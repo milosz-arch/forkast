@@ -34,6 +34,13 @@ export const kluczProduktu = nazwa => nazwa.toLowerCase()
  */
 export function nalozSpizarnie(pozycje, stan = {}) {
   return pozycje.map(p => {
+    /* Bez liczby nie ma od czego odejmować. Wcześniej wychodziło z tego NaN,
+       który przechodził przez cały ekran i kończył się listą mówiącą „400 g”
+       przy pełnej szafce. NaN nie jest błędem — jest liczbą, więc nic nie
+       piszczało. Dlatego tu jest twardy wyjątek, a nie ciche zero. */
+    if (typeof p.gramy !== "number" || Number.isNaN(p.gramy)) {
+      throw new TypeError(`Pozycja „${p.produkt}” przyszła do spiżarni bez gramów.`);
+    }
     const masz = Math.max(0, Math.round(stan[kluczProduktu(p.produkt)] || 0));
     const doKupienia = Math.max(0, p.gramy - masz);
     return {

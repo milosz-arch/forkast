@@ -195,7 +195,9 @@
               <template x-for="p in g.pozycje" :key="p.produkt">
                 <li class="border-b border-stone-100 last:border-0 dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
-                          :aria-label="`${p.produkt}, ${p.ile}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
+                          :aria-label="p.wDomu
+                            ? `${p.produkt}. Macie w domu ${p.ileWDomu}, nie trzeba kupować.`
+                            : `${p.produkt}, do kupienia ${p.ileDoKupienia}${p.masz > 0 ? `, w domu ${p.ileWDomu}` : ''}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
                           class="flex min-h-[3.25rem] w-full items-center gap-4 px-4 text-left transition
                                  active:bg-stone-50 dark:active:bg-stone-800/60"
                           :class="p.wKoszyku ? 'opacity-55' : ''">
@@ -215,8 +217,16 @@
                             x-text="p.produkt"></span>
                       <span class="block truncate text-[0.82rem] text-stone-400" x-text="p.zDan"></span>
                     </span>
-                    <span class="shrink-0 font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
-                          x-text="p.ile"></span>
+                    <!-- Ilość po odjęciu spiżarni. Gdy coś macie w domu, liczba mówi,
+                         ILE DOŁOŻYĆ, a w nawiasie stoi, ile już jest — żeby było widać,
+                         że apka odjęła, a nie że przepis zmalał (decyzja 70). -->
+                    <span class="shrink-0 text-right">
+                      <span class="block font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
+                            x-text="p.wDomu ? 'mamy' : p.ileDoKupienia"></span>
+                      <span x-show="p.masz > 0"
+                            class="block text-[0.68rem] tabular-nums text-stone-400 dark:text-stone-500"
+                            x-text="p.wDomu ? `${p.ileWDomu} w domu` : `${p.ileWDomu} jest w domu`"></span>
+                    </span>
                   </button>
                 </li>
               </template>
@@ -470,18 +480,35 @@ Alpine.data("ekranZakupy", () => ({
       pozycje: [...poz.filter(p => !p.wKoszyku), ...poz.filter(p => p.wKoszyku)],
     }));
   },
+  /* Ile w tym dziale zostało do wzięcia. Nagłówek dzialu używał tej nazwy
+     dwa razy i też jej nigdzie nie było — dział nigdy nie mówił „gotowe”. */
+  zostaloWDziale(grupa) {
+    return grupa.pozycje.filter(p => !p.wDomu && !p.wKoszyku).length;
+  },
+
+  /* POZYCJE, KTÓRE TRZEBA KUPIĆ — czyli te, których spiżarnia nie pokrywa
+     w całości. Do 8 sierpnia ta nazwa była użyta pięć razy w nagłówku tego
+     ekranu (duży licznik, „/ N”, „N już macie w domu”) i NIE ISTNIAŁA nigdzie
+     w danych — więc licznik wywalał się przy każdym otwarciu Zakupów (decyzja 70). */
+  get doKupienia() {
+    return this.pozycje.filter(p => !p.wDomu);
+  },
+
   get postep() {
-    return this.pozycje.length
-      ? Math.round(this.pozycje.filter(p => p.wKoszyku).length / this.pozycje.length * 100) : 0;
+    /* Mianownikiem są pozycje DO KUPIENIA. Produkt pokryty w całości przez
+       spiżarnię nie liczy się do postępu (decyzja 37) — inaczej pasek nigdy
+       nie doszedłby do stu procent, mimo że w sklepie nie ma już nic do wzięcia. */
+    return this.doKupienia.length
+      ? Math.round(this.doKupienia.filter(p => p.wKoszyku).length / this.doKupienia.length * 100) : 0;
   },
   get opisKoszyka() {
-    const z = this.pozycje.filter(p => p.wKoszyku).length;
+    const z = this.doKupienia.filter(p => p.wKoszyku).length;
     if (!this.pozycje.length) return "—";
-    if (z === this.pozycje.length) {
+    if (this.doKupienia.length && z === this.doKupienia.length) {
       const ile = Number(localStorage.getItem("forkast-kompletow") || 0);
       return ile >= 10 ? "Wszystko w koszyku. yeah yeah 🎵" : "Wszystko w koszyku. Możesz iść do domu.";
     }
-    return `${z} z ${this.pozycje.length} w koszyku`;
+    return `${z} z ${this.doKupienia.length} w koszyku`;
   },
 
   /* Wczytuje odhaczenia dla konkretnego okresu i sprząta poprzednie. */
@@ -605,6 +632,11 @@ Alpine.data("ekranZakupy", () => ({
         const plaskie = grupy.flatMap(g => g.pozycje.map(p => ({
           produkt: p.produkt,
           dzial: g.dzial,
+          /* `gramy` MUSI tu przejść. Do 8 sierpnia spłaszczanie zostawiało tylko
+             gotowy napis „400 g”, więc nalozSpizarnie() dostawało pozycje bez liczby
+             i liczyło `masz - undefined` = NaN. Spiżarnia nie odejmowała nic,
+             a znacznik „mamy” nie zapalał się nigdy (decyzja 70). */
+          gramy: p.gramy,
           ile: opisIlosci(p.gramy),
           zDan: p.wDaniach.join(" · "),
         })));
@@ -626,6 +658,16 @@ Alpine.data("ekranZakupy", () => ({
 
   pozycjeSurowe: [],
   odliczanieUzbrojone: false,
+
+  /* STAN SPIŻARNI — cztery pola, których do 8 sierpnia po prostu nie było.
+     Metody niżej pisały do nich (`this.spizarnia[klucz] = ...`), ale szablon
+     czytał je, zanim cokolwiek je stworzyło: `Object.keys(spizarnia)` i
+     `!nowyProdukt.trim()` wywalały się na undefined przy pierwszym rysowaniu
+     arkusza — czyli spiżarni nie dało się otworzyć ani razu (decyzja 70). */
+  arkuszSpizarni: false,
+  spizarnia: {},
+  nowyProdukt: "",
+  nowaIlosc: null,
 
   get nazwyProduktow() {
     return [...new Set([...this.pozycjeSurowe.map(p => p.produkt), ...this.wszystkieNazwy])]
@@ -709,7 +751,14 @@ Alpine.data("ekranZakupy", () => ({
   zOdhaczeniami(lista) {
     this.pozycjeSurowe = lista;
     return nalozSpizarnie(lista, this.spizarnia)
-      .map(p => ({ ...p, wKoszyku: this.odhaczone.has(klucz(p.produkt)) }));
+      .map(p => ({
+        ...p,
+        /* Liczby zamieniane na napisy TU, a nie w widoku — żeby „250 g” i „1,2 kg”
+           powstawały tą samą funkcją co reszta listy. */
+        ileDoKupienia: opisIlosci(p.doKupienia),
+        ileWDomu: opisIlosci(p.masz),
+        wKoszyku: this.odhaczone.has(klucz(p.produkt)),
+      }));
   },
 
     /* Optimistic UI: stan zmienia się natychmiast, zapis do pamięci telefonu
