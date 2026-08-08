@@ -61,15 +61,15 @@
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight">Dodaj przez AI</h1>
-      <p class="mt-1 max-w-[38ch] text-[0.85rem] leading-snug text-white/85">
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj przez AI</h1>
+      <p class="mt-1 max-w-[38ch] text-[0.82rem] leading-snug text-white/85">
         Nazwa, link, zdjęcie przepisu — albo zdjęcie samego talerza.
       </p>
       <button type="button" @click="pomocKlucz = 'dodawanie'"
               aria-label="Jak to działa"
               class="absolute flex size-11 items-center justify-center rounded-full border
-                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
 
@@ -91,7 +91,7 @@
           <div class="mb-4 grid grid-cols-3 gap-2" role="group" aria-label="Sposób dodania">
             <template x-for="t in TRYBY" :key="t.id">
               <button type="button" @click="tryb = t.id" :aria-pressed="(tryb === t.id).toString()"
-                      class="min-h-[48px] rounded-xl border-2 px-2 text-[0.82rem] font-semibold transition"
+                      class="min-h-[2.7rem] rounded-xl border-2 px-2 text-[0.82rem] font-semibold transition"
                       :class="tryb === t.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -101,25 +101,25 @@
           </div>
 
           <input x-show="tryb === 'nazwa'" type="text" x-model="nazwa" placeholder="np. Naleśniki z dżemem"
-                 class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+                 class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                         outline-none transition focus:border-emerald-600 focus:ring-4
                         focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
 
           <input x-show="tryb === 'link'" type="url" x-model="url" placeholder="https://…"
-                 class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+                 class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                         outline-none transition focus:border-emerald-600 focus:ring-4
                         focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
 
           <div x-show="tryb === 'zdjecia'">
-            <label class="flex min-h-[110px] w-full cursor-pointer flex-col items-center justify-center
+            <label class="flex min-h-[6.15rem] w-full cursor-pointer flex-col items-center justify-center
                           rounded-2xl border-2 border-dashed border-stone-300 px-4 text-center
                           dark:border-stone-700">
               <input type="file" accept="image/*" multiple class="hidden" @change="wczytajZdjecia($event)">
               <span class="font-semibold" x-text="opisZdjec"></span>
-              <span class="mt-1 text-[0.78rem] text-stone-400">
+              <span class="mt-1 text-[0.82rem] text-stone-400">
                 Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.
               </span>
-              <span class="mt-0.5 text-[0.72rem] text-stone-400">
+              <span class="mt-0.5 text-[0.82rem] text-stone-400">
                 Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.
               </span>
             </label>
@@ -131,14 +131,14 @@
           </div>
 
           <button type="button" @click="wyslij()" :disabled="!gotoweDoWyslania"
-                  class="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                  class="mt-4 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                          bg-emerald-700 font-bold text-white transition active:scale-[0.98]
                          disabled:opacity-40 dark:bg-emerald-600">
             <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Wyślij do AI
           </button>
 
-          <a href="formularz.html" class="mt-3 flex min-h-[44px] w-full items-center justify-center
-             text-[0.85rem] font-semibold text-stone-500 no-underline dark:text-stone-400">
+          <a href="formularz.html" class="mt-3 flex min-h-[2.5rem] w-full items-center justify-center
+             text-[0.82rem] font-semibold text-stone-500 no-underline dark:text-stone-400">
             Wolisz wpisać ręcznie?
           </a>
         </div>
@@ -168,22 +168,22 @@
                         :class="i === etap ? 'bg-emerald-600 dark:bg-emerald-400'
                                            : 'bg-stone-300 dark:bg-stone-600'"></span>
                 </span>
-                <span class="text-[0.92rem]"
+                <span class="text-[1rem]"
                       :class="i === etap ? 'font-semibold' : 'text-stone-500 dark:text-stone-400'"
                       x-text="e.tekst"></span>
               </li>
             </template>
           </ul>
 
-          <p class="mt-6 text-center text-[0.8rem] text-stone-400" x-text="podpowiedzCzekania"></p>
+          <p class="mt-6 text-center text-[0.82rem] text-stone-400" x-text="podpowiedzCzekania"></p>
         </div>
 
         <!-- ================= BŁĄD ================= -->
         <div x-show="krok === 'blad'" x-transition class="space-y-3">
-          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.9rem] text-red-800
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[1rem] text-red-800
                       dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200" x-text="blad"></div>
           <button type="button" @click="krok = 'wejscie'"
-                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-emerald-700
+                  class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
                          font-bold text-white dark:bg-emerald-600">Spróbuj jeszcze raz</button>
         </div>
 
@@ -198,13 +198,13 @@
           <template x-for="d in wynik.dania" :key="d.nazwa">
             <article class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                             dark:border-stone-800 dark:bg-stone-900">
-              <h3 class="text-[1.15rem] font-bold leading-snug" x-text="d.nazwa"></h3>
-              <p class="mt-1 text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+              <h3 class="text-[1.25rem] font-bold leading-snug" x-text="d.nazwa"></h3>
+              <p class="mt-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                         text-emerald-700 dark:text-emerald-400"
                  x-text="d.typy.join(' · ') + ' · na ' + d.porcje + ' os.'"></p>
               <ul class="mt-3 space-y-1.5">
                 <template x-for="s in d.skladniki" :key="s.produkt">
-                  <li class="flex justify-between text-[0.9rem] text-stone-600 dark:text-stone-400">
+                  <li class="flex justify-between text-[1rem] text-stone-600 dark:text-stone-400">
                     <span x-text="s.produkt"></span>
                     <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
                           x-text="s.gramy + ' g'"></span>
@@ -215,19 +215,19 @@
           </template>
 
           <template x-for="u in [...wynik.bledy, ...wynik.ostrzezenia]" :key="u">
-            <p class="rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
+            <p class="rounded-xl bg-amber-50 px-4 py-3 text-[0.82rem] text-amber-900
                       dark:bg-amber-900/25 dark:text-amber-200" x-text="u"></p>
           </template>
 
-          <p x-show="!wynik.dania.length" class="text-[0.9rem] text-stone-500">
+          <p x-show="!wynik.dania.length" class="text-[1rem] text-stone-500">
             Nie ma tu ani jednego dania, które da się zapisać.
           </p>
 
           <button type="button" x-show="wynik.dania.length" @click="zatwierdz()"
-                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-emerald-700
+                  class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
                          font-bold text-white dark:bg-emerald-600">Dodaj do moich dań</button>
           <button type="button" @click="odrzuc()"
-                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl border-2
+                  class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
                          border-stone-200 font-bold dark:border-stone-700">Odrzuć</button>
         </div>
 
@@ -240,11 +240,11 @@
             <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-ptaszek"/></svg>
           </div>
           <h2 class="mt-4 text-xl font-bold">Zapisane</h2>
-          <p class="mt-2 text-[0.9rem] text-stone-500 dark:text-stone-400" x-text="podsumowanie"></p>
+          <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400" x-text="podsumowanie"></p>
           <button type="button" @click="odNowa()"
-                  class="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-xl
+                  class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
                          bg-emerald-700 font-bold text-white dark:bg-emerald-600">Dodaj kolejne</button>
-          <a href="talia.html" class="mt-2.5 flex min-h-[52px] w-full items-center justify-center
+          <a href="talia.html" class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center
              rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700">
             Wróć do dań</a>
         </div>
@@ -258,7 +258,7 @@
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
-             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                                      : 'text-stone-500 dark:text-stone-400'">

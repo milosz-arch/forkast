@@ -71,16 +71,16 @@
                  from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                  shadow-lg shadow-emerald-900/20 md:rounded-none"
           style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-    <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-    <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
-    <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+    <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+    <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
 
     <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
             :aria-pressed="ekranSwieci.toString()"
             :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
                                      : 'Ekran gaśnie. Dotknij, żeby świecił.'"
-            class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
-                   text-[0.66rem] font-bold backdrop-blur-md transition"
+            class="absolute flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
+                   text-[0.68rem] font-bold backdrop-blur-md transition"
             style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem"
             :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                 : 'border-white/40 bg-white/15 text-white/90'">
@@ -90,7 +90,7 @@
       <button type="button" @click="pomocKlucz = 'zakupy'"
               aria-label="Jak to działa"
               class="absolute flex size-11 items-center justify-center rounded-full border
-                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
 
@@ -131,7 +131,7 @@
           <div class="min-w-0 flex-1 pb-1.5 text-right">
             <p class="text-[0.82rem] font-semibold leading-tight" x-text="opisKoszyka"></p>
             <p x-show="pozycje.length - doKupienia.length > 0"
-               class="mt-0.5 text-[0.72rem] text-stone-400"
+               class="mt-0.5 text-[0.82rem] text-stone-400"
                x-text="`${pozycje.length - doKupienia.length} już macie w domu`"></p>
           </div>
         </div>
@@ -148,7 +148,7 @@
 
       <!-- Uwagi z liczenia (np. danie zniknęło z bazy) -->
       <template x-for="u in pominiete" :key="u">
-        <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.88rem]
+        <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[1rem]
                     text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/25 dark:text-amber-200"
              x-text="u"></div>
       </template>
@@ -196,7 +196,7 @@
                 <li class="border-b border-stone-100 last:border-0 dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
                           :aria-label="`${p.produkt}, ${p.ile}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
-                          class="flex min-h-[58px] w-full items-center gap-4 px-4 text-left transition
+                          class="flex min-h-[3.25rem] w-full items-center gap-4 px-4 text-left transition
                                  active:bg-stone-50 dark:active:bg-stone-800/60"
                           :class="p.wKoszyku ? 'opacity-55' : ''">
                     <!-- Stan nie zależy od samego koloru: kolor + ptaszek
@@ -213,7 +213,7 @@
                       <span class="block truncate font-medium"
                             :class="p.wKoszyku ? 'text-stone-400 line-through dark:text-stone-500' : ''"
                             x-text="p.produkt"></span>
-                      <span class="block truncate text-[0.72rem] text-stone-400" x-text="p.zDan"></span>
+                      <span class="block truncate text-[0.82rem] text-stone-400" x-text="p.zDan"></span>
                     </span>
                     <span class="shrink-0 font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
                           x-text="p.ile"></span>
@@ -226,7 +226,7 @@
       </div>
 
       <p x-show="stanSieci" x-text="stanSieci"
-         class="mt-4 text-center text-[0.78rem] text-stone-400"></p>
+         class="mt-4 text-center text-[0.82rem] text-stone-400"></p>
     </div>
     </main>
 
@@ -240,7 +240,7 @@
              :aria-current="z.id === ekran ? 'page' : null"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
              :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"
-             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                      : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
@@ -269,8 +269,8 @@
        style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
     <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700 md:hidden"></div>
 
-    <h3 class="text-[1.3rem] font-bold">Spiżarnia</h3>
-    <p class="mt-1 text-[0.85rem] leading-snug text-stone-500 dark:text-stone-400">
+    <h3 class="text-[1.25rem] font-bold">Spiżarnia</h3>
+    <p class="mt-1 text-[0.82rem] leading-snug text-stone-500 dark:text-stone-400">
       Wpiszcie, ile czego macie w domu. Apka odejmie to od listy zakupów, żeby nie kazała
       Wam kupować kilograma mąki co tydzień.
     </p>
@@ -278,12 +278,12 @@
     <!-- Dodawanie -->
     <div class="mt-4 flex gap-2">
       <input type="text" x-model="nowyProdukt" list="produkty-spizarnia" placeholder="Produkt"
-             class="min-h-[52px] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+             class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                     outline-none transition focus:border-emerald-600
                     dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
       <input type="number" x-model.number="nowaIlosc" placeholder="gramy" min="1"
              @keydown.enter="dodajDoSpizarni()"
-             class="min-h-[52px] w-28 rounded-xl border-2 border-stone-200 bg-white px-3 text-[17px]
+             class="min-h-[2.9rem] w-28 rounded-xl border-2 border-stone-200 bg-white px-3 text-[17px]
                     outline-none transition focus:border-emerald-600
                     dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
     </div>
@@ -291,7 +291,7 @@
       <template x-for="n in nazwyProduktow" :key="n"><option :value="n"></option></template>
     </datalist>
     <button type="button" @click="dodajDoSpizarni()" :disabled="!nowyProdukt.trim() || !nowaIlosc"
-            class="mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl
+            class="mt-2 flex min-h-[2.7rem] w-full items-center justify-center gap-2 rounded-xl
                    bg-emerald-700 font-bold text-white transition active:scale-[0.98]
                    disabled:opacity-40 dark:bg-emerald-600">
       <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj do spiżarni
@@ -299,7 +299,7 @@
 
     <!-- Zawartość -->
     <p x-show="!Object.keys(spizarnia).length"
-       class="mt-5 rounded-2xl bg-stone-100 px-4 py-6 text-center text-[0.88rem] text-stone-500
+       class="mt-5 rounded-2xl bg-stone-100 px-4 py-6 text-center text-[1rem] text-stone-500
               dark:bg-stone-900 dark:text-stone-400">
       Spiżarnia jest pusta. To w porządku — wpiszcie tylko to, czego macie więcej
       niż na jeden raz.
@@ -313,12 +313,12 @@
                    dark:border-stone-800">
           <span class="min-w-0 flex-1">
             <span class="block truncate font-medium" x-text="w.nazwa"></span>
-            <span class="block text-[0.72rem] text-stone-400" x-text="w.opis"></span>
+            <span class="block text-[0.82rem] text-stone-400" x-text="w.opis"></span>
           </span>
           <input type="number" :value="w.gramy" min="0"
                  @change="ustawWSpizarni(w.klucz, $event.target.value)"
                  :aria-label="`Ile gramów: ${w.nazwa}`"
-                 class="min-h-[44px] w-24 rounded-xl border-2 border-stone-200 bg-white px-3
+                 class="min-h-[2.5rem] w-24 rounded-xl border-2 border-stone-200 bg-white px-3
                         text-center text-[16px] outline-none focus:border-emerald-600
                         dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100">
           <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
@@ -333,17 +333,17 @@
 
     <!-- Odliczenie po ugotowaniu -->
     <button type="button" x-show="Object.keys(spizarnia).length" @click="odliczZuzycie()"
-            class="mt-3 flex min-h-[52px] w-full items-center justify-center rounded-xl border-2
-                   border-stone-200 bg-white text-[0.88rem] font-bold transition active:scale-[0.98]
+            class="mt-3 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
+                   border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
                    dark:border-stone-700 dark:bg-stone-900"
             x-text="odliczanieUzbrojone ? 'Na pewno? Dotknij ponownie'
                                         : 'Ugotowane — odlicz zużycie okresu'"></button>
-    <p x-show="Object.keys(spizarnia).length" class="mt-1.5 text-center text-[0.75rem] text-stone-400">
+    <p x-show="Object.keys(spizarnia).length" class="mt-1.5 text-center text-[0.82rem] text-stone-400">
       Odejmie od spiżarni to, co zjedliście przez ten okres.
     </p>
 
     <button type="button" @click="arkuszSpizarni = false"
-            class="mt-4 min-h-[52px] w-full rounded-xl bg-emerald-700 font-bold text-white
+            class="mt-4 min-h-[2.9rem] w-full rounded-xl bg-emerald-700 font-bold text-white
                    dark:bg-emerald-600">Zamknij</button>
   </div>
 </div>
@@ -354,7 +354,7 @@
      x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
      class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-6"
      style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
-  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.82rem] font-semibold text-white
           shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
 </div>
 
@@ -394,7 +394,7 @@ const kodDomu = localStorage.getItem("forkast-dom");
 if (!kodDomu) {
   document.body.innerHTML = `
     <div class="flex h-dvh flex-col items-center justify-center gap-5 px-8 text-center">
-      <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.24em] text-emerald-700
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-emerald-700
                 dark:text-emerald-400">Forkast</p>
       <h1 class="text-2xl font-bold">Najpierw usiądź do stołu</h1>
       <p class="max-w-[34ch] text-stone-500 dark:text-stone-400">
@@ -402,7 +402,7 @@ if (!kodDomu) {
         albo wpisz kod, który ktoś Ci wysłał.
       </p>
       <a href="index.html"
-         class="flex min-h-[52px] w-full max-w-xs items-center justify-center rounded-xl
+         class="flex min-h-[2.9rem] w-full max-w-xs items-center justify-center rounded-xl
                 bg-emerald-700 px-5 font-bold text-white no-underline dark:bg-emerald-600">
         Przejdź do stołu
       </a>

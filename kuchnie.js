@@ -35,6 +35,10 @@ export const KUCHNIE = {
   ge: { flaga: "🇬🇪", nazwa: "gruzińska" },
   pe: { flaga: "🇵🇪", nazwa: "peruwiańska" },
   il: { flaga: "🇮🇱", nazwa: "bliskowschodnia" },
+  /* Uniwersalna to PEŁNOPRAWNA wartość, nie brak danych. Owsianka, koktajl,
+     kanapki i batony owsiane nie należą do żadnej kuchni narodowej i wpisanie
+     im którejkolwiek byłoby zmyśleniem. 49 ze 113 dań startowych ma tę wartość. */
+  uni: { flaga: "", nazwa: "uniwersalna" },
 };
 
 /* Kolejność ma znaczenie: pierwsza pasująca reguła wygrywa. Bardziej
@@ -71,11 +75,23 @@ const REGULY = [
  * @returns {{kod: string, flaga: string, nazwa: string}}
  */
 export function kuchniaDania(danie) {
+  /* POLE MA PIERWSZEŃSTWO. Do 8 sierpnia kuchnia była wyłącznie zgadywana
+     z nazwy, a gdy żadna reguła nie trafiła — wpisywana jako „polska”.
+     Skutek: 75 ze 113 dań uchodziło za polskie, w tym owsianka, koktajl
+     i batony owsiane. To nie była wartość domyślna, tylko zmyślona.
+     Od decyzji 68 każde danie w talii startowej ma `kuchnia` wpisane wprost. */
+  if (danie?.kuchnia && KUCHNIE[danie.kuchnia]) {
+    return { kod: danie.kuchnia, ...KUCHNIE[danie.kuchnia] };
+  }
+
+  /* Dania spoza talii — dodane przez AI albo ręcznie — pola mogą nie mieć.
+     Wtedy próbujemy reguł po nazwie, ale gdy żadna nie trafi, wynikiem jest
+     UNIWERSALNA, nie polska. Lepiej nie powiedzieć nic, niż zmyślić kraj. */
   const nazwa = danie?.nazwa || "";
   for (const [wzorzec, kod] of REGULY) {
     if (wzorzec.test(nazwa)) return { kod, ...KUCHNIE[kod] };
   }
-  return { kod: "pl", ...KUCHNIE.pl };
+  return { kod: "uni", ...KUCHNIE.uni };
 }
 
 /** Ile dań z każdej kuchni — do sprawdzenia, czy reguły nie przesadzają. */

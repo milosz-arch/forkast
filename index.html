@@ -34,9 +34,9 @@
                  from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-center text-white
                  shadow-lg shadow-emerald-900/20"
           style="padding-top:calc(1.6rem + env(safe-area-inset-top,0px)); padding-bottom:1.75rem">
-    <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-    <h1 class="mt-2 text-[1.8rem] font-bold leading-tight tracking-tight">Cześć, tu Forkast</h1>
-    <p class="mx-auto mt-2 max-w-[34ch] text-[0.9rem] leading-snug text-white/85">
+    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+    <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight">Cześć, tu Forkast</h1>
+    <p class="mx-auto mt-2 max-w-[34ch] text-[1rem] leading-snug text-white/85">
       Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?
     </p>
   </header>
@@ -48,14 +48,14 @@
       <!-- ================= START ================= -->
       <section x-show="krok === 'start'" x-transition class="space-y-3">
         <button type="button" @click="nowyStol()" :disabled="zajety"
-                class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
-                       text-[1.05rem] font-bold text-white transition active:scale-[0.98]
+                class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
+                       text-[1rem] font-bold text-white transition active:scale-[0.98]
                        disabled:opacity-50 dark:bg-emerald-600"
                 x-text="zajety ? 'Zakładam…' : 'Nakrywam nowy stół'"></button>
 
         <button type="button" @click="krok = 'kod'"
-                class="flex min-h-[56px] w-full items-center justify-center rounded-xl border-2
-                       border-stone-200 bg-white text-[1.05rem] font-bold transition active:scale-[0.98]
+                class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl border-2
+                       border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
                        dark:border-stone-700 dark:bg-stone-900">Dosiadam się — mam kod</button>
 
         <p class="pt-3 text-[0.82rem] italic leading-relaxed text-stone-500 dark:text-stone-400">
@@ -69,25 +69,25 @@
 
       <!-- ================= WPISANIE KODU ================= -->
       <section x-show="krok === 'kod'" x-transition class="space-y-3">
-        <label for="poleKodu" class="block text-[0.9rem] font-semibold">Kod stołu</label>
+        <label for="poleKodu" class="block text-[1rem] font-semibold">Kod stołu</label>
         <input id="poleKodu" type="text" x-model="wpisanyKod" maxlength="8" autocomplete="off"
                autocapitalize="characters" placeholder="np. NH7XOO"
-               class="min-h-[56px] w-full rounded-xl border-2 border-stone-200 bg-white px-4
-                      text-center text-[1.4rem] font-bold tracking-[0.2em] uppercase outline-none
+               class="min-h-[3.15rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                      text-center text-[1.45rem] font-bold tracking-[0.2em] uppercase outline-none
                       transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15
                       dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
 
         <p x-show="bladKodu" x-transition
-           class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.88rem] text-red-800
+           class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[1rem] text-red-800
                   dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200" x-text="bladKodu"></p>
 
         <button type="button" @click="dolacz()" :disabled="sprawdzam"
-                class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
+                class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
                        font-bold text-white transition active:scale-[0.98] disabled:opacity-50
                        dark:bg-emerald-600"
                 x-text="sprawdzam ? 'Sprawdzam…' : 'Dołącz'"></button>
         <button type="button" @click="krok = 'start'; bladKodu = ''"
-                class="flex min-h-[44px] w-full items-center justify-center text-[0.85rem]
+                class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
                        text-stone-500 dark:text-stone-400">Wróć</button>
       </section>
 
@@ -98,30 +98,30 @@
                     dark:border-emerald-500/20 dark:bg-emerald-500/10">
           <div class="flex items-center gap-4">
             <div class="min-w-0 flex-1">
-              <p class="text-[0.8rem] font-semibold text-stone-600 dark:text-stone-400">Kod tego stołu</p>
-              <p class="zaznaczalne mt-0.5 text-[1.6rem] font-bold tracking-[0.22em] text-emerald-800
+              <p class="text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Kod tego stołu</p>
+              <p class="zaznaczalne mt-0.5 text-[1.45rem] font-bold tracking-[0.22em] text-emerald-800
                         dark:text-emerald-300" x-text="kodDomu"></p>
-              <p x-show="smacznyKod" class="mt-1 text-[0.8rem] font-semibold text-emerald-700
+              <p x-show="smacznyKod" class="mt-1 text-[0.82rem] font-semibold text-emerald-700
                         dark:text-emerald-400" x-text="smacznyKod"></p>
             </div>
             <button type="button" @click="kopiuj()"
-                    class="flex min-h-[44px] shrink-0 items-center rounded-xl border-2
-                           border-emerald-700/20 bg-white px-4 text-[0.85rem] font-bold text-emerald-800
+                    class="flex min-h-[2.5rem] shrink-0 items-center rounded-xl border-2
+                           border-emerald-700/20 bg-white px-4 text-[0.82rem] font-bold text-emerald-800
                            transition active:scale-95 dark:border-emerald-400/30 dark:bg-stone-900
                            dark:text-emerald-300">Kopiuj</button>
           </div>
-          <p class="mt-3 text-[0.8rem] text-stone-600 dark:text-stone-400">
+          <p class="mt-3 text-[0.82rem] text-stone-600 dark:text-stone-400">
             Podaj go tym, którzy siadają z Wami do stołu. Zapisz, zanim zamkniesz kartę.
           </p>
         </div>
 
-        <p class="text-[0.9rem] text-stone-600 dark:text-stone-400">
+        <p class="text-[1rem] text-stone-600 dark:text-stone-400">
           Kto siada do stołu? Dodaj przynajmniej siebie — resztę możesz dopisać kiedy chcesz.
         </p>
 
         <ul class="space-y-2">
           <template x-for="d in domownicy" :key="d.id">
-            <li class="flex min-h-[56px] items-center gap-3 rounded-xl border border-stone-100
+            <li class="flex min-h-[3.15rem] items-center gap-3 rounded-xl border border-stone-100
                        bg-white px-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
               <span class="flex-1 font-medium" x-text="d.imie"></span>
               <button type="button" @click="usun(d)" :aria-label="`Usuń ${d.imie} ze stołu`"
@@ -136,28 +136,28 @@
         <div class="flex gap-2">
           <input type="text" x-model="noweImie" placeholder="Imię lub pseudonim" autocomplete="off"
                  @keydown.enter="dodaj()"
-                 class="min-h-[52px] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
+                 class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
                         text-[17px] outline-none transition focus:border-emerald-600
                         dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
           <button type="button" @click="dodaj()"
-                  class="min-h-[52px] shrink-0 rounded-xl bg-emerald-700 px-6 font-bold text-white
+                  class="min-h-[2.9rem] shrink-0 rounded-xl bg-emerald-700 px-6 font-bold text-white
                          transition active:scale-95 dark:bg-emerald-600">Dodaj</button>
         </div>
 
-        <p x-show="bladOsoby" class="text-[0.85rem] text-red-700 dark:text-red-400" x-text="bladOsoby"></p>
+        <p x-show="bladOsoby" class="text-[0.82rem] text-red-700 dark:text-red-400" x-text="bladOsoby"></p>
 
         <a href="talia.html" x-show="domownicy.length"
-           class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
-                  text-[1.05rem] font-bold text-white no-underline dark:bg-emerald-600">
+           class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
+                  text-[1rem] font-bold text-white no-underline dark:bg-emerald-600">
           Dalej — wybierz dania
         </a>
-        <p x-show="!domownicy.length" class="text-center text-[0.85rem] text-stone-400">
+        <p x-show="!domownicy.length" class="text-center text-[0.82rem] text-stone-400">
           Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.
         </p>
 
         <div class="pt-2">
           <button type="button" @click="zapomnij()"
-                  class="flex min-h-[44px] w-full items-center justify-center text-[0.82rem]
+                  class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
                          text-stone-500 dark:text-stone-400">
             To nie mój stół — zacznij od nowa
           </button>
@@ -171,7 +171,7 @@
      x-transition:enter-start="opacity-0 translate-y-2"
      x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
      class="pointer-events-none fixed inset-x-0 bottom-8 z-50 flex justify-center px-6">
-  <p class="rounded-full bg-stone-900 px-5 py-3 text-[0.85rem] font-semibold text-white shadow-xl
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-[0.82rem] font-semibold text-white shadow-xl
             dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
 </div>
 

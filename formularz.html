@@ -60,9 +60,9 @@
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight">Dodaj danie</h1>
-      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85">
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj danie</h1>
+      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85">
         Bez AI — po prostu to, co i tak gotujecie.
       </p>
       <a href="ustawienia.html" aria-label="Ustawienia"
@@ -82,20 +82,20 @@
         <div x-show="!zapisane" x-transition class="space-y-5">
 
           <div>
-            <label for="nazwa" class="mb-2 block text-[0.9rem] font-semibold">Nazwa dania</label>
+            <label for="nazwa" class="mb-2 block text-[1rem] font-semibold">Nazwa dania</label>
             <input id="nazwa" type="text" x-model="nazwa" autocomplete="off"
-                   class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                   class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                           text-[17px] outline-none transition focus:border-emerald-600
                           focus:ring-4 focus:ring-emerald-500/15
                           dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
           </div>
 
           <div>
-            <p class="mb-2 text-[0.9rem] font-semibold">Typ posiłku <span class="font-normal text-stone-400">(można wybrać kilka)</span></p>
+            <p class="mb-2 text-[1rem] font-semibold">Typ posiłku <span class="font-normal text-stone-400">(można wybrać kilka)</span></p>
             <div class="flex flex-wrap gap-2" role="group" aria-label="Typ posiłku">
               <template x-for="t in TYPY_POSILKOW" :key="t">
                 <button type="button" @click="przelaczTyp(t)" :aria-pressed="typy.includes(t).toString()"
-                        class="min-h-[48px] rounded-full border-2 px-5 font-semibold capitalize transition active:scale-95"
+                        class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold capitalize transition active:scale-95"
                         :class="typy.includes(t)
                           ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                           : 'border-stone-200 dark:border-stone-700'">
@@ -106,27 +106,46 @@
           </div>
 
           <div>
-            <label for="porcje" class="mb-2 block text-[0.9rem] font-semibold">
+            <label for="porcje" class="mb-2 block text-[1rem] font-semibold">
               Na ile osób jest ta gramatura
             </label>
             <input id="porcje" type="number" min="1" max="20" x-model.number="porcje"
-                   class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                   class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                           text-[17px] outline-none transition focus:border-emerald-600
                           focus:ring-4 focus:ring-emerald-500/15
                           dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
           </div>
 
           <div>
-            <p class="mb-2 text-[0.9rem] font-semibold">Składniki</p>
+            <label for="kuchnia" class="mb-2 block text-[1rem] font-semibold">
+              Z jakiej kuchni
+            </label>
+            <select id="kuchnia" x-model="kuchnia"
+                    class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                           text-[17px] outline-none transition focus:border-emerald-600
+                           focus:ring-4 focus:ring-emerald-500/15
+                           dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+              <template x-for="[kod, k] in Object.entries(KUCHNIE)" :key="kod">
+                <option :value="kod" x-text="k.nazwa"></option>
+              </template>
+            </select>
+            <p class="mt-1.5 text-[0.82rem] text-stone-500 dark:text-stone-400">
+              Owsianka, koktajl czy kanapka nie należą do żadnej kuchni narodowej —
+              zostaw „uniwersalna”.
+            </p>
+          </div>
+
+          <div>
+            <p class="mb-2 text-[1rem] font-semibold">Składniki</p>
             <div class="space-y-2.5">
               <template x-for="(s, i) in skladniki" :key="i">
                 <div class="flex gap-2">
                   <input type="text" x-model="s.produkt" :list="'produkty-' + i" placeholder="Produkt"
-                         class="min-h-[52px] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
+                         class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
                                 text-[17px] outline-none transition focus:border-emerald-600
                                 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
                   <input type="number" x-model.number="s.gramy" placeholder="gramy" min="1"
-                         class="min-h-[52px] w-28 rounded-xl border-2 border-stone-200 bg-white px-3
+                         class="min-h-[2.9rem] w-28 rounded-xl border-2 border-stone-200 bg-white px-3
                                 text-[17px] outline-none transition focus:border-emerald-600
                                 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
                   <button type="button" @click="skladniki.splice(i, 1)"
@@ -152,7 +171,7 @@
             </template>
 
             <button type="button" @click="skladniki.push({ produkt: '', gramy: null })"
-                    class="mt-2.5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                    class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                            border-2 border-dashed border-stone-300 font-semibold text-stone-600
                            transition active:scale-[0.98] dark:border-stone-700 dark:text-stone-400">
               <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj składnik
@@ -160,7 +179,7 @@
           </div>
 
           <div x-show="bledy.length" x-transition
-               class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.88rem] text-red-800
+               class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[1rem] text-red-800
                       dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200">
             <template x-for="b in bledy" :key="b"><p x-text="b"></p></template>
           </div>
@@ -169,7 +188,7 @@
                wpisywać gramaturę z palca, powinien wiedzieć, że AI zrobi to
                z linku albo ze zdjęcia strony z książki. -->
           <a href="dodaj-z-ai.html"
-             class="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+             class="flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                     border-2 border-emerald-600/40 bg-emerald-50 font-semibold text-emerald-800
                     no-underline transition active:scale-[0.98] dark:border-emerald-500/30
                     dark:bg-emerald-500/10 dark:text-emerald-300">
@@ -178,7 +197,7 @@
           </a>
 
           <button type="button" @click="zapisz()" :disabled="zapisywanie"
-                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-emerald-700
+                  class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
                          font-bold text-white transition active:scale-[0.98] disabled:opacity-50
                          dark:bg-emerald-600"
                   x-text="zapisywanie ? 'Zapisuję…' : 'Zapisz danie'"></button>
@@ -193,13 +212,13 @@
             <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-ptaszek"/></svg>
           </div>
           <h2 class="mt-4 text-xl font-bold">Dodane!</h2>
-          <p class="mt-2 text-[0.9rem] text-stone-500 dark:text-stone-400">
+          <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400">
             Danie trafiło do Waszych dań jako polubione.
           </p>
           <button type="button" @click="odNowa()"
-                  class="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-xl
+                  class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
                          bg-emerald-700 font-bold text-white dark:bg-emerald-600">Dodaj kolejne</button>
-          <a href="talia.html" class="mt-2.5 flex min-h-[52px] w-full items-center justify-center
+          <a href="talia.html" class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center
              rounded-xl border-2 border-stone-200 font-bold no-underline
              dark:border-stone-700">Wróć do dań</a>
         </div>
@@ -213,7 +232,7 @@
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
-             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                                      : 'text-stone-500 dark:text-stone-400'">
@@ -236,6 +255,7 @@ let db, ref, get, set, remove, push, update, onValue;
 
 import { stanPoczatkowy } from "./postep.js";
 import { danePowloki } from "./powloka.js";
+import { KUCHNIE } from "./kuchnie.js";
 import { walidujDanie } from "./formularz.js";
 import { PRODUKTY } from "./produkty.js";
 import { TYPY_POSILKOW } from "./prompt.js";
@@ -251,6 +271,10 @@ Alpine.data("ekranFormularz", () => ({
   nazwa: "",
   typy: [],
   porcje: 2,
+  /* Domyślnie uniwersalna, nie polska — żeby brak decyzji nie zamieniał się
+     w twierdzenie o pochodzeniu dania (decyzja 68). */
+  kuchnia: "uni",
+  KUCHNIE,
   skladniki: [{ produkt: "", gramy: null }, { produkt: "", gramy: null }],
   bledy: [],
   zapisywanie: false,
@@ -305,6 +329,7 @@ Alpine.data("ekranFormularz", () => ({
       nazwa: this.nazwa,
       typy: this.typy,
       porcje: this.porcje,
+      kuchnia: this.kuchnia,
       skladniki: this.skladniki,
     }, this.slownik);
 
@@ -333,7 +358,7 @@ Alpine.data("ekranFormularz", () => ({
   },
 
   odNowa() {
-    this.nazwa = ""; this.typy = []; this.porcje = 2;
+    this.nazwa = ""; this.typy = []; this.porcje = 2; this.kuchnia = "uni";
     this.skladniki = [{ produkt: "", gramy: null }, { produkt: "", gramy: null }];
     this.bledy = []; this.zapisane = false;
   },

@@ -7,6 +7,7 @@
    to inny produkt niż "zapisz, co i tak gotujesz".
    ===================================================================== */
 
+import { KUCHNIE } from "./kuchnie.js";
 import { TYPY_POSILKOW } from "./prompt.js";
 
 /**
@@ -49,5 +50,9 @@ export function walidujDanie(dane, znaneProdukty) {
   }
 
   if (bledy.length) return { ok: false, bledy };
-  return { ok: true, danie: { nazwa, typy, porcje, skladniki, kroki: [] } };
+  /* Kuchnia: nieznana albo spoza słownika → "uni". Nigdy "pl" — brak decyzji
+     nie może zamieniać się w twierdzenie o pochodzeniu dania (decyzja 68). */
+  const kuchnia = KUCHNIE[dane?.kuchnia] ? dane.kuchnia : "uni";
+
+  return { ok: true, danie: { nazwa, typy, porcje, kuchnia, skladniki, kroki: [] } };
 }

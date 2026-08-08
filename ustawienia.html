@@ -63,9 +63,9 @@
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
-      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
       <a href="talia.html" aria-label="Wróć do dań"
          class="absolute flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
@@ -86,19 +86,19 @@
                         dark:border-emerald-500/20 dark:bg-emerald-500/10">
           <div class="flex items-center gap-4">
             <div class="min-w-0 flex-1">
-              <p class="text-[0.8rem] font-semibold text-stone-600 dark:text-stone-400">Kod Waszego stołu</p>
-              <p class="mt-0.5 text-[1.6rem] font-bold tracking-[0.22em] text-emerald-800
+              <p class="text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Kod Waszego stołu</p>
+              <p class="mt-0.5 text-[1.45rem] font-bold tracking-[0.22em] text-emerald-800
                         dark:text-emerald-300 zaznaczalne" x-text="kod"></p>
             </div>
             <button type="button" @click="kopiujKod()"
-                    class="flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl border-2
-                           border-emerald-700/20 bg-white px-4 text-[0.85rem] font-bold
+                    class="flex min-h-[2.5rem] shrink-0 items-center gap-2 rounded-xl border-2
+                           border-emerald-700/20 bg-white px-4 text-[0.82rem] font-bold
                            text-emerald-800 transition active:scale-95
                            dark:border-emerald-400/30 dark:bg-stone-900 dark:text-emerald-300">
               Kopiuj
             </button>
           </div>
-          <p class="mt-3 text-[0.8rem] text-stone-600 dark:text-stone-400">
+          <p class="mt-3 text-[0.82rem] text-stone-600 dark:text-stone-400">
             Podaj go tym, którzy siadają z Wami do stołu. Wpisują go przy pierwszym wejściu.
           </p>
         </section>
@@ -108,7 +108,7 @@
                         dark:border-stone-800 dark:bg-stone-900">
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-              <h2 class="text-[1.05rem] font-bold">Nie wygaszaj ekranu, gdy używam aplikacji</h2>
+              <h2 class="text-[1rem] font-bold">Nie wygaszaj ekranu, gdy używam aplikacji</h2>
               <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
                 Przydaje się przy wózku w sklepie i przy mokrych rękach w kuchni. W tle gaśnie
                 normalnie i nie zjada baterii.
@@ -137,7 +137,7 @@
                         dark:border-stone-800 dark:bg-stone-900">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <h2 class="text-[1.05rem] font-bold" x-text="ciemny ? 'Tryb ciemny' : 'Tryb jasny'"></h2>
+              <h2 class="text-[1rem] font-bold" x-text="ciemny ? 'Tryb ciemny' : 'Tryb jasny'"></h2>
               <p class="mt-0.5 text-[0.82rem] text-stone-500 dark:text-stone-400">
                 Domyślnie apka idzie za ustawieniem telefonu.
               </p>
@@ -151,14 +151,14 @@
             </button>
           </div>
 
-          <h3 class="mt-5 text-[0.95rem] font-bold">Rozmiar liter</h3>
+          <h3 class="mt-5 text-[1rem] font-bold">Rozmiar liter</h3>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             Jeśli musisz mrużyć oczy — zwiększ. Dotyczy tylko tego urządzenia.
           </p>
           <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Rozmiar liter">
             <template x-for="s in skale" :key="s.id">
               <button type="button" @click="ustawSkale(s.id)" :aria-pressed="(skala === s.id).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="skala === s.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -171,7 +171,7 @@
         <!-- ============ OKRES ============ -->
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
-          <h2 class="text-[1.05rem] font-bold">Na ile dni planujecie naraz</h2>
+          <h2 class="text-[1rem] font-bold">Na ile dni planujecie naraz</h2>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             Tydzień to tylko najczęstszy wybór, nie jedyny — jeśli robicie zakupy co trzy dni
             albo raz na dwa tygodnie, ustaw to tutaj.
@@ -180,7 +180,7 @@
             <template x-for="n in [3,5,7,10,14]" :key="n">
               <button type="button" @click="dlugoscOkresu = n; zapisz()"
                       :aria-pressed="(dlugoscOkresu === n).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="dlugoscOkresu === n
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -193,13 +193,13 @@
         <!-- ============ RYTM ============ -->
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
-          <h2 class="text-[1.05rem] font-bold">Które posiłki i dla kogo</h2>
+          <h2 class="text-[1rem] font-bold">Które posiłki i dla kogo</h2>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             To wartość domyślna dla nowego okresu, nie reguła na sztywno — w jadłospisie
             da się zmienić pojedynczy posiłek w pojedynczym dniu.
           </p>
 
-          <p x-show="!domownicy.length" class="mt-4 text-[0.85rem] italic text-stone-400">
+          <p x-show="!domownicy.length" class="mt-4 text-[0.82rem] italic text-stone-400">
             Najpierw dodaj kogoś do stołu na ekranie startowym.
           </p>
 
@@ -221,7 +221,7 @@
                   <template x-for="d in domownicy" :key="d.id">
                     <button type="button" @click="przelaczOsobe(typ, d.id)"
                             :aria-pressed="(rytm[typ]?.kto?.includes(d.id) ?? false).toString()"
-                            class="min-h-[44px] rounded-full border-2 px-4 text-[0.85rem] font-semibold transition"
+                            class="min-h-[2.5rem] rounded-full border-2 px-4 text-[0.82rem] font-semibold transition"
                             :class="rytm[typ]?.kto?.includes(d.id)
                               ? 'border-emerald-700 bg-emerald-50 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-300'
                               : 'border-stone-200 text-stone-500 dark:border-stone-700 dark:text-stone-400'">
@@ -237,7 +237,7 @@
         <!-- ============ POWTÓRKI ============ -->
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
-          <h2 class="text-[1.05rem] font-bold">Czy dania mogą się powtarzać</h2>
+          <h2 class="text-[1rem] font-bold">Czy dania mogą się powtarzać</h2>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             Bez limitu jest sensowne, jeśli gotujecie większą porcję na kilka dni — albo jeśli
             polubionych dań jest na razie mało.
@@ -246,7 +246,7 @@
             <template x-for="p in POWTORKI" :key="p.etykieta">
               <button type="button" @click="limitPowtorzen = p.wartosc; zapisz()"
                       :aria-pressed="(limitPowtorzen === p.wartosc).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="limitPowtorzen === p.wartosc
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -259,18 +259,18 @@
         <!-- ============ KUCHNIA ============ -->
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
-          <h2 class="text-[1.05rem] font-bold">Czym gotujecie</h2>
+          <h2 class="text-[1rem] font-bold">Czym gotujecie</h2>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             Przepis mówiący „smaż na 6/9” to instrukcja do indukcji — na gazie nie znaczy nic.
             Powiedz, co masz, a nowe dania od AI będą pod to pisane.
           </p>
 
-          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Płyta</p>
+          <p class="mt-4 mb-2 text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Płyta</p>
           <div class="flex flex-wrap gap-2" role="group" aria-label="Rodzaj płyty">
             <template x-for="p in PLYTY" :key="p.id">
               <button type="button" @click="kuchnia.plyta = p.id; zapisz()"
                       :aria-pressed="(kuchnia.plyta === p.id).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="kuchnia.plyta === p.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -279,12 +279,12 @@
             </template>
           </div>
 
-          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Piekarnik</p>
+          <p class="mt-4 mb-2 text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Piekarnik</p>
           <div class="flex flex-wrap gap-2" role="group" aria-label="Rodzaj piekarnika">
             <template x-for="p in PIEKARNIKI" :key="p.id">
               <button type="button" @click="kuchnia.piekarnik = p.id; zapisz()"
                       :aria-pressed="(kuchnia.piekarnik === p.id).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="kuchnia.piekarnik === p.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -293,12 +293,12 @@
             </template>
           </div>
 
-          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Co masz w kuchni</p>
+          <p class="mt-4 mb-2 text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Co masz w kuchni</p>
           <div class="flex flex-wrap gap-2" role="group" aria-label="Sprzęt kuchenny">
             <template x-for="n in NACZYNIA" :key="n.id">
               <button type="button" @click="przelaczNaczynie(n.id)"
                       :aria-pressed="(kuchnia.naczynia?.includes(n.id) ?? false).toString()"
-                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold transition active:scale-95"
                       :class="kuchnia.naczynia?.includes(n.id)
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
@@ -311,13 +311,13 @@
         <!-- ============ WASZE DANIA ============ -->
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
-          <h2 class="text-[1.05rem] font-bold">Wasze dania</h2>
+          <h2 class="text-[1rem] font-bold">Wasze dania</h2>
           <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
             Dania, które sami dodaliście. Możesz je pobrać jako plik i trzymać u siebie,
             niezależnie od tej aplikacji.
           </p>
           <button type="button" @click="eksportuj()"
-                  class="mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                  class="mt-3 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                          border-2 border-stone-200 bg-white font-bold transition active:scale-[0.98]
                          dark:border-stone-700 dark:bg-stone-900">
             <svg class="ikona ikona-sm"><use href="#i-pobierz"/></svg> Pobierz nasze dania
@@ -338,13 +338,13 @@
                 Wersja aplikacji: <span class="font-bold text-stone-700 dark:text-stone-300"
                                         x-text="WYDANIE"></span>
               </p>
-              <p class="mt-1 text-[0.78rem] text-stone-400">
+              <p class="mt-1 text-[0.82rem] text-stone-400">
                 Jeśli coś wygląda inaczej niż u innych, dotknij „Pobierz najnowszą”.
               </p>
             </div>
             <button type="button" @click="odswiezWszystko()" :disabled="odswiezanie"
-                    class="min-h-[44px] shrink-0 rounded-xl border-2 border-stone-200 px-4
-                           text-[0.85rem] font-bold transition active:scale-95
+                    class="min-h-[2.5rem] shrink-0 rounded-xl border-2 border-stone-200 px-4
+                           text-[0.82rem] font-bold transition active:scale-95
                            disabled:opacity-50 dark:border-stone-700"
                     x-text="odswiezanie ? 'Pobieram…' : 'Pobierz najnowszą'"></button>
           </div>
@@ -354,12 +354,12 @@
         <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
           <button type="button" @click="zapomnij()"
-                  class="flex min-h-[44px] w-full items-center justify-center text-[0.85rem]
+                  class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
                          text-stone-500 dark:text-stone-400">
             To nie mój stół — zacznij od nowa
           </button>
           <button type="button" @click="usunStol()"
-                  class="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 text-[0.85rem]
+                  class="mt-2 flex min-h-[2.5rem] w-full items-center justify-center gap-2 text-[0.82rem]
                          font-semibold text-red-700 dark:text-red-400">
             <svg class="ikona ikona-sm"><use href="#i-kosz"/></svg>
             <span x-text="usuwanieUzbrojone ? 'Na pewno? Dotknij ponownie — tego nie da się cofnąć'
@@ -377,7 +377,7 @@
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
              :aria-current="z.id === ekran ? 'page' : null"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
-             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                      : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
@@ -399,7 +399,7 @@
      x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
      class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-6"
      style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
-  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.82rem] font-semibold text-white
             shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
 </div>
 

@@ -382,3 +382,40 @@ li.poz-zakupy.plynie { z-index: 5; position: relative; }
 .dark .stempel-czasu--srednio { background: #451a03; color: #FBBF24 }   /* 8.97:1 */
 .dark .stempel-czasu--dlugo   { background: #4a044e; color: #E879F9 }   /* 6.02:1 */
 .dark .stempel-czasu--brak    { background: #292524; color: #D6D3D1 }   /* 10.18:1 */
+
+/* =====================================================================
+   ŁAMANIE TEKSTU — dwie reguły globalne, zero zmian w komponentach.
+
+   W całym kodzie nie było ani jednego `text-wrap`, a nazwy dań stoją
+   w wąskiej karcie przy 1.55rem — czyli dokładnie w przypadku, w którym
+   przeglądarka domyślnie zostawia jedno słowo samo w drugim wierszu.
+
+   `balance` wyrównuje długość wierszy w nagłówku (działa do ~6 wierszy,
+   dalej przeglądarka i tak odpuszcza — dlatego na akapitach jest `pretty`,
+   które kosztuje mniej i pilnuje głównie ostatniego wiersza).
+
+   Przeglądarki bez obsługi ignorują obie reguły i łamią po staremu.
+   ===================================================================== */
+h1, h2, h3, .stempel-czasu { text-wrap: balance }
+p, li { text-wrap: pretty }
+
+/* =====================================================================
+   SKALA TYPOGRAFICZNA — sześć stopni, nie dwadzieścia osiem.
+
+   Do 8 sierpnia w kodzie stało 28 różnych rozmiarów tekstu, w tym takie
+   sąsiedztwa jak 0.55 / 0.56 / 0.58 / 0.60 / 0.62 rem. Różnica 0.02 rem
+   to 0.36 px — nie decyzja projektowa, tylko ślad po dobieraniu na oko.
+
+   Sześć stopni pokrywa całą apkę. Ta lista jest referencją: nowy tekst
+   bierze najbliższy stopień, nie własną wartość.
+
+     XS   0.68rem   nadtytuły, meta wersalikami, etykieta kuchni
+     S    0.82rem   podpisy, opisy pod nagłówkiem, wiersz meta dania
+     M    1rem      tekst podstawowy, składniki, przyciski
+     L    1.25rem   tytuły sekcji, nagłówek okienka pomocy
+     XL   1.45rem   nazwa dania na karcie, kod stołu
+     2XL  1.75rem   h1 w nagłówku ekranu
+
+   Wszystko w `rem`, bo `html` ma `font-size: calc(18px * var(--skala))` —
+   dzięki temu ustawienie „większy tekst” podnosi cały ekran proporcjonalnie.
+   ===================================================================== */

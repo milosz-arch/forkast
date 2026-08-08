@@ -13,6 +13,8 @@
    rozmowy, nie okienka.
    ===================================================================== */
 
+import { bezSierot } from "./powloka.js";
+
 export const POMOC = {
 
   dania: {
@@ -101,3 +103,11 @@ export const POMOC = {
     ],
   },
 };
+
+/* Teksty pomocy przepuszczone przez bezSierot raz, przy wczytaniu modułu —
+   zamiast owijać każde `x-text` w pomoc.html. Okienko pomocy jest
+   wstrzykiwane do pięciu ekranów, więc jedno miejsce obsługuje wszystkie. */
+for (const wpis of Object.values(POMOC)) {
+  wpis.tytul = bezSierot(wpis.tytul);
+  wpis.akapity = wpis.akapity.map(bezSierot);
+}

@@ -64,15 +64,15 @@
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
-      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
       <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
               :aria-pressed="ekranSwieci.toString()"
               :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
                                        : 'Ekran gaśnie. Dotknij, żeby świecił.'"
-              class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
-                     text-[0.66rem] font-bold backdrop-blur-md transition"
+              class="absolute flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
+                     text-[0.68rem] font-bold backdrop-blur-md transition"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem"
               :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                   : 'border-white/40 bg-white/15 text-white/90'">
@@ -82,7 +82,7 @@
       <button type="button" @click="pomocKlucz = 'dania'"
               aria-label="Jak to działa"
               class="absolute flex size-11 items-center justify-center rounded-full border
-                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
 
@@ -104,7 +104,7 @@
                  x-transition:enter-start="opacity-0 translate-y-2">
           <div class="space-y-2.5">
             <template x-for="w in WYKLUCZENIA" :key="w.id">
-              <label class="flex min-h-[64px] cursor-pointer items-center gap-4 rounded-2xl border
+              <label class="flex min-h-[3.6rem] cursor-pointer items-center gap-4 rounded-2xl border
                             border-stone-100 bg-white px-5 shadow-sm transition
                             dark:border-stone-800 dark:bg-stone-900">
                 <input type="checkbox" :value="w.id" x-model="wybraneWykluczenia"
@@ -114,7 +114,7 @@
             </template>
           </div>
           <button type="button" @click="pokazTalie()"
-                  class="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-xl
+                  class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
                          bg-emerald-700 font-bold text-white transition active:scale-[0.98]
                          dark:bg-emerald-600">Pokaż dania</button>
         </section>
@@ -125,18 +125,18 @@
              class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-5
                     dark:border-emerald-500/20 dark:bg-emerald-500/10">
           <h2 class="font-bold" x-text="instalacja?.tytul"></h2>
-          <p class="mt-1 text-[0.85rem] leading-snug text-stone-600 dark:text-stone-400"
+          <p class="mt-1 text-[0.82rem] leading-snug text-stone-600 dark:text-stone-400"
              x-text="instalacja?.tresc"></p>
           <div class="mt-3 flex gap-2">
             <button type="button" x-show="instalacja?.system === 'android' && mamyPropozycje()"
                     @click="zainstalujTeraz()"
-                    class="flex min-h-[44px] flex-1 items-center justify-center rounded-xl
+                    class="flex min-h-[2.5rem] flex-1 items-center justify-center rounded-xl
                            bg-emerald-700 px-4 font-bold text-white dark:bg-emerald-600">
               Dodaj do ekranu
             </button>
             <button type="button" @click="ukryjInstalacje()"
-                    class="flex min-h-[44px] items-center justify-center rounded-xl border-2
-                           border-emerald-700/20 px-4 text-[0.85rem] font-semibold
+                    class="flex min-h-[2.5rem] items-center justify-center rounded-xl border-2
+                           border-emerald-700/20 px-4 text-[0.82rem] font-semibold
                            text-stone-600 dark:border-emerald-400/25 dark:text-stone-400">
               Nie teraz
             </button>
@@ -169,18 +169,18 @@
 
               <!-- Licznik pierwszych dań: subtelny, jedna linia. Znika po odblokowaniu. -->
               <div x-show="!odblokowane" class="mb-2 flex items-center gap-2.5">
-                <span class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[0.72rem]
+                <span class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[0.82rem]
                              font-bold tabular-nums text-emerald-800
                              dark:bg-emerald-500/15 dark:text-emerald-300"
                       x-text="`${POTRZEBA_DAN - brakujeDan}/${POTRZEBA_DAN}`"></span>
-                <p class="min-w-0 flex-1 truncate text-[0.75rem] text-stone-500 dark:text-stone-400"
+                <p class="min-w-0 flex-1 truncate text-[0.82rem] text-stone-500 dark:text-stone-400"
                    x-text="zachetaKrotka"></p>
                 <!-- Wyjaśnienie pod „i”, bo pełny tekst nie mieści się w jednej linii,
                      a zajmowanie trzech linii na stałe kosztuje więcej, niż daje. -->
                 <button type="button" @click="pomocKlucz = 'dania'"
                         aria-label="Dlaczego warto przejrzeć więcej dań"
                         class="flex size-8 shrink-0 items-center justify-center rounded-full border
-                               border-stone-300 text-[0.78rem] font-bold text-stone-500
+                               border-stone-300 text-[0.82rem] font-bold text-stone-500
                                dark:border-stone-600 dark:text-stone-400">i</button>
               </div>
 
@@ -202,17 +202,8 @@
               <span class="pasek-kubelka" :style="`background:${barwaCzasu(danie)}`"></span>
 
               <div class="flex items-start justify-between gap-3">
-                <h2 class="text-[1.55rem] font-bold leading-[1.15] tracking-tight">
-                  <!-- Flaga przed nazwą: jeden znak zamiast dziesięciu, nie konkuruje
-                       z odznaką czasu i rozpoznaje się ją bez czytania. Podpis w title
-                       i aria-label, bo sama flaga jest nieczytelna dla czytnika ekranu
-                       i dla kogoś, kto jej nie zna. -->
-                  <span class="mr-1.5 align-[0.05em]"
-                        :title="`kuchnia ${kuchniaDania(danie).nazwa}`"
-                        :aria-label="`kuchnia ${kuchniaDania(danie).nazwa}`"
-                        role="img"
-                        x-text="kuchniaDania(danie).flaga"></span><span x-text="danie.nazwa"></span>
-                </h2>
+                <h2 class="text-[1.45rem] font-bold leading-[1.15] tracking-tight"
+                    x-text="bezSierot(danie.nazwa)"></h2>
                 <!-- Czas zamiast kategorii. Kubełki („domowa klasyka”, „nowoczesne”)
                      mieszały trzy różne osie i 45 dań ze 101 nie miało żadnego,
                      więc oznaczenia wyglądały na przypadkowe. Czas jest jednoznaczny,
@@ -223,8 +214,17 @@
                       class="jednostka">min</span></span>
               </div>
 
+              <!-- Kuchnia SŁOWEM, przy każdym daniu (decyzja 68). Flaga wypadła:
+                   emoji nie renderuje się na Windowsie, czytnik ekranu czytał je
+                   przed każdą nazwą, a jedna trzecia dań dostawała polską flagę
+                   tylko dlatego, że żadna reguła nie trafiła. Teraz każde danie
+                   ma kuchnię WPISANĄ, a dania bez kuchni narodowej — uniwersalną. -->
+              <p class="mt-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
+                        text-stone-400 dark:text-stone-500"
+                 x-text="`kuchnia ${kuchniaDania(danie).nazwa}`"></p>
+
               <!-- Kontekst jednym wierszem: typy posiłku i liczba osób. -->
-              <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.78rem]
+              <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.82rem]
                         text-stone-500 dark:text-stone-400">
                 <template x-for="(t, i) in danie.typy" :key="t">
                   <span class="flex items-center gap-2">
@@ -260,7 +260,7 @@
               <ul class="mt-5 sm:columns-2 sm:gap-x-6">
                 <template x-for="s in danie.skladniki" :key="s.produkt">
                   <li class="flex items-baseline justify-between gap-3 break-inside-avoid py-1
-                             text-[0.92rem]">
+                             text-[1rem]">
                     <span class="text-stone-600 dark:text-stone-400" x-text="s.produkt"></span>
                     <span class="shrink-0 font-semibold tabular-nums text-stone-800 dark:text-stone-200"
                           x-text="s.gramy + ' g'"></span>
@@ -273,13 +273,13 @@
                  realny wybór, nie potwierdzenie sugestii. -->
             <div class="mt-4 grid grid-cols-2 gap-3">
               <button type="button" @click="zdecyduj('nie')"
-                      class="flex min-h-[60px] items-center justify-center gap-2 rounded-xl border-2
+                      class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl border-2
                              border-stone-200 bg-white font-bold text-stone-600 transition active:scale-95
                              dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
                 <svg class="ikona ikona-sm"><use href="#i-x"/></svg> Nie lubię
               </button>
               <button type="button" @click="zdecyduj('tak')"
-                      class="flex min-h-[60px] items-center justify-center gap-2 rounded-xl
+                      class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl
                              bg-emerald-700 font-bold text-white shadow-sm transition active:scale-95
                              dark:bg-emerald-600">
                 <svg class="ikona ikona-sm"><use href="#i-serce"/></svg> Lubię
@@ -287,8 +287,8 @@
             </div>
 
             <button type="button" @click="cofnij()" x-show="historia.length" x-transition.opacity
-                    class="mt-3 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl
-                           text-[0.85rem] font-semibold text-stone-500 dark:text-stone-400">
+                    class="mt-3 flex min-h-[2.5rem] w-full items-center justify-center gap-2 rounded-xl
+                           text-[0.82rem] font-semibold text-stone-500 dark:text-stone-400">
               <svg class="ikona ikona-sm"><use href="#i-cofnij"/></svg> Cofnij ostatnią
             </button>
 
@@ -297,19 +297,19 @@
                  która ma być najczęstsza (link do przepisu albo zdjęcie strony
                  z książki). Człowiek trafiał na wpisywanie gramatury z palca
                  i nie dowiadywał się, że apka umie to zrobić za niego. -->
-            <p class="mt-5 mb-2 text-center text-[0.8rem] text-stone-500 dark:text-stone-400">
+            <p class="mt-5 mb-2 text-center text-[0.82rem] text-stone-500 dark:text-stone-400">
               Nic z tego? Dodajcie swoje dania.
             </p>
             <div class="grid grid-cols-2 gap-2.5">
               <a href="dodaj-z-ai.html"
-                 class="flex min-h-[52px] items-center justify-center gap-2 rounded-xl border-2
+                 class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-emerald-600/40 bg-emerald-50 font-semibold text-emerald-800 no-underline
                         transition active:scale-[0.98] dark:border-emerald-500/30
                         dark:bg-emerald-500/10 dark:text-emerald-300">
                 <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Przez AI
               </a>
               <a href="formularz.html"
-                 class="flex min-h-[52px] items-center justify-center gap-2 rounded-xl border-2
+                 class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-dashed border-stone-300 font-semibold text-stone-600 no-underline
                         transition active:scale-[0.98] dark:border-stone-700 dark:text-stone-400">
                 <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Ręcznie
@@ -326,23 +326,23 @@
               <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-swieto"/></svg>
             </div>
             <h2 class="mt-4 text-xl font-bold" x-text="lubiane ? 'To wszystko na teraz' : 'Nic nie trafiło?'"></h2>
-            <p class="mt-2 text-[0.9rem] text-stone-500 dark:text-stone-400"
+            <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400"
                x-text="lubiane
                  ? `Polubiliście ${lubiane} dań. Wystarczy, żeby ułożyć jadłospis.`
                  : 'W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.'"></p>
             <a x-show="lubiane" href="jadlospis.html"
-               class="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-xl
+               class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
                       bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600">
               Ułóż jadłospis
             </a>
             <div x-show="!lubiane" class="mt-5 grid gap-2.5">
               <a href="dodaj-z-ai.html"
-                 class="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-emerald-700
+                 class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl bg-emerald-700
                         font-bold text-white no-underline dark:bg-emerald-600">
                 <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Dodaj przez AI
               </a>
               <a href="formularz.html"
-                 class="flex min-h-[52px] items-center justify-center gap-2 rounded-xl border-2
+                 class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-stone-200 font-bold no-underline dark:border-stone-700">
                 <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Wpisz ręcznie
               </a>
@@ -360,7 +360,7 @@
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
              :aria-current="z.id === ekran ? 'page' : null"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
-             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                      : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
@@ -382,7 +382,7 @@
      x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
      class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-6"
      style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
-  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.82rem] font-semibold text-white
             shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
 </div>
 

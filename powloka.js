@@ -66,7 +66,10 @@ export function zastosujUstawieniaWygladu() {
 export function danePowloki({ ekran, tytul, opis }) {
   const startowe = zastosujUstawieniaWygladu();
   return {
-      ekran, tytul, opis,
+      /* Nagłówek i podtytuł każdego z ośmiu ekranów przechodzą przez bezSierot
+         w jednym miejscu — dlatego nie ma tego w ośmiu plikach osobno. */
+      ekran, tytul: bezSierot(tytul), opis: bezSierot(opis),
+      bezSierot,
       zakladki: ZAKLADKI,
       ciemny: startowe.ciemny,
       skala: startowe.skala,
@@ -247,4 +250,25 @@ export function ding() {
     o.start(); o.stop(c.currentTime + 0.45);
   } catch { /* wyciszony telefon — nic się nie dzieje */ }
   navigator.vibrate?.([40, 60, 40]);
+}
+
+/* =====================================================================
+   SIEROTY — twarda spacja po jednoliterowych wyrazach.
+
+   W polskim składzie „a”, „i”, „o”, „u”, „w”, „z” nie zostają na końcu
+   wiersza. Do 8 sierpnia w całym kodzie nie było ani jednej twardej spacji,
+   a nazwy dań i teksty pomocy łamią się w wąskich kolumnach dziesiątki razy
+   na ekran — to najbardziej widoczny sygnał, że coś nie było składane po polsku.
+
+   Działa przy WYŚWIETLANIU, nie przy zapisie: dzięki temu obejmuje też dania
+   dodane przez AI i wpisane ręcznie przez użytkownika, których nie widzieliśmy
+   na oczy. Nic nie zapisujemy w tej postaci do bazy — twarda spacja żyje
+   wyłącznie w tym, co widać na ekranie.
+
+   Wzorzec celowo wymaga spacji ALBO początku tekstu przed literą, żeby nie
+   złapać końcówki wyrazu: w „mąka i woda” łapie „i”, w „mąka” nie łapie „a”.
+   ===================================================================== */
+export function bezSierot(tekst) {
+  if (typeof tekst !== "string") return tekst;
+  return tekst.replace(/(^|\s)([aiouwzAIOUWZ])\s+/g, "$1$2 ");
 }

@@ -4,6 +4,8 @@
 // Kopiuje go, wkleja i wraca. Więc prompt ma być odporny na model, który
 // czyta go pobieżnie — stąd powtórzenia i przykład na końcu.
 
+import { KUCHNIE } from "./kuchnie.js";
+
 export const TYPY_POSILKOW = ["śniadanie", "lunch", "obiad", "przekąska", "kolacja"];
 
 export const WYKLUCZENIA = [
@@ -101,6 +103,7 @@ FORMAT ODPOWIEDZI
       "nazwa": "nazwa dania",
       "typy": ["lunch", "kolacja"],
       "porcje": 2,
+      "kuchnia": "pl",
       "skladniki": [
         { "produkt": "Nazwa dokładnie z listy", "gramy": 150 }
       ],
@@ -116,6 +119,11 @@ WYMAGANIA, KTÓRYCH NIE WOLNO POMINĄĆ
 - "typy": tylko z tego zbioru: ${TYPY_POSILKOW.join(", ")}. Może być więcej niż jedno.
 - "porcje": na ile osób jest podana gramatura. Liczba całkowita${liczbaDomownikow ? `, zwykle ${liczbaDomownikow} (tyle jest w tym domu), chyba że danie z natury wychodzi na inną liczbę` : ""}. To pole jest
   obowiązkowe — bez niego aplikacja nie policzy zakupów.
+- "kuchnia": kod kuchni, z której danie POCHODZI. Dozwolone wyłącznie: ${Object.keys(KUCHNIE).join(", ")}.
+  Jeśli danie nie należy do żadnej kuchni narodowej — owsianka, koktajl, kanapka,
+  sałatka, batony owsiane — wpisz "uni" (uniwersalna). NIE ZGADUJ kraju po składnikach
+  i nie wpisuj "pl" dlatego, że nie wiesz: owsianka z bananem nie jest daniem kuchni
+  polskiej, a zgadnięty kraj trafia użytkownikowi na kartę jako fakt.
 - "gramy": liczba w gramach, bez jednostki. Płyny licz jak gramy.
 - "kroki": co najmniej SZEŚĆ kroków przy daniu gotowanym, cztery przy zimnym.
   Każdy zaczyna się od czasownika i wymienia z nazwy każdy składnik, którego dotyczy.

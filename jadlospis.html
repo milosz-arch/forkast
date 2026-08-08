@@ -64,16 +64,16 @@
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
-      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
 
       <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
               :aria-pressed="ekranSwieci.toString()"
               :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
                                        : 'Ekran gaśnie. Dotknij, żeby świecił.'"
-              class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
-                     text-[0.66rem] font-bold backdrop-blur-md transition"
+              class="absolute flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
+                     text-[0.68rem] font-bold backdrop-blur-md transition"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem"
               :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                   : 'border-white/40 bg-white/15 text-white/90'">
@@ -83,7 +83,7 @@
       <button type="button" @click="pomocKlucz = 'jadlospis'"
               aria-label="Jak to działa"
               class="absolute flex size-11 items-center justify-center rounded-full border
-                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95"
               style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
 
@@ -105,21 +105,21 @@
              Główny przycisk bierze resztę miejsca, „Wyczyść” tylko tyle, ile trzeba. -->
         <div class="mb-4 flex gap-2.5 md:max-w-md">
           <button type="button" @click="ulozPlan()"
-                  class="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-xl
-                         bg-emerald-700 px-3 text-[0.92rem] font-bold text-white shadow-sm
+                  class="flex min-h-[2.9rem] flex-1 items-center justify-center gap-2 rounded-xl
+                         bg-emerald-700 px-3 text-[1rem] font-bold text-white shadow-sm
                          transition active:scale-95 dark:bg-emerald-600">
             <svg class="ikona ikona-sm shrink-0"><use href="#i-iskra"/></svg>
             <span class="truncate">Ułóż automatycznie</span>
           </button>
           <button type="button" @click="wyczysc()"
-                  class="min-h-[52px] shrink-0 rounded-xl border-2 border-stone-200 bg-white px-5
-                         text-[0.92rem] font-bold transition active:scale-95
+                  class="min-h-[2.9rem] shrink-0 rounded-xl border-2 border-stone-200 bg-white px-5
+                         text-[1rem] font-bold transition active:scale-95
                          dark:border-stone-700 dark:bg-stone-900">Wyczyść</button>
         </div>
 
         <!-- Uwagi automatu: jedno zbiorcze zamiast sześciu identycznych -->
         <template x-for="u in uwagi" :key="u">
-          <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.88rem]
+          <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[1rem]
                       text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/25 dark:text-amber-200"
                x-text="u"></div>
         </template>
@@ -154,23 +154,23 @@
                    Wcześniej wszystkie dni ważyły tyle samo i oko nie miało
                    się o co zaczepić. -->
               <div class="mb-3 flex items-baseline gap-2">
-                <h2 class="min-w-0 flex-1 truncate text-[0.72rem] font-extrabold uppercase
+                <h2 class="min-w-0 flex-1 truncate text-[0.82rem] font-extrabold uppercase
                            tracking-[0.14em]"
                     :class="czyDzis(d.data) ? 'text-emerald-700 dark:text-emerald-400'
                                             : 'text-stone-400 dark:text-stone-500'"
                     x-text="podpisDnia(d.data)"></h2>
                 <span x-show="czyDzis(d.data)"
-                      class="shrink-0 rounded-full bg-emerald-600 px-2 py-0.5 text-[0.55rem]
+                      class="shrink-0 rounded-full bg-emerald-600 px-2 py-0.5 text-[0.68rem]
                              font-extrabold uppercase tracking-wider text-white
                              dark:bg-emerald-500 dark:text-stone-900">dziś</span>
-                <span class="shrink-0 text-[0.7rem] font-bold tabular-nums"
+                <span class="shrink-0 text-[0.82rem] font-bold tabular-nums"
                       :class="pelnyDzien(d) ? 'text-emerald-700 dark:text-emerald-400'
                                             : 'text-stone-400'"
                       x-text="`${zaplanowane(d)}/${Object.keys(d.posilki).length}`"></span>
               </div>
 
               <p x-show="!Object.keys(d.posilki).length"
-                 class="text-[0.85rem] italic text-stone-400">
+                 class="text-[0.82rem] italic text-stone-400">
                 Wszystkie posiłki wyłączone tego dnia.
               </p>
 
@@ -182,36 +182,32 @@
                            widoczne bez otwierania. -->
                       <span class="size-2 shrink-0 rounded-full"
                             :style="`background:${barwaPosilku(d, typ)}`"></span>
-                      <span class="text-[0.58rem] font-extrabold uppercase tracking-[0.12em]
+                      <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]
                                    text-stone-400 dark:text-stone-500" x-text="typ"></span>
-                      <span class="truncate text-[0.7rem] text-stone-400"
+                      <span class="truncate text-[0.82rem] text-stone-400"
                             x-text="d.posilki[typ].kto.map(imieOsoby).join(', ')"></span>
                     </div>
                     <button type="button" @click="dotknij(d, typ)"
-                            class="block min-h-[44px] w-full pr-12 text-left"
+                            class="block min-h-[2.5rem] w-full pr-12 text-left"
                             :aria-label="`${typ}, ${podpisDnia(d.data)}: ${opisPosilku(d, typ)}. Dotknij, żeby zmienić.`">
                       <span x-show="d.posilki[typ].bezSkladnikow"
-                            class="text-[0.95rem] font-semibold text-stone-500 dark:text-stone-400"
+                            class="text-[1rem] font-semibold text-stone-500 dark:text-stone-400"
                             x-text="d.posilki[typ].bezSkladnikow"></span>
-                      <span x-show="flagaPosilku(d, typ)" class="mr-1" role="img"
-                            :title="`kuchnia ${flagaPosilku(d, typ)?.nazwa}`"
-                            :aria-label="`kuchnia ${flagaPosilku(d, typ)?.nazwa}`"
-                            x-text="flagaPosilku(d, typ)?.flaga"></span>
                       <span x-show="!d.posilki[typ].bezSkladnikow && d.posilki[typ].danie"
-                            class="text-[0.95rem] font-medium"
+                            class="text-[1rem] font-medium"
                             x-text="nazwaDania(d.posilki[typ].danie)"></span>
                       <span x-show="czasPosilku(d, typ)"
-                            class="ml-1.5 text-[0.72rem] font-semibold text-stone-400"
+                            class="ml-1.5 text-[0.82rem] font-semibold text-stone-400"
                             x-text="czasPosilku(d, typ)"></span>
                       <!-- Danie w planie, którego tym sprzętem nie da się zrobić.
                            Lepiej powiedzieć teraz niż przy garnku. -->
                       <span x-show="niewykonalnePosilku(d, typ)"
-                            class="ml-1 rounded-full bg-red-50 px-1.5 text-[0.62rem] font-bold
+                            class="ml-1 rounded-full bg-red-50 px-1.5 text-[0.68rem] font-bold
                                    text-red-800 dark:bg-red-400/15 dark:text-red-300">
                         bez piekarnika nie zrobisz
                       </span>
                       <span x-show="!d.posilki[typ].bezSkladnikow && !d.posilki[typ].danie"
-                            class="text-[0.95rem] italic text-stone-300 dark:text-stone-600">
+                            class="text-[1rem] italic text-stone-300 dark:text-stone-600">
                         — dotknij, żeby wybrać —</span>
                     </button>
                     <button type="button" @click="wylacz(d, typ)"
@@ -229,7 +225,7 @@
         </div>
 
         <a x-show="!laduje" href="zakupy.html"
-           class="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+           class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                   bg-emerald-700 font-bold text-white no-underline md:max-w-md dark:bg-emerald-600">
           <svg class="ikona ikona-sm"><use href="#i-zakupy"/></svg> Zobacz listę zakupów
         </a>
@@ -244,7 +240,7 @@
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
              :aria-current="z.id === ekran ? 'page' : null"
              :aria-disabled="zamknieta(z.id) ? 'true' : null"
-             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.68rem]
                     font-semibold no-underline transition"
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                      : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
@@ -277,19 +273,19 @@
 
     <template x-if="przepis">
       <div>
-        <h3 class="text-[1.35rem] font-bold leading-tight" x-text="przepis.danie.nazwa"></h3>
-        <p class="mt-1 text-[0.62rem] font-extrabold uppercase tracking-[0.14em]
+        <h3 class="text-[1.25rem] font-bold leading-tight" x-text="przepis.danie.nazwa"></h3>
+        <p class="mt-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                   text-emerald-700 dark:text-emerald-400"
            x-text="`${przepis.typ} · ${podpisDnia(przepis.data)}`"></p>
 
         <div class="mt-4 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
-          <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+          <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                     text-emerald-700 dark:text-emerald-400"
              x-text="`Składniki na ${przepis.ileOsob} ${przepis.ileOsob === 1 ? 'osobę' : 'osoby'}`"></p>
           <ul class="mt-2">
             <template x-for="s in przepis.skladniki" :key="s.produkt">
-              <li class="flex justify-between py-1 text-[0.92rem] text-stone-600 dark:text-stone-400">
+              <li class="flex justify-between py-1 text-[1rem] text-stone-600 dark:text-stone-400">
                 <span x-text="s.produkt"></span>
                 <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
                       x-text="s.gramy + ' g'"></span>
@@ -297,32 +293,32 @@
             </template>
           </ul>
           <p x-show="przepis.przeliczone"
-             class="mt-3 text-[0.75rem] italic text-stone-400"
+             class="mt-3 text-[0.82rem] italic text-stone-400"
              x-text="`Przeliczone z przepisu na ${przepis.danie.porcje} os.`"></p>
         </div>
 
         <div x-show="przepis.danie.kroki?.length"
              class="mt-3 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
-          <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+          <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                     text-emerald-700 dark:text-emerald-400">Jak to zrobić</p>
-          <ol class="mt-2 list-decimal space-y-2.5 pl-5 text-[0.92rem] leading-relaxed">
+          <ol class="mt-2 list-decimal space-y-2.5 pl-5 text-[1rem] leading-relaxed">
             <template x-for="k in przepis.danie.kroki" :key="k"><li x-text="k"></li></template>
           </ol>
         </div>
 
         <p x-show="!przepis.danie.kroki?.length"
-           class="mt-3 rounded-2xl bg-stone-100 px-4 py-3 text-[0.85rem] italic text-stone-500
+           class="mt-3 rounded-2xl bg-stone-100 px-4 py-3 text-[0.82rem] italic text-stone-500
                   dark:bg-stone-800/60 dark:text-stone-400">
           To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.
         </p>
 
         <div class="mt-4 grid grid-cols-2 gap-2.5">
           <button type="button" @click="zmienZPrzepisu()"
-                  class="min-h-[52px] rounded-xl border-2 border-stone-200 bg-white font-bold
+                  class="min-h-[2.9rem] rounded-xl border-2 border-stone-200 bg-white font-bold
                          dark:border-stone-700 dark:bg-stone-900">Zmień danie</button>
           <button type="button" @click="przepis = null"
-                  class="min-h-[52px] rounded-xl bg-emerald-700 font-bold text-white
+                  class="min-h-[2.9rem] rounded-xl bg-emerald-700 font-bold text-white
                          dark:bg-emerald-600">Zamknij</button>
         </div>
       </div>
@@ -342,34 +338,34 @@
     <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700"></div>
     <h3 class="mb-3 text-lg font-bold" x-text="arkusz ? `${arkusz.typ} — ${podpisDnia(arkusz.dzien.data)}` : ''"></h3>
 
-    <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.85rem] text-stone-500">
+    <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.82rem] text-stone-500">
       Nie masz polubionego dania, które pasuje na ten posiłek.
     </p>
 
     <template x-for="d in pasujaceDania" :key="d.id">
       <button type="button" @click="wybierzDanie(d)"
-              class="mb-2 flex min-h-[52px] w-full flex-col justify-center rounded-xl border
+              class="mb-2 flex min-h-[2.9rem] w-full flex-col justify-center rounded-xl border
                      border-stone-100 bg-white px-4 py-3 text-left transition
                      active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
         <span class="font-medium" x-text="d.nazwa"></span>
-        <span class="mt-0.5 text-[0.72rem] text-stone-400" x-text="d.skladniki.length + ' składników'"></span>
+        <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="d.skladniki.length + ' składników'"></span>
       </button>
     </template>
 
-    <p class="mb-2 mt-4 ml-1 text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+    <p class="mb-2 mt-4 ml-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
               text-stone-400">Bez gotowania</p>
     <template x-for="p in BEZ_SKLADNIKOW" :key="p.etykieta">
       <button type="button" @click="wybierzBez(p)"
-              class="mb-2 flex min-h-[52px] w-full flex-col justify-center rounded-xl border
+              class="mb-2 flex min-h-[2.9rem] w-full flex-col justify-center rounded-xl border
                      border-stone-100 bg-white px-4 py-3 text-left transition
                      active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
         <span class="font-medium" x-text="p.etykieta"></span>
-        <span class="mt-0.5 text-[0.72rem] text-stone-400">nie wchodzi do listy zakupów</span>
+        <span class="mt-0.5 text-[0.82rem] text-stone-400">nie wchodzi do listy zakupów</span>
       </button>
     </template>
 
     <button type="button" @click="zamknijArkusz()"
-            class="mt-2 min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white font-bold
+            class="mt-2 min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white font-bold
                    dark:border-stone-700 dark:bg-stone-900">Zamknij</button>
   </div>
 </div>
@@ -379,7 +375,7 @@
      x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
      class="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-6"
      style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
-  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.82rem] font-semibold text-white
             shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
 </div>
 
@@ -400,7 +396,6 @@ import { nowyOkres, dniOkresu, domyslnyRytm, pustaSiatka, wylaczPosilek,
 import { ulozPlan as ulozAutomatem } from "./automat.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
-import { kuchniaDania } from "./kuchnie.js";
 import { TYPY_POSILKOW } from "./prompt.js";
 
 
@@ -552,13 +547,6 @@ Alpine.data("ekranJadlospis", () => ({
 
   /* Flaga kuchni przy daniu — druga oś obok czasu. Czas mówi „zdążę?”,
      kuchnia mówi „na co mam ochotę?”. */
-  flagaPosilku(d, typ) {
-    const w = d.posilki[typ];
-    if (!w?.danie || w.bezSkladnikow) return null;
-    const danie = this.wszystkieDania.find(x => x.id === w.danie);
-    return danie ? kuchniaDania(danie) : null;
-  },
-
   niewykonalnePosilku(d, typ) {
     const w = d.posilki[typ];
     if (!w?.danie || w.bezSkladnikow) return false;

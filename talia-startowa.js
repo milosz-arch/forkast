@@ -10,6 +10,7 @@
 export const TALIA_BATCH_1 = [
   {
     "nazwa": "Owsianka z owocami i orzechami",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -44,6 +45,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Jajecznica z pomidorami",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -75,6 +77,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Kanapki z awokado i jajkiem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -107,6 +110,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Naleśniki z twarogiem",
+    "kuchnia": "pl",
     "typy": [
       "śniadanie",
       "kolacja"
@@ -143,6 +147,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Zupa pomidorowa z ryżem",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -184,6 +189,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Kurczak w curry z ryżem",
+    "kuchnia": "in",
     "typy": [
       "obiad",
       "kolacja"
@@ -229,6 +235,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Makaron z pesto i pomidorkami",
+    "kuchnia": "it",
     "typy": [
       "obiad",
       "kolacja"
@@ -261,6 +268,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Sałatka grecka z fetą",
+    "kuchnia": "gr",
     "typy": [
       "lunch",
       "kolacja"
@@ -300,6 +308,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Gulasz wołowy z kaszą gryczaną",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -340,6 +349,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Pieczony łosoś z warzywami",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -380,6 +390,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Placki ziemniaczane",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -416,6 +427,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Chili con carne",
+    "kuchnia": "mx",
     "typy": [
       "obiad"
     ],
@@ -460,6 +472,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Zupa krem z brokułów",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -500,6 +513,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Kanapki z hummusem i warzywami",
+    "kuchnia": "il",
     "typy": [
       "lunch",
       "przekąska"
@@ -535,6 +549,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Owocowy koktajl z jogurtem",
+    "kuchnia": "uni",
     "typy": [
       "przekąska",
       "śniadanie"
@@ -565,6 +580,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Sałatka z ciecierzycą i warzywami",
+    "kuchnia": "uni",
     "typy": [
       "lunch"
     ],
@@ -607,6 +623,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Tost z awokado i jajkiem w koszulce",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -638,6 +655,7 @@ export const TALIA_BATCH_1 = [
   },
   {
     "nazwa": "Ryż smażony z warzywami i jajkiem",
+    "kuchnia": "cn",
     "typy": [
       "obiad",
       "kolacja"
@@ -682,6 +700,7 @@ export const TALIA_BATCH_1 = [
 export const TALIA_BATCH_2 = [
   {
     "nazwa": "Tortilla z kurczakiem i warzywami",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -719,6 +738,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Zapiekane bataty z fetą",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -751,6 +771,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Krewetki w czosnku z makaronem",
+    "kuchnia": "it",
     "typy": [
       "obiad",
       "kolacja"
@@ -791,6 +812,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Sałatka caprese",
+    "kuchnia": "it",
     "typy": [
       "lunch",
       "przekąska"
@@ -822,6 +844,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Owsianka na zimno z jogurtem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -856,6 +879,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Zupa soczewicowa",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -896,6 +920,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Pieczony kurczak z ziemniakami",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -932,6 +957,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Tuńczyk z ryżem i warzywami",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -968,6 +994,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Kanapka z jajkiem i szczypiorkiem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -999,6 +1026,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Naleśniki bananowe",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -1034,6 +1062,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Sałatka z quinoa i warzywami",
+    "kuchnia": "uni",
     "typy": [
       "lunch"
     ],
@@ -1076,6 +1105,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Kurczak w sosie sojowym z warzywami",
+    "kuchnia": "cn",
     "typy": [
       "obiad",
       "kolacja"
@@ -1116,6 +1146,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Zupa krem z batatów",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -1156,6 +1187,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Placki z cukinii",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -1191,6 +1223,7 @@ export const TALIA_BATCH_2 = [
   },
   {
     "nazwa": "Jogurt z granolą i owocami",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -1233,6 +1266,7 @@ export const TALIA_BATCH_2 = [
 export const TALIA_Z_DIETKI = [
   {
     "nazwa": "Sałatka: quinoa, wędzony łosoś, jarmuż i pomarańcza",
+    "kuchnia": "uni",
     "typy": [
       "lunch"
     ],
@@ -1299,6 +1333,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Makrela z ziemniakami, ogórkiem i jogurtem",
+    "kuchnia": "pl",
     "typy": [
       "lunch"
     ],
@@ -1361,6 +1396,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Gryka z pieczonym batatem, jarmużem i nerkowcami",
+    "kuchnia": "uni",
     "typy": [
       "lunch",
       "kolacja"
@@ -1419,6 +1455,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Krewetki z makaronem, czosnkiem i szpinakiem",
+    "kuchnia": "it",
     "typy": [
       "lunch",
       "kolacja"
@@ -1472,6 +1509,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Jajecznica z wędzonym łososiem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -1512,6 +1550,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Placuszki twarogowe z borówkami",
+    "kuchnia": "pl",
     "typy": [
       "śniadanie"
     ],
@@ -1550,6 +1589,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Szakszuka",
+    "kuchnia": "il",
     "typy": [
       "śniadanie",
       "kolacja"
@@ -1595,6 +1635,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Łosoś pieczony z batatem i brokułem",
+    "kuchnia": "uni",
     "typy": [
       "kolacja"
     ],
@@ -1634,6 +1675,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Indyk stir-fry z ryżem",
+    "kuchnia": "cn",
     "typy": [
       "kolacja"
     ],
@@ -1683,6 +1725,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Pulpety wołowe w pomidorach z gryką",
+    "kuchnia": "pl",
     "typy": [
       "kolacja"
     ],
@@ -1727,6 +1770,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Kurczak curry z soczewicą i ryżem",
+    "kuchnia": "in",
     "typy": [
       "kolacja"
     ],
@@ -1795,6 +1839,7 @@ export const TALIA_Z_DIETKI = [
   },
   {
     "nazwa": "Jajka na twardo z bananem",
+    "kuchnia": "uni",
     "typy": [
       "przekąska"
     ],
@@ -1827,6 +1872,7 @@ export const TALIA_Z_DIETKI = [
 export const TALIA_KLASYKA = [
   {
     "nazwa": "Kotlet schabowy z ziemniakami i mizerią",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -1880,6 +1926,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Gołąbki w sosie pomidorowym",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -1921,6 +1968,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Rosół z makaronem",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -1970,6 +2018,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Bigos",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -2014,6 +2063,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kotlety mielone z ziemniakami",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -2058,6 +2108,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Żurek z białą kiełbasą",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -2108,6 +2159,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kopytka z masłem",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -2146,6 +2198,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Pierogi z kapustą i grzybami",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -2185,6 +2238,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Zupa ogórkowa",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -2231,6 +2285,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Schabowy w sosie własnym z kaszą",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -2267,6 +2322,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Leczo z kiełbasą",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -2312,6 +2368,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Fasolka po bretońsku",
+    "kuchnia": "pl",
     "typy": [
       "obiad"
     ],
@@ -2351,6 +2408,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kurczak pieczony z warzywami",
+    "kuchnia": "uni",
     "typy": [
       "obiad"
     ],
@@ -2395,6 +2453,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Racuchy z jabłkami",
+    "kuchnia": "pl",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -2435,6 +2494,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Sałatka jarzynowa",
+    "kuchnia": "pl",
     "typy": [
       "przekąska",
       "kolacja"
@@ -2484,6 +2544,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Barszcz czerwony z uszkami",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -2530,6 +2591,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Krokiety z mięsem",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -2575,6 +2637,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Miska z tofu, batatem i tahini",
+    "kuchnia": "il",
     "typy": [
       "lunch",
       "obiad"
@@ -2621,6 +2684,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Curry z ciecierzycą i szpinakiem",
+    "kuchnia": "in",
     "typy": [
       "obiad",
       "kolacja"
@@ -2675,6 +2739,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Bowl z łososiem i awokado",
+    "kuchnia": "uni",
     "typy": [
       "lunch",
       "obiad"
@@ -2720,6 +2785,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Sałatka z soczewicą i pieczonym burakiem",
+    "kuchnia": "uni",
     "typy": [
       "lunch"
     ],
@@ -2765,6 +2831,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Zupa krem z dyni z imbirem",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -2810,6 +2877,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Tacos z fasolą i kukurydzą",
+    "kuchnia": "mx",
     "typy": [
       "obiad",
       "kolacja"
@@ -2859,6 +2927,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Makaron z cukinią i ricottą",
+    "kuchnia": "it",
     "typy": [
       "obiad",
       "kolacja"
@@ -2900,6 +2969,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Sałatka z kaszą jaglaną i pieczoną dynią",
+    "kuchnia": "uni",
     "typy": [
       "lunch"
     ],
@@ -2944,6 +3014,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Stir-fry z indykiem i warzywami",
+    "kuchnia": "cn",
     "typy": [
       "obiad",
       "kolacja"
@@ -2989,6 +3060,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kanapki z pastą jajeczną i szczypiorkiem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -3024,6 +3096,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Owsianka na mleku z bananem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -3059,6 +3132,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Tost francuski z owocami",
+    "kuchnia": "fr",
     "typy": [
       "śniadanie"
     ],
@@ -3099,6 +3173,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Jajka w koszulkach na grzance",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -3134,6 +3209,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Zapiekanka makaronowa z serem",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -3176,6 +3252,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kurczak w sosie śmietanowym z ryżem",
+    "kuchnia": "uni",
     "typy": [
       "obiad"
     ],
@@ -3220,6 +3297,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Zupa jarzynowa",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -3265,6 +3343,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Zupa gulaszowa",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "lunch"
@@ -3310,6 +3389,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Pierś z kurczaka z warzywami z patelni",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -3354,6 +3434,7 @@ export const TALIA_KLASYKA = [
   },
   {
     "nazwa": "Kasza gryczana z pieczarkami i cebulą",
+    "kuchnia": "pl",
     "typy": [
       "obiad",
       "kolacja"
@@ -3403,6 +3484,7 @@ export const TALIA_KLASYKA = [
 export const TALIA_SWIAT = [
   {
     "nazwa": "Ramen z kurczakiem i jajkiem marynowanym",
+    "kuchnia": "jp",
     "typy": [
       "obiad",
       "kolacja"
@@ -3464,6 +3546,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Bibimbap z wołowiną i warzywami",
+    "kuchnia": "kr",
     "typy": [
       "obiad"
     ],
@@ -3528,6 +3611,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Katsu curry z kurczakiem",
+    "kuchnia": "jp",
     "typy": [
       "obiad"
     ],
@@ -3592,6 +3676,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Pad thai z krewetkami",
+    "kuchnia": "th",
     "typy": [
       "obiad",
       "kolacja"
@@ -3657,6 +3742,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Tortilla española z ziemniakami",
+    "kuchnia": "es",
     "typy": [
       "obiad",
       "kolacja",
@@ -3695,6 +3781,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Moussaka z bakłażanem",
+    "kuchnia": "gr",
     "typy": [
       "obiad"
     ],
@@ -3755,6 +3842,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Chakapuli — gruzińska jagnięcina z estragonem",
+    "kuchnia": "ge",
     "typy": [
       "obiad"
     ],
@@ -3802,6 +3890,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Ceviche z dorsza z limonką",
+    "kuchnia": "pe",
     "typy": [
       "przekąska",
       "kolacja"
@@ -3850,6 +3939,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Dal z soczewicy czerwonej",
+    "kuchnia": "in",
     "typy": [
       "obiad",
       "lunch"
@@ -3911,6 +4001,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Gyros z kurczaka z tzatzikami",
+    "kuchnia": "gr",
     "typy": [
       "obiad",
       "kolacja"
@@ -3972,6 +4063,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Zupa miso z tofu i wodorostami",
+    "kuchnia": "jp",
     "typy": [
       "lunch",
       "kolacja"
@@ -4016,6 +4108,7 @@ export const TALIA_SWIAT = [
   },
   {
     "nazwa": "Ratatouille z piekarnika",
+    "kuchnia": "fr",
     "typy": [
       "obiad",
       "kolacja"
@@ -4080,6 +4173,7 @@ export const TALIA_SWIAT = [
 export const TALIA_WEGE = [
   {
     "nazwa": "Gulasz z ciecierzycy i batatów",
+    "kuchnia": "uni",
     "typy": [
       "obiad"
     ],
@@ -4131,6 +4225,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Kotlety z soczewicy i kaszy jaglanej",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "kolacja"
@@ -4179,6 +4274,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Curry z bakłażana i mleka kokosowego",
+    "kuchnia": "in",
     "typy": [
       "obiad",
       "kolacja"
@@ -4235,6 +4331,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Sałatka z pieczonym kalafiorem i tahini",
+    "kuchnia": "il",
     "typy": [
       "lunch",
       "obiad"
@@ -4286,6 +4383,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Makaron z pomidorami i bazylią",
+    "kuchnia": "it",
     "typy": [
       "obiad",
       "kolacja"
@@ -4325,6 +4423,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Zupa krem z pieczonej papryki",
+    "kuchnia": "uni",
     "typy": [
       "obiad",
       "lunch"
@@ -4372,6 +4471,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Tofu w sosie słodko-kwaśnym z ryżem",
+    "kuchnia": "cn",
     "typy": [
       "obiad",
       "kolacja"
@@ -4428,6 +4528,7 @@ export const TALIA_WEGE = [
   },
   {
     "nazwa": "Falafel z ciecierzycy",
+    "kuchnia": "il",
     "typy": [
       "obiad",
       "przekąska"
@@ -4491,6 +4592,7 @@ export const TALIA_WEGE = [
 export const TALIA_ROSLINNE = [
   {
     "nazwa": "Owsianka na napoju owsianym z bananem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -4525,6 +4627,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Owsianka z prażonym jabłkiem i cynamonem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -4563,6 +4666,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Tofucznica ze szczypiorkiem i pomidorkami",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "kolacja"
@@ -4604,6 +4708,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Grzanki z pomidorami i bazylią",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -4640,6 +4745,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Zielony koktajl ze szpinakiem i bananem",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -4674,6 +4780,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Koktajl owsiany z borówkami",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -4708,6 +4815,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Placki z mąki ciecierzycowej z cukinią",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "kolacja"
@@ -4749,6 +4857,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Batony owsiane z daktylami i kakao",
+    "kuchnia": "uni",
     "typy": [
       "przekąska"
     ],
@@ -4789,6 +4898,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Pasta kanapkowa z ciecierzycy z tahini",
+    "kuchnia": "il",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -4829,6 +4939,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Kanapki z awokado i rzodkiewką",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie",
       "przekąska"
@@ -4864,6 +4975,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Jaglanka na mleku kokosowym z pomarańczą",
+    "kuchnia": "uni",
     "typy": [
       "śniadanie"
     ],
@@ -4899,6 +5011,7 @@ export const TALIA_ROSLINNE = [
   },
   {
     "nazwa": "Hummus z warzywami do chrupania",
+    "kuchnia": "il",
     "typy": [
       "przekąska"
     ],
