@@ -216,7 +216,18 @@ Alpine.data("ekranWejscie", () => ({
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
       this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
-      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+      /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
+
+         „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
+         nic zrobić: ani człowiekowi, który to widzi, ani mnie, gdy dostaję zrzut
+         ekranu. Miłosz zgłosił ten komunikat 8 sierpnia i poszła na to cała runda
+         zgadywania, bo treść wyjątku siedziała w konsoli telefonu, czyli nigdzie
+         (decyzja 76). Konsoli na iPhonie się nie otwiera.
+
+         Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
+         o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
+      const powod = (e && (e.message || e.name)) || String(e);
+      this.mrugnij?.(`Coś nie zadziałało: ${powod}`);
     }
   },
 

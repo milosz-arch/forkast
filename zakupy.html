@@ -610,6 +610,18 @@ Alpine.data("ekranZakupy", () => ({
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
       this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
+
+         „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
+         nic zrobić: ani człowiekowi, który to widzi, ani mnie, gdy dostaję zrzut
+         ekranu. Miłosz zgłosił ten komunikat 8 sierpnia i poszła na to cała runda
+         zgadywania, bo treść wyjątku siedziała w konsoli telefonu, czyli nigdzie
+         (decyzja 76). Konsoli na iPhonie się nie otwiera.
+
+         Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
+         o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
+      const powod = (e && (e.message || e.name)) || String(e);
+      this.stanSieci = `Coś nie zadziałało przy wczytywaniu: ${powod}`;
       this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
     }
   },
@@ -660,8 +672,18 @@ Alpine.data("ekranZakupy", () => ({
     }
     this.fb = fb;
     /* Połączenie dopiero teraz istnieje, a `ustawOkres` mogło już przelecieć
-       wcześniej na zapisanej liście i nic nie podpiąć. Podpinamy tutaj (decyzja 74). */
-    this.podepnijNasluchy(this.startOkresu);
+       wcześniej na zapisanej liście i nic nie podpiąć. Podpinamy tutaj (decyzja 74).
+
+       W osobnym `try`, bo to jedyny kawałek startu, który stoi POZA dużym blokiem
+       niżej — i gdyby cokolwiek tu rzuciło, przewróciłoby cały ekran zamiast zepsuć
+       samą synchronizację. Lista zakupów ma się pokazać nawet wtedy, gdy nasłuch
+       nie wstanie: w sklepie potrzebna jest lista, nie świeżość (decyzja 76). */
+    try {
+      this.podepnijNasluchy(this.startOkresu);
+    } catch (e) {
+      console.error("Nie udało się podpiąć nasłuchów:", e);
+      this.stanSieci = `Lista działa, ale zmiany drugiej osoby mogą nie dochodzić: ${e?.message || e}`;
+    }
     const { db, ref, get, onValue } = fb;
 
     try {
