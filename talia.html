@@ -199,6 +199,12 @@
             </div>
             </div>
 
+            <!-- KARTA W `x-if`, NIE W `x-show`. `x-show` tylko ukrywa element —
+                 wyrażenia w środku są liczone tak czy inaczej, więc przy pustej talii
+                 (dane jeszcze się wczytują albo wszystko już przejrzane) `danie` jest
+                 `null` i pięć odczytów typu `danie.nazwa` rzucało wyjątkiem prosto
+                 do konsoli. `x-if` nie renderuje zawartości w ogóle (decyzja 73). -->
+            <template x-if="danie">
             <article class="relative overflow-hidden rounded-2xl border border-stone-100 bg-white
                             p-6 pt-7 shadow-md dark:border-stone-800 dark:bg-stone-900"
                      :class="odlot === 'tak' ? 'odlot-tak' : odlot === 'nie' ? 'odlot-nie'
@@ -274,6 +280,7 @@
                 </template>
               </ul>
             </article>
+            </template>
 
             <!-- Dwie drogi, nie jedna. Wcześniej ten przycisk prowadził wprost
                  do ręcznego formularza, z pominięciem AI — czyli tej drogi,

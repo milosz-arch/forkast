@@ -81,12 +81,30 @@
                                      : 'Ekran gaśnie. Dotknij, żeby świecił.'"
             class="absolute flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
                    text-[0.68rem] font-bold backdrop-blur-md transition"
-            style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem"
+            style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:10.6rem"
             :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                 : 'border-white/40 bg-white/15 text-white/90'">
       <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
       <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
     </button>
+
+      <!-- DRZWI DO SPIŻARNI. Arkusz niżej istniał od v41 w komplecie — z polami,
+           listą zawartości i odliczaniem zużycia — i przez cały ten czas NIC nie
+           ustawiało `arkuszSpizarni` na prawdę, więc nie dało się go otworzyć.
+           Ikona i tekst pomocy też już czekały gotowe (decyzja 73).
+
+           Kontrolki w tym nagłówku stoją na siatce co 3.2rem, licząc od prawej:
+           1rem ustawienia, 4.2rem pomoc, 7.4rem spiżarnia, 10.6rem blokada ekranu.
+           Dwie o tej samej wartości nachodzą na siebie — tak było tu do dziś. -->
+      <button type="button" @click="arkuszSpizarni = true"
+              aria-label="Spiżarnia — co macie w domu"
+              class="absolute flex size-11 items-center justify-center rounded-full border
+                     border-white/35 bg-white/15 text-white backdrop-blur-md
+                     transition active:scale-95"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem">
+        <svg class="ikona ikona-sm"><use href="#i-spizarnia"/></svg>
+      </button>
+
       <button type="button" @click="pomocKlucz = 'zakupy'"
               aria-label="Jak to działa"
               class="absolute flex size-11 items-center justify-center rounded-full border
@@ -285,10 +303,14 @@
       Wam kupować kilograma mąki co tydzień.
     </p>
 
-    <!-- Dodawanie -->
+    <!-- Dodawanie.
+         `min-w-0` przy polu tekstowym nie jest ozdobą: element w układzie flex
+         domyślnie NIE kurczy się poniżej swojej naturalnej szerokości, a pole
+         tekstowe ma ją sporą. Bez tego pole „gramy” było wypychane poza ekran —
+         przy 390 px o 29 px, przy 320 px o 99 px (decyzja 73). -->
     <div class="mt-4 flex gap-2">
       <input type="text" x-model="nowyProdukt" list="produkty-spizarnia" placeholder="Produkt"
-             class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+             class="min-h-[2.9rem] min-w-0 flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                     outline-none transition focus:border-emerald-600
                     dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
       <input type="number" x-model.number="nowaIlosc" placeholder="gramy" min="1"

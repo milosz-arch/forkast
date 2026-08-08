@@ -257,5 +257,75 @@ for (const plik of EKRANY) {
   });
 }
 
+/* =====================================================================
+   KAŻDE OKIENKO MA MIEĆ KLAMKĘ
+
+   Arkusz spiżarni w Zakupach był kompletny: pola, lista zawartości, odliczanie
+   zużycia, przycisk „Zamknij". Sterowała nim jedna nazwa — i przez cały czas
+   NIC w całej apce nie ustawiało jej na prawdę. Ekran istniał i nie dało się
+   do niego wejść. Testy tego nie widziały, bo z ich punktu widzenia wszystko
+   było na miejscu: nazwa zadeklarowana, szablon poprawny (decyzja 73).
+
+   Reguła: jeśli jakieś pole steruje widocznością czegoś (`x-show="cos"`)
+   i gdzieś jest gaszone (`cos = false`), to musi też istnieć miejsce,
+   które je zapala. Inaczej to jest pokój bez drzwi.
+   ===================================================================== */
+console.log("\n— czy każde okienko da się otworzyć —");
+
+for (const plik of EKRANY) {
+  test(`${plik}: każdy przełącznik widoczności ma czym zostać zapalony`, () => {
+    const surowy = readFileSync(plik, "utf8");
+    const szablon = surowy.slice(0, surowy.indexOf("<script type=\"module\">"));
+
+    /* Bierzemy tylko przełączniki JAWNIE gaszone gdzieś w szablonie — czyli te,
+       które ktoś zaprojektował jako otwierane i zamykane. Pola sterowane
+       wyłącznie z kodu (np. `laduje`) nie wchodzą, bo tam prawdę ustawia
+       moduł, a nie kliknięcie. */
+    const gaszone = new Set(
+      [...szablon.matchAll(/([A-Za-z_$][\w$]*)\s*=\s*false/g)].map(m => m[1]),
+    );
+    const sterujaWidocznoscia = new Set(
+      [...szablon.matchAll(/x-(?:show|if)\s*=\s*"\s*([A-Za-z_$][\w$]*)\s*"/g)].map(m => m[1]),
+    );
+
+    const bezKlamki = [...gaszone]
+      .filter(n => sterujaWidocznoscia.has(n))
+      .filter(n => !new RegExp(`${n}\\s*=\\s*true`).test(surowy))
+      /* Zapalenie przez przypisanie wartości innej niż `true` — np.
+         `pomocKlucz = 'zakupy'` — też jest klamką. */
+      .filter(n => !new RegExp(`${n}\\s*=\\s*(?!false)['"\`\\w]`).test(szablon));
+
+    prawda(bezKlamki.length === 0,
+           `okienko bez klamki: ${bezKlamki.join(", ")} — da się zamknąć, nie da się otworzyć`);
+  });
+}
+
+/* =====================================================================
+   KONTROLKI W NAGŁÓWKU NIE MOGĄ STAĆ W TYM SAMYM MIEJSCU
+
+   Nagłówek każdego ekranu trzyma dwie–cztery okrągłe kontrolki ustawione
+   na sztywno od prawej krawędzi, na siatce co 3.2rem. W Zakupach dwie z nich
+   miały tę samą wartość `right` — przycisk pomocy leżał na połowie przełącznika
+   blokady ekranu i przejmował jego dotknięcia. Zmierzone w przeglądarce:
+   50×45 px wspólnego pola (decyzja 73).
+   ===================================================================== */
+console.log("\n— rozstaw kontrolek w nagłówkach —");
+
+for (const plik of EKRANY) {
+  test(`${plik}: żadne dwie kontrolki nagłówka nie stoją w tym samym miejscu`, () => {
+    const surowy = readFileSync(plik, "utf8");
+    const naglowek = surowy.slice(surowy.indexOf("<header"), surowy.indexOf("</header>"));
+    if (naglowek.length < 10) return;                    // ekran bez nagłówka
+
+    const pozycje = [...naglowek.matchAll(/right:\s*([\d.]+)rem/g)].map(m => m[1]);
+    const ile = {};
+    for (const p of pozycje) ile[p] = (ile[p] || 0) + 1;
+    const zderzenia = Object.entries(ile).filter(([, n]) => n > 1).map(([p, n]) => `${p}rem ×${n}`);
+
+    prawda(zderzenia.length === 0,
+           `kontrolki jedna na drugiej: ${zderzenia.join(", ")} — siatka to 1 / 4.2 / 7.4 / 10.6rem`);
+  });
+}
+
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
 process.exit(oblane ? 1 : 0);
