@@ -302,11 +302,18 @@ li.poz-zakupy.plynie { z-index: 5; position: relative; }
    odziedziczonym z karty. Kontrast wychodził od 1.53:1 do 3.48:1 — sześć par
    na sześć poniżej progu 4.5:1.
 
-   KSZTAŁT od Claude Design (brief `BRIEF-pieczatka-czasu.md`), PALETA nasza.
-   Dwie ramki w stałej odległości — zewnętrzna na krawędzi, wewnętrzna wsunięta
-   przez `::after` — dają wrażenie odbitego znaczka bez żadnej tekstury. Symulowany
-   rozmyty tusz odpada z tego samego powodu, co widelec ze spaghetti: wektor udający
-   fizyczny ślad wygląda jak filtr, nie jak odbicie.
+   KSZTAŁT od Claude Design (druga wersja, okrągła — brief `BRIEF-pieczatka-czasu.md`),
+   PALETA nasza. Dwie współśrodkowe obręcze plus krótka kreska u góry dają wrażenie
+   odbitego znaczka bez żadnej tekstury. Symulowany rozmyty tusz odpada z tego samego
+   powodu, co widelec ze spaghetti: wektor udający fizyczny ślad wygląda jak filtr,
+   nie jak odbicie.
+
+   ŚREDNICA JEST SZTYWNA (3.2em) i to jest różnica wobec pierwszej, prostokątnej
+   wersji, która rosła z treścią. Notatka projektowa od Claude Design nadal opisuje
+   tamten mechanizm — sprawdzone renderowaniem, że „120 min” mimo to mieści się
+   w kółku przy każdym z trzech rozmiarów. `font-size: .75em` dobrane na prawdziwej
+   karcie: przy .62em jednostka „min” robi się nieczytelna, przy .88em kółko zaczyna
+   konkurować z tytułem dania.
 
    WSZYSTKO W `em`, nie w pikselach — element skaluje się wyłącznie rozmiarem
    czcionki rodzica, więc ten sam kod działa i przy 1.55 rem na karcie dania,
@@ -325,29 +332,46 @@ li.poz-zakupy.plynie { z-index: 5; position: relative; }
 .stempel-czasu {
   position: relative;
   display: inline-flex;
-  align-items: baseline;
-  gap: .16em;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .02em;
+  width: 3.2em;
+  height: 3.2em;
+  font-size: .75em;
   font-weight: 800;
-  font-size: .62em;
   line-height: 1;
-  padding: .34em .55em;
-  border-radius: .3em;
-  border: max(1px, .09em) solid currentColor;
+  border-radius: 50%;
+  border: max(1px, .08em) solid currentColor;
   transform: rotate(-2deg);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  letter-spacing: .01em;
 }
+/* Druga, cieńsza obręcz wsunięta do środka — dwie linie w stałej odległości
+   dają wrażenie odbitego znaczka bez żadnej tekstury. */
 .stempel-czasu::after {
   content: "";
   position: absolute;
-  inset: .14em;
-  border: max(1px, .045em) solid currentColor;
-  border-radius: .17em;
-  opacity: .55;
+  inset: .16em;
+  border-radius: 50%;
+  border: max(1px, .04em) solid currentColor;
+  opacity: .38;
 }
-/* Jednostka mniejsza i wyciszona: liczba jest odpowiedzią, „min" tylko ją opisuje. */
-.stempel-czasu .jednostka { font-size: .72em; font-weight: 700; opacity: .8 }
+/* Krótka kreska u góry — to ona sprawia, że kółko czyta się jako pieczątka,
+   a nie jako plakietka albo awatar. */
+.stempel-czasu::before {
+  content: "";
+  position: absolute;
+  top: .06em;
+  left: 50%;
+  width: max(1px, .07em);
+  height: .26em;
+  background: currentColor;
+  transform: translateX(-50%);
+  opacity: .7;
+}
+/* Jednostka mniejsza i wyciszona: liczba jest odpowiedzią, „min” tylko ją opisuje. */
+.stempel-czasu .jednostka { font-size: .42em; font-weight: 700; opacity: .7; letter-spacing: .04em }
 
 .stempel-czasu--szybko  { background: #e0f2fe; color: #075985 }   /* 6.59:1 */
 .stempel-czasu--srednio { background: #fef3c7; color: #92400E }   /* 6.37:1 */
