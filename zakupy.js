@@ -106,3 +106,26 @@ export function opisIlosci(gramy) {
   }
   return `${gramy} g`;
 }
+
+/**
+ * Czy lista zapisana w telefonie nadaje się jeszcze do liczenia.
+ *
+ * DLACZEGO TO ISTNIEJE. Ekran Zakupów trzyma ostatnią listę w pamięci telefonu,
+ * żeby działała w sklepie bez zasięgu. Ta kopia bywa STARSZA NIŻ KOD — leży tam
+ * od wydania, którego już nie pamiętamy. Do 8 sierpnia pozycje zapisywały się
+ * bez pola `gramy`; od v45 spiżarnia odejmuje właśnie od tego pola, a funkcja,
+ * która to robi, celowo rzuca wyjątkiem, gdy liczby nie ma (decyzja 70).
+ *
+ * Skutek był taki, że stara kopia w telefonie wywracała cały ekran: człowiek
+ * widział „Coś nie zadziałało. Spróbuj odświeżyć.”, odświeżenie nic nie dawało,
+ * bo kopia zostawała, a ekran nie zdążył podpiąć się do bazy, żeby pobrać nową.
+ * Telefon, który raz w to wpadł, nie wychodził z tego sam nigdy (decyzja 75).
+ *
+ * Dane z pamięci telefonu traktujemy jak dane z zewnątrz: sprawdzamy je,
+ * zamiast zakładać, że mają kształt, który akurat dziś piszemy.
+ */
+export function kopiaNadajeSie(pozycje) {
+  return Array.isArray(pozycje) && pozycje.length > 0
+    && pozycje.every(p => p && typeof p.produkt === "string"
+                            && typeof p.gramy === "number" && !Number.isNaN(p.gramy));
+}

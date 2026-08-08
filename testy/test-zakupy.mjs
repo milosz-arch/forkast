@@ -1,4 +1,4 @@
-import { policzZakupy, pogrupujDzialami, opisIlosci } from "../zakupy.js";
+import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie } from "../zakupy.js";
 import { nowyOkres, domyslnyRytm, pustaSiatka, przypiszDanie, zmienKtoJe, oznaczBezSkladnikow } from "../rytm.js";
 
 let zdane = 0, oblane = 0;
@@ -170,6 +170,36 @@ test("opisIlosci przechodzi na kilogramy dopiero powyżej 1000 g", () => {
   rowne(opisIlosci(999), "999 g");
   rowne(opisIlosci(1000), "1 kg");
   rowne(opisIlosci(1250), "1,3 kg");
+});
+
+console.log("\n— kopia listy zapisana w telefonie —");
+
+test("kopia bez pola gramy jest odrzucana, a nie liczona", () => {
+  /* Tak wyglądała lista zapisywana przed v45. Spiżarnia odejmuje od `gramy`
+     i celowo rzuca wyjątkiem, gdy liczby nie ma — więc taka kopia wywracała
+     CAŁY ekran Zakupów i nie dało się z tego wyjść odświeżeniem, bo kopia
+     zostawała w telefonie (decyzja 75). */
+  const stara = [{ produkt: "Ryż basmati", ile: "400 g", zDan: "Kurczak" }];
+  prawda(!kopiaNadajeSie(stara), "stary format przeszedł jako dobry");
+});
+
+test("kopia z kompletem pól przechodzi", () => {
+  prawda(kopiaNadajeSie([{ produkt: "Ryż basmati", gramy: 400 }]));
+});
+
+test("pusta, brakująca i uszkodzona kopia nie udaje dobrej", () => {
+  prawda(!kopiaNadajeSie([]), "pusta lista nie ma czego pokazać");
+  prawda(!kopiaNadajeSie(null));
+  prawda(!kopiaNadajeSie(undefined));
+  prawda(!kopiaNadajeSie("[]"));
+  prawda(!kopiaNadajeSie([{ produkt: "Mąka", gramy: NaN }]), "NaN to nie liczba do liczenia");
+  prawda(!kopiaNadajeSie([{ produkt: "Mąka", gramy: "250" }]), "napis to nie liczba");
+});
+
+test("wystarczy JEDNA pozycja bez gramów, żeby odrzucić całą kopię", () => {
+  /* Bo lista liczy się w całości: jedna pozycja bez liczby wywala spiżarnię
+     dla wszystkich pozostałych. */
+  prawda(!kopiaNadajeSie([{ produkt: "Ryż", gramy: 400 }, { produkt: "Mąka" }]));
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

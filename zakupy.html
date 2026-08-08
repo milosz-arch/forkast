@@ -405,7 +405,7 @@ import collapse from "./lib/alpine-collapse-esm.js";
 import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
-import { policzZakupy, pogrupujDzialami, opisIlosci } from "./zakupy.js";
+import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie } from "./zakupy.js";
 import { nalozSpizarnie, poZuzyciu, opisZapasu, kluczProduktu } from "./spizarnia.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { PRODUKTY } from "./produkty.js";
@@ -622,16 +622,32 @@ Alpine.data("ekranZakupy", () => ({
        okresu, więc bierzemy jedyną zapisaną listę — po odpowiedzi z bazy i tak
        zostanie zastąpiona właściwą. */
     const kluczeList = Object.keys(localStorage).filter(k => k.startsWith(PREFIKS_LISTY));
-    const lokalna = kluczeList.length ? localStorage.getItem(kluczeList[0]) : null;
+    let lokalna = kluczeList.length ? localStorage.getItem(kluczeList[0]) : null;
     if (lokalna) {
       try {
         const d = JSON.parse(lokalna);
-        this.ustawOkres(d.okres);
-        this.pozycje = this.zOdhaczeniami(d.pozycje || []);
-        this.pominiete = d.pominiete || [];
-        this.laduje = false;
-        this.stanSieci = "Pokazuję ostatnią zapisaną listę — sprawdzam, czy jest nowsza…";
-      } catch { /* uszkodzona kopia nic nie psuje */ }
+        /* KOPIA W TELEFONIE BYWA STARSZA NIŻ KOD. Zapisana przed v45 nie ma pola
+           `gramy`, a spiżarnia od niego odejmuje — i celowo rzuca wyjątkiem, gdy
+           liczby nie ma (decyzja 70). Taka kopia wywracała cały ekran: człowiek
+           widział „Coś nie zadziałało”, odświeżenie nie pomagało, bo kopia
+           zostawała, a ekran nie zdążył podpiąć się do bazy po nową. Kasujemy ją
+           i idziemy dalej tak, jakby jej nie było (decyzja 75). */
+        if (!kopiaNadajeSie(d.pozycje)) {
+          localStorage.removeItem(kluczeList[0]);
+          lokalna = null;
+        } else {
+          this.ustawOkres(d.okres);
+          this.pozycje = this.zOdhaczeniami(d.pozycje);
+          this.pominiete = d.pominiete || [];
+          this.laduje = false;
+          this.stanSieci = "Pokazuję ostatnią zapisaną listę — sprawdzam, czy jest nowsza…";
+        }
+      } catch {
+        /* Uszkodzona kopia nic nie psuje — ale musi też zniknąć, inaczej ten sam
+           wyjątek wita człowieka przy każdym wejściu aż do skasowania danych. */
+        localStorage.removeItem(kluczeList[0]);
+        lokalna = null;
+      }
     }
 
     const fb = await polaczZBaza();
@@ -802,8 +818,23 @@ Alpine.data("ekranZakupy", () => ({
      wzięliście ze sklepu (odhaczenia). Trzymamy surową listę osobno, bo obie
      warstwy zmieniają się niezależnie i każda musi umieć przeliczyć od nowa. */
   zOdhaczeniami(lista) {
-    this.pozycjeSurowe = lista;
-    return nalozSpizarnie(lista, this.spizarnia)
+    /* JEDYNE WEJŚCIE DO LICZENIA — i dlatego sprawdzenie kształtu stoi właśnie tu.
+
+       Odsianie starej kopii przy odczycie z pamięci telefonu nie wystarczało:
+       ta funkcja przypisywała `pozycjeSurowe` PRZED policzeniem, więc stara lista
+       zostawała w pamięci ekranu nawet wtedy, gdy liczenie się wywaliło. Potem
+       pierwsza odpowiedź z bazy o spiżarni wołała to ponownie na tej samej starej
+       liście — i wyjątek leciał już ze środka nasłuchu, przewracając cały start
+       ekranu. Stąd „Coś nie zadziałało” przy każdym wejściu (decyzja 75).
+
+       Teraz lista w złym kształcie nie ma jak wejść: zostaje pusta lista i czekamy
+       na odpowiedź z bazy, która przychodzi w kształcie dzisiejszym. */
+    const dobra = kopiaNadajeSie(lista) ? lista : [];
+    if (lista?.length && !dobra.length) {
+      console.warn("Lista w starym kształcie — pomijam ją i czekam na odpowiedź z bazy.");
+    }
+    this.pozycjeSurowe = dobra;
+    return nalozSpizarnie(dobra, this.spizarnia)
       .map(p => ({
         ...p,
         /* Liczby zamieniane na napisy TU, a nie w widoku — żeby „250 g” i „1,2 kg”
