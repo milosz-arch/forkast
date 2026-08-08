@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Zakupy — Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+
+<!-- Biblioteki lokalnie, nie z CDN: lista zakupów ma działać w sklepie bez
+     zasięgu, a service worker cache'uje tylko własną domenę.
+     Alpine NIE jest tu ładowany — importuje go moduł na dole strony i sam
+     go startuje, po zarejestrowaniu danych. Powód w komentarzu przy imporcie. -->
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+    x-data="ekranZakupy" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<div id="pomoc"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden md:flex-row">
+
+  <!-- ================= NAWIGACJA BOCZNA (desktop) ================= -->
+  <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
+            md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
+     aria-label="Nawigacja główna">
+    <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
+            text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
+    <template x-for="z in zakladki" :key="z.id">
+    <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+       :aria-current="z.id === ekran ? 'page' : null"
+       :aria-disabled="zamknieta(z.id) ? 'true' : null"
+       class="flex h-12 items-center gap-3 rounded-xl px-3.5 no-underline transition"
+       :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+               : z.id === ekran
+               ? 'bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+               : 'text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'">
+      <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+      <span x-text="z.nazwa"></span>
+      <span x-show="z.id === ekran" class="ml-auto size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+    </a>
+    </template>
+    <a href="ustawienia.html"
+       class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
+              transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+      <svg class="ikona"><use href="#i-ustawienia"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+
+    <!-- ========================= NAGŁÓWEK ========================= -->
+    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                 from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
+                 shadow-lg shadow-emerald-900/20 md:rounded-none"
+          style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+    <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+    <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+    <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+
+    <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
+            :aria-pressed="ekranSwieci.toString()"
+            :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
+                                     : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+            class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
+                   text-[0.66rem] font-bold backdrop-blur-md transition"
+            style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem"
+            :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
+                                : 'border-white/40 bg-white/15 text-white/90'">
+      <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
+      <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+    </button>
+      <button type="button" @click="pomocKlucz = 'zakupy'"
+              aria-label="Jak to działa"
+              class="absolute flex size-11 items-center justify-center rounded-full border
+                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     backdrop-blur-md transition active:scale-95"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
+
+      <a href="ustawienia.html" aria-label="Ustawienia"
+         class="absolute flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95"
+         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
+      </a>
+    </header>
+
+    <!-- ========================== TREŚĆ ========================== -->
+    <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
+        style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+    <div class="mx-auto w-full max-w-2xl">
+
+        <!-- Duża liczba u góry: po to człowiek wchodzi na ten ekran w sklepie.
+             Wcześniej ta informacja była podpisem drobnym drukiem pod paskiem,
+             czyli najmniej ważnym elementem — a jest najważniejszym. -->
+        <div class="mb-4 flex items-end gap-3">
+          <!-- Licznik przewijany, nie przeskakujący. Liczba, która przeskakuje
+               z 6 na 7, nie mówi nic; przewijająca się mówi „przybyło” — a to jest
+               informacja, po którą człowiek patrzy na ten ekran w sklepie. -->
+          <p class="licznik liczba-glowna text-emerald-700 dark:text-emerald-400"
+             :aria-label="`${doKupienia.filter(p => p.wKoszyku).length} w koszyku`">
+            <template x-for="(c, i) in String(doKupienia.filter(p => p.wKoszyku).length).split('')"
+                      :key="i">
+              <span class="cyfra" aria-hidden="true">
+                <span class="kolumna" :style="`--c:${c}`">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                  <span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                </span>
+              </span>
+            </template>
+          </p>
+          <p class="liczba-drobna pb-1.5" x-text="`/ ${doKupienia.length}`"></p>
+          <div class="min-w-0 flex-1 pb-1.5 text-right">
+            <p class="text-[0.82rem] font-semibold leading-tight" x-text="opisKoszyka"></p>
+            <p x-show="pozycje.length - doKupienia.length > 0"
+               class="mt-0.5 text-[0.72rem] text-stone-400"
+               x-text="`${pozycje.length - doKupienia.length} już macie w domu`"></p>
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <div class="pasek" x-data="pasek" x-effect="ustaw(postep)"
+                 :class="{ przyrost, gotowe }"
+                 :style="`--postep:${postep}`"
+                 role="progressbar" :aria-valuenow="postep" aria-valuemin="0" aria-valuemax="100"
+                 :aria-label=opisKoszyka>
+              <i></i><u></u><b></b>
+            </div>
+        </div>
+
+      <!-- Uwagi z liczenia (np. danie zniknęło z bazy) -->
+      <template x-for="u in pominiete" :key="u">
+        <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.88rem]
+                    text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/25 dark:text-amber-200"
+             x-text="u"></div>
+      </template>
+
+      <!-- Skeleton: kształt listy, nie napis „ładuję” -->
+      <div x-show="laduje" class="space-y-2.5">
+        <template x-for="n in 6" :key="n">
+          <div class="szkielet flex items-center gap-4 rounded-2xl border border-stone-100 bg-white
+                      p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+            <div class="size-6 shrink-0 rounded-lg bg-stone-200 dark:bg-stone-800"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3.5 w-2/5 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+              <div class="h-2.5 w-3/5 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+            </div>
+            <div class="h-3.5 w-12 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Pusto -->
+      <div x-show="!laduje && !pozycje.length" x-transition
+           class="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm
+                  dark:border-stone-800 dark:bg-stone-900">
+        <p class="text-stone-500 dark:text-stone-400">
+          Nic do kupienia. Ułóż jadłospis, a lista policzy się sama.
+        </p>
+        <a href="jadlospis.html" class="btn-glowny mt-5 no-underline">Przejdź do jadłospisu</a>
+      </div>
+
+      <!-- Lista -->
+      <div x-show="!laduje && pozycje.length" class="space-y-5">
+        <template x-for="g in wgDzialu" :key="g.dzial">
+          <section>
+            <!-- Licznik przy dziale: widać, ile zostało, bez liczenia wierszy. -->
+            <h2 class="naglowek-dzialu mb-2 ml-1 text-stone-400 dark:text-stone-500">
+              <span x-text="g.dzial"></span>
+              <span class="ml-auto normal-case tracking-normal"
+                    :class="zostaloWDziale(g) === 0 ? 'text-emerald-700 dark:text-emerald-400'
+                                                    : 'text-stone-400'"
+                    x-text="zostaloWDziale(g) === 0 ? '✓ gotowe' : `zostało ${zostaloWDziale(g)}`"></span>
+            </h2>
+            <ul role="list" class="overflow-hidden rounded-2xl border border-stone-100 bg-white
+                                   shadow-sm dark:border-stone-800 dark:bg-stone-900">
+              <template x-for="p in g.pozycje" :key="p.produkt">
+                <li class="border-b border-stone-100 last:border-0 dark:border-stone-800">
+                  <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
+                          :aria-label="`${p.produkt}, ${p.ile}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
+                          class="flex min-h-[58px] w-full items-center gap-4 px-4 text-left transition
+                                 active:bg-stone-50 dark:active:bg-stone-800/60"
+                          :class="p.wKoszyku ? 'opacity-55' : ''">
+                    <!-- Stan nie zależy od samego koloru: kolor + ptaszek
+                         + przekreślenie + pozycja na liście. -->
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border-2
+                                 transition-colors"
+                          :class="p.wKoszyku
+                            ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                            : 'border-stone-300 dark:border-stone-600'">
+                      <svg x-show="p.wKoszyku" class="ikona" style="width:.8rem;height:.8rem;stroke-width:3">
+                        <use href="#i-ptaszek"/></svg>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate font-medium"
+                            :class="p.wKoszyku ? 'text-stone-400 line-through dark:text-stone-500' : ''"
+                            x-text="p.produkt"></span>
+                      <span class="block truncate text-[0.72rem] text-stone-400" x-text="p.zDan"></span>
+                    </span>
+                    <span class="shrink-0 font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
+                          x-text="p.ile"></span>
+                  </button>
+                </li>
+              </template>
+            </ul>
+          </section>
+        </template>
+      </div>
+
+      <p x-show="stanSieci" x-text="stanSieci"
+         class="mt-4 text-center text-[0.78rem] text-stone-400"></p>
+    </div>
+    </main>
+
+    <!-- ================= PASEK NA DOLE (mobile) ================= -->
+    <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
+              dark:border-stone-800 dark:bg-stone-950/95"
+       style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+    <div class="mx-auto flex h-16 max-w-lg">
+      <template x-for="z in zakladki" :key="z.id">
+          <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+             :aria-current="z.id === ekran ? 'page' : null"
+             :aria-disabled="zamknieta(z.id) ? 'true' : null"
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"
+             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+                    font-semibold no-underline transition"
+             :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                     : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
+                                      : 'text-stone-500 dark:text-stone-400'">
+            <svg class="ikona" :style="z.id === ekran ? 'stroke-width:2.4' : ''">
+              <use :href="'#i-' + z.id"/></svg>
+            <span x-text="z.nazwa"></span>
+            <span x-show="z.id === ekran"
+                  class="absolute bottom-1 size-1 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+          </a>
+        </template>
+    </div>
+    </nav>
+  </div>
+</div>
+
+<!-- ==================== SPIŻARNIA ==================== -->
+<div x-show="arkuszSpizarni" @click.self="arkuszSpizarni = false" x-transition.opacity.duration.200ms
+     class="fixed inset-0 z-[55] flex items-end justify-center bg-stone-900/50 backdrop-blur-sm
+            md:items-center">
+  <div x-show="arkuszSpizarni" x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0"
+       x-data="przeciagany(() => arkuszSpizarni = false)" x-bind="uchwyty"
+       class="plynne bez-paska max-h-[86vh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem]
+              bg-stone-50 px-5 pt-3 dark:bg-stone-950 md:rounded-[1.75rem]"
+       style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
+    <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700 md:hidden"></div>
+
+    <h3 class="text-[1.3rem] font-bold">Spiżarnia</h3>
+    <p class="mt-1 text-[0.85rem] leading-snug text-stone-500 dark:text-stone-400">
+      Wpiszcie, ile czego macie w domu. Apka odejmie to od listy zakupów, żeby nie kazała
+      Wam kupować kilograma mąki co tydzień.
+    </p>
+
+    <!-- Dodawanie -->
+    <div class="mt-4 flex gap-2">
+      <input type="text" x-model="nowyProdukt" list="produkty-spizarnia" placeholder="Produkt"
+             class="min-h-[52px] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+                    outline-none transition focus:border-emerald-600
+                    dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+      <input type="number" x-model.number="nowaIlosc" placeholder="gramy" min="1"
+             @keydown.enter="dodajDoSpizarni()"
+             class="min-h-[52px] w-28 rounded-xl border-2 border-stone-200 bg-white px-3 text-[17px]
+                    outline-none transition focus:border-emerald-600
+                    dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+    </div>
+    <datalist id="produkty-spizarnia">
+      <template x-for="n in nazwyProduktow" :key="n"><option :value="n"></option></template>
+    </datalist>
+    <button type="button" @click="dodajDoSpizarni()" :disabled="!nowyProdukt.trim() || !nowaIlosc"
+            class="mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl
+                   bg-emerald-700 font-bold text-white transition active:scale-[0.98]
+                   disabled:opacity-40 dark:bg-emerald-600">
+      <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj do spiżarni
+    </button>
+
+    <!-- Zawartość -->
+    <p x-show="!Object.keys(spizarnia).length"
+       class="mt-5 rounded-2xl bg-stone-100 px-4 py-6 text-center text-[0.88rem] text-stone-500
+              dark:bg-stone-900 dark:text-stone-400">
+      Spiżarnia jest pusta. To w porządku — wpiszcie tylko to, czego macie więcej
+      niż na jeden raz.
+    </p>
+
+    <ul x-show="Object.keys(spizarnia).length" role="list"
+        class="mt-5 overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm
+               dark:border-stone-800 dark:bg-stone-900">
+      <template x-for="w in zawartoscSpizarni" :key="w.klucz">
+        <li class="flex items-center gap-3 border-b border-stone-100 px-4 py-3 last:border-0
+                   dark:border-stone-800">
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-medium" x-text="w.nazwa"></span>
+            <span class="block text-[0.72rem] text-stone-400" x-text="w.opis"></span>
+          </span>
+          <input type="number" :value="w.gramy" min="0"
+                 @change="ustawWSpizarni(w.klucz, $event.target.value)"
+                 :aria-label="`Ile gramów: ${w.nazwa}`"
+                 class="min-h-[44px] w-24 rounded-xl border-2 border-stone-200 bg-white px-3
+                        text-center text-[16px] outline-none focus:border-emerald-600
+                        dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100">
+          <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
+                  :aria-label="`Usuń ${w.nazwa} ze spiżarni`"
+                  class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
+                         transition active:bg-stone-100 dark:active:bg-stone-800">
+            <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
+          </button>
+        </li>
+      </template>
+    </ul>
+
+    <!-- Odliczenie po ugotowaniu -->
+    <button type="button" x-show="Object.keys(spizarnia).length" @click="odliczZuzycie()"
+            class="mt-3 flex min-h-[52px] w-full items-center justify-center rounded-xl border-2
+                   border-stone-200 bg-white text-[0.88rem] font-bold transition active:scale-[0.98]
+                   dark:border-stone-700 dark:bg-stone-900"
+            x-text="odliczanieUzbrojone ? 'Na pewno? Dotknij ponownie'
+                                        : 'Ugotowane — odlicz zużycie okresu'"></button>
+    <p x-show="Object.keys(spizarnia).length" class="mt-1.5 text-center text-[0.75rem] text-stone-400">
+      Odejmie od spiżarni to, co zjedliście przez ten okres.
+    </p>
+
+    <button type="button" @click="arkuszSpizarni = false"
+            class="mt-4 min-h-[52px] w-full rounded-xl bg-emerald-700 font-bold text-white
+                   dark:bg-emerald-600">Zamknij</button>
+  </div>
+</div>
+
+<!-- Mrugnięcie apki -->
+<div x-show="toast" x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
+     class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-6"
+     style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+          shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
+</div>
+
+<script type="module">
+/* Alpine importowany jako moduł i startowany ręcznie na końcu.
+
+   Wcześniej szedł zwykłym <script defer> w <head>, więc uruchamiał się PRZED
+   tym modułem, wysyłał zdarzenie `alpine:init` w próżnię, a rejestracja danych
+   przychodziła za późno — sidebar był pusty, nagłówek bez tytułu, lista się
+   nie renderowała. Ta sama klasa błędu co przy wczytajSkale(): kolejność
+   wykonania, nie składnia, więc sprawdzanie składni tego nie łapie. */
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+import collapse from "./lib/alpine-collapse-esm.js";
+import { stanPoczatkowy } from "./postep.js";
+import { POMOC } from "./pomoc.js";
+import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
+import { policzZakupy, pogrupujDzialami, opisIlosci } from "./zakupy.js";
+import { nalozSpizarnie, poZuzyciu, opisZapasu, kluczProduktu } from "./spizarnia.js";
+import { TALIA_STARTOWA } from "./talia-startowa.js";
+import { PRODUKTY } from "./produkty.js";
+
+/* Firebase ładowany dynamicznie, nie importem na górze modułu.
+
+   Powód jest konkretny: service worker cache'uje tylko własną domenę, więc SDK
+   z gstatic.com nie jest dostępny offline. Przy imporcie statycznym nieudane
+   pobranie zabija CAŁY moduł — łącznie z odczytem listy z pamięci telefonu,
+   który siedzi w init(). W hali sklepu bez zasięgu dawało to nie „starą listę”,
+   tylko pusty ekran pod x-cloak. Czyli dokładną odwrotność tego, po co ta apka
+   w ogóle powstała. */
+
+/* Bez stołu nie ma czego pokazać, ale natychmiastowe przekierowanie daje
+   brzydkie mignięcie i nie mówi, co się stało. Częsty przypadek: ktoś dostał
+   link do konkretnego ekranu albo wszedł z innej domeny (pamięć przeglądarki
+   jest osobna dla każdego adresu), więc ma stół zapisany gdzie indziej. */
+const kodDomu = localStorage.getItem("forkast-dom");
+if (!kodDomu) {
+  document.body.innerHTML = `
+    <div class="flex h-dvh flex-col items-center justify-center gap-5 px-8 text-center">
+      <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.24em] text-emerald-700
+                dark:text-emerald-400">Forkast</p>
+      <h1 class="text-2xl font-bold">Najpierw usiądź do stołu</h1>
+      <p class="max-w-[34ch] text-stone-500 dark:text-stone-400">
+        Ta przeglądarka nie wie jeszcze, do którego stołu należysz. Załóż nowy
+        albo wpisz kod, który ktoś Ci wysłał.
+      </p>
+      <a href="index.html"
+         class="flex min-h-[52px] w-full max-w-xs items-center justify-center rounded-xl
+                bg-emerald-700 px-5 font-bold text-white no-underline dark:bg-emerald-600">
+        Przejdź do stołu
+      </a>
+    </div>`;
+  throw new Error("brak stołu");   // zatrzymuje resztę modułu
+}
+
+/* Ostatnia policzona lista leży też lokalnie. Powód jest zapisany w kosztach
+   decyzji 4: przepisy przychodzą z bazy, więc bez sieci nie ma z czego policzyć
+   zakupów — a brak zasięgu zdarza się akurat w sklepie, w hali z betonu. */
+/* Klucze zawierają datę startu okresu.
+
+   Bez tego odhaczenia przenosiły się na następny tydzień: układasz nowy plan,
+   a połowa listy jest już odhaczona, bo te produkty kupiłeś siedem dni temu.
+   Człowiek nie kupuje jajek. Żaden test tego nie łapał, bo problem mieszka
+   w stanie przeglądarki, nie w czystej funkcji. */
+const PREFIKS_LISTY = `forkast-zakupy-${kodDomu}-`;
+const PREFIKS_ODHACZEN = `forkast-odhaczone-${kodDomu}-`;
+
+/* Nazwa produktu jako klucz w bazie. Firebase nie przyjmuje w kluczach znaków
+   . # $ [ ] / — a mamy „Mleko 2%”, „Śmietana 18%” i podobne. Slug jest stabilny:
+   ta sama nazwa zawsze daje ten sam klucz, na każdym urządzeniu. */
+const klucz = nazwa => nazwa.toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/** Zostawia w pamięci tylko bieżący okres — inaczej localStorage rośnie w nieskończoność. */
+function sprzatnij(prefiks, zostaw) {
+  for (const k of Object.keys(localStorage))
+    if (k.startsWith(prefiks) && k !== zostaw) localStorage.removeItem(k);
+}
+
+Alpine.plugin(collapse);
+zarejestrujPrzeciaganie(Alpine);
+zarejestrujPasek(Alpine);
+
+Alpine.data("ekranZakupy", () => ({
+  POMOC,
+  pomocKlucz: null,
+
+  ...danePowloki({
+    ekran: "zakupy",
+    tytul: "Lista zakupów",
+    opis: "Policzona z jadłospisu. Działa też bez zasięgu.",
+  }),
+
+  laduje: true,
+  pozycje: [],
+  pominiete: [],
+  stanSieci: "",
+  odhaczone: new Set(),
+  kluczOdhaczen: null,
+  kluczListy: null,
+
+  get wgDzialu() {
+    const grupy = new Map();
+    for (const p of this.pozycje) {
+      if (!grupy.has(p.dzial)) grupy.set(p.dzial, []);
+      grupy.get(p.dzial).push(p);
+    }
+    /* Odhaczone spadają na dół działu: to, co zostało do kupienia, ma być
+       na wierzchu, bo po to się w tę listę patrzy, stojąc w sklepie. */
+    return [...grupy].map(([dzial, poz]) => ({
+      dzial,
+      pozycje: [...poz.filter(p => !p.wKoszyku), ...poz.filter(p => p.wKoszyku)],
+    }));
+  },
+  get postep() {
+    return this.pozycje.length
+      ? Math.round(this.pozycje.filter(p => p.wKoszyku).length / this.pozycje.length * 100) : 0;
+  },
+  get opisKoszyka() {
+    const z = this.pozycje.filter(p => p.wKoszyku).length;
+    if (!this.pozycje.length) return "—";
+    if (z === this.pozycje.length) {
+      const ile = Number(localStorage.getItem("forkast-kompletow") || 0);
+      return ile >= 10 ? "Wszystko w koszyku. yeah yeah 🎵" : "Wszystko w koszyku. Możesz iść do domu.";
+    }
+    return `${z} z ${this.pozycje.length} w koszyku`;
+  },
+
+  /* Wczytuje odhaczenia dla konkretnego okresu i sprząta poprzednie. */
+  ustawOkres(startOkresu) {
+    this.startOkresu = startOkresu;
+    this.kluczOdhaczen = PREFIKS_ODHACZEN + startOkresu;
+    this.kluczListy = PREFIKS_LISTY + startOkresu;
+    sprzatnij(PREFIKS_ODHACZEN, this.kluczOdhaczen);
+    sprzatnij(PREFIKS_LISTY, this.kluczListy);
+
+    /* Kopia lokalna od razu, żeby lista miała stan przed odpowiedzią z sieci
+       i żeby działała w sklepie bez zasięgu. */
+    this.odhaczone = new Set(JSON.parse(localStorage.getItem(this.kluczOdhaczen) || "[]"));
+
+    /* Odhaczenia leżą w bazie, nie tylko na telefonie.
+
+       Do 3 sierpnia były wyłącznie lokalne — czyli każde urządzenie miało własne.
+       Jadłospis synchronizował się na żywo, lista się przeliczała, ale to, co ktoś
+       odhaczył w sklepie, nie docierało do drugiej osoby. Dokładnie odwrotnie niż
+       obiecuje ta apka: dwie osoby przy jednym stole widzą jedną listę. */
+    if (this.odsubOdhaczen) { this.odsubOdhaczen(); this.odsubOdhaczen = null; }
+    if (!this.fb) return;
+    const { db, ref, onValue } = this.fb;
+    /* Spiżarnia jest wspólna dla stołu i nie zależy od okresu — zapas leży w domu
+       niezależnie od tego, jaki tydzień planujecie. */
+    if (!this.odsubSpizarni) {
+      this.odsubSpizarni = onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
+        this.spizarnia = snap.val() || {};
+        this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+      });
+    }
+
+    this.odsubOdhaczen = onValue(
+      ref(db, `domy/${kodDomu}/odhaczone/${startOkresu}`),
+      snap => {
+        const zBazy = new Set(Object.keys(snap.val() || {}));
+        this.odhaczone = zBazy;
+        localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...zBazy]));
+        this.pozycje = this.pozycje.map(x => ({ ...x, wKoszyku: zBazy.has(klucz(x.produkt)) }));
+      });
+  },
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    if (!kodDomu) { pokazBrakStolu(); return; }
+    this.initPowloka();
+
+    /* Najpierw kopia lokalna, zanim cokolwiek dotknie sieci. Nie znamy jeszcze
+       okresu, więc bierzemy jedyną zapisaną listę — po odpowiedzi z bazy i tak
+       zostanie zastąpiona właściwą. */
+    const kluczeList = Object.keys(localStorage).filter(k => k.startsWith(PREFIKS_LISTY));
+    const lokalna = kluczeList.length ? localStorage.getItem(kluczeList[0]) : null;
+    if (lokalna) {
+      try {
+        const d = JSON.parse(lokalna);
+        this.ustawOkres(d.okres);
+        this.pozycje = this.zOdhaczeniami(d.pozycje || []);
+        this.pominiete = d.pominiete || [];
+        this.laduje = false;
+        this.stanSieci = "Pokazuję ostatnią zapisaną listę — sprawdzam, czy jest nowsza…";
+      } catch { /* uszkodzona kopia nic nie psuje */ }
+    }
+
+    const fb = await polaczZBaza();
+    if (!fb) {
+      this.laduje = false;
+      this.stanSieci = lokalna
+        ? "Brak połączenia — to ostatnia lista zapisana na tym telefonie."
+        : "Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.";
+      return;
+    }
+    this.fb = fb;
+    const { db, ref, get, onValue } = fb;
+
+    try {
+      const [snapWlasne, snapProdukty, snapPref] = await Promise.all([
+        get(ref(db, `domy/${kodDomu}/wlasneDania`)),
+        get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
+        get(ref(db, `domy/${kodDomu}/preferencje`)),
+      ]);
+      this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+      const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
+      const wszystkie = [...TALIA_STARTOWA, ...wlasne];
+      const slownik = [...PRODUKTY, ...Object.values(snapProdukty.val() || {})];
+
+      /* MUSI stać PO deklaracji slownika. Stało przed i rzucało wyjątek
+         „Cannot access ’slownik’ before initialization” — a że cały blok jest
+         w try, wyjątek lądował w catch, który mówił „brak połączenia” i zostawiał
+         PUSTĄ LISTĘ ZAKUPÓW. Objaw nie miał nic wspólnego z przyczyną.
+
+         Trzeci raz dziś ta sama pułapka: const nie jest wynoszony na górę,
+         więc kolejność linii jest częścią działania, nie tylko czytelności. */
+      this.wszystkieNazwy = slownik.map(x => x.n);
+
+      /* onValue zamiast get: dwie osoby przy jednym stole widzą swoje zmiany
+         bez odświeżania. */
+      onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => {
+        const zapisany = snap.val();
+        if (!zapisany?.siatka?.length) {
+          this.pozycje = []; this.pominiete = []; this.laduje = false; this.stanSieci = "";
+          return;
+        }
+        // Okres znany dopiero tutaj — dopiero teraz wiadomo, które odhaczenia wczytać.
+        const start = zapisany.okres?.start || "brak";
+        if (this.kluczOdhaczen !== PREFIKS_ODHACZEN + start) this.ustawOkres(start);
+
+        const wynik = policzZakupy(zapisany.siatka, wszystkie);
+        const grupy = pogrupujDzialami(wynik.pozycje, slownik);
+        const plaskie = grupy.flatMap(g => g.pozycje.map(p => ({
+          produkt: p.produkt,
+          dzial: g.dzial,
+          ile: opisIlosci(p.gramy),
+          zDan: p.wDaniach.join(" · "),
+        })));
+        this.pozycje = this.zOdhaczeniami(plaskie);
+        this.pominiete = wynik.pominiete;
+        this.laduje = false;
+        this.stanSieci = "";
+        localStorage.setItem(this.kluczListy, JSON.stringify({
+          okres: start, pozycje: plaskie, pominiete: wynik.pominiete, kiedy: Date.now(),
+        }));
+      });
+    } catch {
+      this.laduje = false;
+      this.stanSieci = lokalna
+        ? "Brak połączenia — to ostatnia lista zapisana na tym telefonie."
+        : "Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.";
+    }
+  },
+
+  pozycjeSurowe: [],
+  odliczanieUzbrojone: false,
+
+  get nazwyProduktow() {
+    return [...new Set([...this.pozycjeSurowe.map(p => p.produkt), ...this.wszystkieNazwy])]
+      .sort((a, b) => a.localeCompare(b, "pl"));
+  },
+  wszystkieNazwy: [],
+
+  get zawartoscSpizarni() {
+    /* Zużycie w tym okresie bierzemy z listy, żeby móc powiedzieć „starczy na 3 okresy”.
+       Produkt, którego w tym okresie nie ma, dostaje uczciwe „nie ma tego w tym okresie”
+       zamiast zmyślonej liczby. */
+    const zuzycie = Object.fromEntries(
+      this.pozycjeSurowe.map(p => [kluczProduktu(p.produkt), p.gramy]));
+    const nazwy = Object.fromEntries(
+      [...this.pozycjeSurowe.map(p => p.produkt), ...this.wszystkieNazwy]
+        .map(n => [kluczProduktu(n), n]));
+    return Object.entries(this.spizarnia)
+      .filter(([, g]) => g > 0)
+      .map(([klucz, gramy]) => ({
+        klucz, gramy,
+        nazwa: nazwy[klucz] || klucz,
+        opis: opisZapasu(gramy, zuzycie[klucz] || 0),
+      }))
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  },
+
+  async dodajDoSpizarni() {
+    const nazwa = this.nowyProdukt.trim();
+    const gramy = Math.round(Number(this.nowaIlosc) || 0);
+    if (!nazwa || gramy <= 0) return;
+    await this.ustawWSpizarni(kluczProduktu(nazwa), gramy, nazwa);
+    this.nowyProdukt = ""; this.nowaIlosc = null;
+  },
+
+  async ustawWSpizarni(klucz, wartosc, nazwaDoZapamietania = null) {
+    const gramy = Math.max(0, Math.round(Number(wartosc) || 0));
+    // Optymistycznie, tak jak przy odhaczaniu — apka ma reagować od razu.
+    if (gramy > 0) this.spizarnia[klucz] = gramy; else delete this.spizarnia[klucz];
+    if (nazwaDoZapamietania && !this.wszystkieNazwy.includes(nazwaDoZapamietania))
+      this.wszystkieNazwy.push(nazwaDoZapamietania);
+    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+
+    if (!this.fb) return;
+    try {
+      const { db, ref, set, remove } = this.fb;
+      const sciezka = ref(db, `domy/${kodDomu}/spizarnia/${klucz}`);
+      if (gramy > 0) await set(sciezka, gramy); else await remove(sciezka);
+    } catch {
+      this.mrugnij("Nie udało się zapisać — sprawdź internet.");
+    }
+  },
+
+  /* Dwustopniowe, bo zmienia liczby, których człowiek nie pamięta z głowy. */
+  async odliczZuzycie() {
+    if (!this.odliczanieUzbrojone) {
+      this.odliczanieUzbrojone = true;
+      clearTimeout(this._to);
+      this._to = setTimeout(() => { this.odliczanieUzbrojone = false; }, 5000);
+      return;
+    }
+    clearTimeout(this._to);
+    this.odliczanieUzbrojone = false;
+    const zmiany = poZuzyciu(this.spizarnia, this.pozycjeSurowe);
+    if (!Object.keys(zmiany).length) { this.mrugnij("Nie ma czego odliczyć."); return; }
+    for (const [k, v] of Object.entries(zmiany)) {
+      if (v === null) delete this.spizarnia[k]; else this.spizarnia[k] = v;
+    }
+    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+    if (this.fb) {
+      try {
+        const { db, ref, update } = this.fb;
+        await update(ref(db, `domy/${kodDomu}/spizarnia`), zmiany);
+      } catch { this.mrugnij("Nie udało się zapisać — sprawdź internet."); return; }
+    }
+    this.mrugnij("Odliczone. Spiżarnia zaktualizowana.");
+  },
+
+  /* Nakłada na listę dwie warstwy: co już macie w domu (spiżarnia) i co już
+     wzięliście ze sklepu (odhaczenia). Trzymamy surową listę osobno, bo obie
+     warstwy zmieniają się niezależnie i każda musi umieć przeliczyć od nowa. */
+  zOdhaczeniami(lista) {
+    this.pozycjeSurowe = lista;
+    return nalozSpizarnie(lista, this.spizarnia)
+      .map(p => ({ ...p, wKoszyku: this.odhaczone.has(klucz(p.produkt)) }));
+  },
+
+    /* Optimistic UI: stan zmienia się natychmiast, zapis do pamięci telefonu
+     idzie zaraz potem. Człowiek stojący przy kasie nie czeka na potwierdzenie. */
+  /* Optimistic UI: stan zmienia się natychmiast, zapis do bazy idzie w tle.
+     Człowiek stojący przy kasie nie czeka na potwierdzenie z sieci.
+
+     Bez zasięgu zapis nie przechodzi — wtedy odhaczenie zostaje w pamięci telefonu
+     i trafi do bazy przy najbliższym wejściu z internetem. To jedyny scenariusz,
+     w którym dwie osoby mogą się chwilowo rozjechać, i jest akceptowalny:
+     w sklepie bez zasięgu i tak jest się samemu. */
+  /* Zmiana kolejności bez przeskoku.
+
+     Mierzymy, gdzie wiersze są PRZED zmianą, pozwalamy Alpine przerysować listę,
+     mierzymy PO — i cofamy każdy wiersz transformacją na stare miejsce, po czym ją
+     zdejmujemy. Przeglądarka animuje wtedy tylko transform, czyli po stronie karty
+     graficznej, więc lista nie migocze nawet przy trzydziestu pozycjach.
+
+     Bez tego odhaczona pozycja znika i pojawia się niżej w tej samej klatce —
+     wygląda jak usterka, a to najczęstszy gest w całej aplikacji. */
+  async plynnaZmianaKolejnosci(zmien) {
+    const wiersze = [...document.querySelectorAll("li.poz-zakupy")];
+    const przed = new Map(wiersze.map(el => [el.dataset.produkt, el.getBoundingClientRect().top]));
+
+    zmien();
+    await this.$nextTick();
+
+    for (const el of document.querySelectorAll("li.poz-zakupy")) {
+      const staraGora = przed.get(el.dataset.produkt);
+      if (staraGora === undefined) continue;
+      const roznica = staraGora - el.getBoundingClientRect().top;
+      if (Math.abs(roznica) < 2) continue;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${roznica}px)`;
+      el.classList.add("plynie");
+      requestAnimationFrame(() => {
+        el.style.transition = "";
+        el.style.transform = "";
+        setTimeout(() => el.classList.remove("plynie"), 450);
+      });
+    }
+  },
+
+  async odhacz(p) {
+    const k = klucz(p.produkt);
+
+    // Ściśnięcie natychmiast — dotknięcie ma mieć odpowiedź, zanim ruszy kolejność.
+    const wiersz = document.querySelector(`li.poz-zakupy[data-produkt="${CSS.escape(p.produkt)}"]`);
+    wiersz?.classList.add("wlasnie-odhaczone");
+    setTimeout(() => wiersz?.classList.remove("wlasnie-odhaczone"), 300);
+
+    await this.plynnaZmianaKolejnosci(() => {
+      p.wKoszyku = !p.wKoszyku;
+      if (p.wKoszyku) this.odhaczone.add(k); else this.odhaczone.delete(k);
+    });
+    if (this.kluczOdhaczen)
+      localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...this.odhaczone]));
+    navigator.vibrate?.(10);
+    this.komunikat = `${p.produkt}: ${p.wKoszyku ? "w koszyku" : "z powrotem na liście"}`;
+
+    if (this.postep === 100) {
+      const ile = Number(localStorage.getItem("forkast-kompletow") || 0) + 1;
+      localStorage.setItem("forkast-kompletow", String(ile));
+      ding();
+      this.mrugnij(ile >= 10 ? "Wszystko w koszyku. yeah yeah 🎵"
+                             : "Wszystko w koszyku. Możesz iść do domu.");
+    } else if (this.pozycje.filter(x => !x.wKoszyku).length === 1 && p.wKoszyku) {
+      const ostatni = this.pozycje.find(x => !x.wKoszyku);
+      if (ostatni) this.mrugnij(`Został tylko ${ostatni.produkt.toLowerCase()}. Dasz radę.`);
+    }
+
+    if (!this.fb || !this.startOkresu) return;
+    try {
+      const { db, ref, set, remove } = this.fb;
+      const sciezka = ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}/${k}`);
+      if (p.wKoszyku) await set(sciezka, true); else await remove(sciezka);
+    } catch {
+      /* Nie cofamy stanu: człowiek widzi, że odhaczył, i tak ma być.
+         Zapis dogoni bazę przy następnym wejściu z zasięgiem. */
+      this.stanSieci = "Odhaczone zapisane na tym telefonie — zsynchronizuje się, gdy wróci internet.";
+    }
+  },
+}));
+
+/* Sprite ikon wstrzykiwany raz. Czekamy na niego przed startem Alpine —
+   inaczej pierwsze rysowanie trafia na <use> wskazujące w pustkę. */
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Ustawienia — Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+      x-data="ekranUstawienia" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden md:flex-row">
+
+  <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
+              md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
+       aria-label="Nawigacja główna">
+    <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
+              text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
+    <template x-for="z in zakladki" :key="z.id">
+      <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+         :aria-current="z.id === ekran ? 'page' : null"
+         :aria-disabled="zamknieta(z.id) ? 'true' : null"
+         class="flex h-12 items-center gap-3 rounded-xl px-3.5 no-underline transition"
+         :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                 : z.id === ekran
+                 ? 'bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+                 : 'text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'">
+        <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+        <span x-text="z.nazwa"></span>
+        <span x-show="z.id === ekran" class="ml-auto size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+      </a>
+    </template>
+    <a href="ustawienia.html"
+       class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
+              transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+      <svg class="ikona"><use href="#i-ustawienia"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+
+    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                   from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
+                   shadow-lg shadow-emerald-900/20 md:rounded-none"
+            style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+      <a href="talia.html" aria-label="Wróć do dań"
+         class="absolute flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95"
+         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+        <svg class="ikona ikona-sm" style="transform:rotate(90deg)"><use href="#i-strzalka"/></svg>
+      </a>
+    </header>
+
+    <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
+          style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+      <div class="mx-auto w-full max-w-2xl space-y-4">
+
+        <!-- ============ KOD STOŁU ============
+             Dodane po tym, jak okazało się, że raz zapisany kod znika z widoku
+             i nie da się go nikomu pokazać bez grzebania w pamięci przeglądarki. -->
+        <section class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5
+                        dark:border-emerald-500/20 dark:bg-emerald-500/10">
+          <div class="flex items-center gap-4">
+            <div class="min-w-0 flex-1">
+              <p class="text-[0.8rem] font-semibold text-stone-600 dark:text-stone-400">Kod Waszego stołu</p>
+              <p class="mt-0.5 text-[1.6rem] font-bold tracking-[0.22em] text-emerald-800
+                        dark:text-emerald-300 zaznaczalne" x-text="kod"></p>
+            </div>
+            <button type="button" @click="kopiujKod()"
+                    class="flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl border-2
+                           border-emerald-700/20 bg-white px-4 text-[0.85rem] font-bold
+                           text-emerald-800 transition active:scale-95
+                           dark:border-emerald-400/30 dark:bg-stone-900 dark:text-emerald-300">
+              Kopiuj
+            </button>
+          </div>
+          <p class="mt-3 text-[0.8rem] text-stone-600 dark:text-stone-400">
+            Podaj go tym, którzy siadają z Wami do stołu. Wpisują go przy pierwszym wejściu.
+          </p>
+        </section>
+
+        <!-- ============ EKRAN ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <h2 class="text-[1.05rem] font-bold">Nie wygaszaj ekranu, gdy używam aplikacji</h2>
+              <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+                Przydaje się przy wózku w sklepie i przy mokrych rękach w kuchni. W tle gaśnie
+                normalnie i nie zjada baterii.
+              </p>
+            </div>
+            <button type="button" @click="przelaczEkran()" :disabled="!ekranObslugiwany"
+                    :aria-pressed="(ekranObslugiwany && ekranSwieci).toString()"
+                    aria-label="Nie wygaszaj ekranu"
+                    class="relative mt-1 h-8 w-14 shrink-0 rounded-full transition-colors"
+                    :class="[ekranObslugiwany && ekranSwieci ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-stone-300 dark:bg-stone-700',
+                             ekranObslugiwany ? '' : 'opacity-40']">
+              <span class="absolute top-1 size-6 rounded-full bg-white shadow transition-[left]"
+                    :class="ekranObslugiwany && ekranSwieci ? 'left-7' : 'left-1'"></span>
+            </button>
+          </div>
+          <p x-show="!ekranObslugiwany"
+             class="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-[0.82rem] text-amber-900
+                    dark:bg-amber-900/25 dark:text-amber-200">
+            Ta przeglądarka tego nie potrafi. Jeśli otwierasz Forkast z linku w WhatsAppie albo
+            Messengerze, otwórz go w Safari albo Chrome — tam zadziała.
+          </p>
+        </section>
+
+        <!-- ============ WYGLĄD ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-[1.05rem] font-bold" x-text="ciemny ? 'Tryb ciemny' : 'Tryb jasny'"></h2>
+              <p class="mt-0.5 text-[0.82rem] text-stone-500 dark:text-stone-400">
+                Domyślnie apka idzie za ustawieniem telefonu.
+              </p>
+            </div>
+            <button type="button" @click="ciemny = !ciemny" :aria-pressed="ciemny.toString()"
+                    aria-label="Przełącz tryb ciemny"
+                    class="relative h-8 w-14 shrink-0 rounded-full transition-colors"
+                    :class="ciemny ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-stone-300'">
+              <span class="absolute top-1 size-6 rounded-full bg-white shadow transition-[left]"
+                    :class="ciemny ? 'left-7' : 'left-1'"></span>
+            </button>
+          </div>
+
+          <h3 class="mt-5 text-[0.95rem] font-bold">Rozmiar liter</h3>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Jeśli musisz mrużyć oczy — zwiększ. Dotyczy tylko tego urządzenia.
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Rozmiar liter">
+            <template x-for="s in skale" :key="s.id">
+              <button type="button" @click="ustawSkale(s.id)" :aria-pressed="(skala === s.id).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="skala === s.id
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="s.etykieta"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <!-- ============ OKRES ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1.05rem] font-bold">Na ile dni planujecie naraz</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Tydzień to tylko najczęstszy wybór, nie jedyny — jeśli robicie zakupy co trzy dni
+            albo raz na dwa tygodnie, ustaw to tutaj.
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Długość okresu">
+            <template x-for="n in [3,5,7,10,14]" :key="n">
+              <button type="button" @click="dlugoscOkresu = n; zapisz()"
+                      :aria-pressed="(dlugoscOkresu === n).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="dlugoscOkresu === n
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="n + ' dni'"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <!-- ============ RYTM ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1.05rem] font-bold">Które posiłki i dla kogo</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            To wartość domyślna dla nowego okresu, nie reguła na sztywno — w jadłospisie
+            da się zmienić pojedynczy posiłek w pojedynczym dniu.
+          </p>
+
+          <p x-show="!domownicy.length" class="mt-4 text-[0.85rem] italic text-stone-400">
+            Najpierw dodaj kogoś do stołu na ekranie startowym.
+          </p>
+
+          <div class="mt-3 divide-y divide-stone-100 dark:divide-stone-800">
+            <template x-for="typ in TYPY_POSILKOW" :key="typ">
+              <div class="py-3">
+                <div class="flex items-center gap-3">
+                  <span class="flex-1 capitalize" x-text="typ"></span>
+                  <button type="button" @click="przelaczPosilek(typ)"
+                          :aria-pressed="(rytm[typ]?.wlaczony ?? false).toString()"
+                          :aria-label="`Posiłek ${typ}`"
+                          class="relative h-8 w-14 shrink-0 rounded-full transition-colors"
+                          :class="rytm[typ]?.wlaczony ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-stone-300 dark:bg-stone-700'">
+                    <span class="absolute top-1 size-6 rounded-full bg-white shadow transition-[left]"
+                          :class="rytm[typ]?.wlaczony ? 'left-7' : 'left-1'"></span>
+                  </button>
+                </div>
+                <div x-show="rytm[typ]?.wlaczony" class="mt-2.5 flex flex-wrap gap-2">
+                  <template x-for="d in domownicy" :key="d.id">
+                    <button type="button" @click="przelaczOsobe(typ, d.id)"
+                            :aria-pressed="(rytm[typ]?.kto?.includes(d.id) ?? false).toString()"
+                            class="min-h-[44px] rounded-full border-2 px-4 text-[0.85rem] font-semibold transition"
+                            :class="rytm[typ]?.kto?.includes(d.id)
+                              ? 'border-emerald-700 bg-emerald-50 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-300'
+                              : 'border-stone-200 text-stone-500 dark:border-stone-700 dark:text-stone-400'">
+                      <span x-text="d.imie"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- ============ POWTÓRKI ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1.05rem] font-bold">Czy dania mogą się powtarzać</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Bez limitu jest sensowne, jeśli gotujecie większą porcję na kilka dni — albo jeśli
+            polubionych dań jest na razie mało.
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Limit powtórzeń">
+            <template x-for="p in POWTORKI" :key="p.etykieta">
+              <button type="button" @click="limitPowtorzen = p.wartosc; zapisz()"
+                      :aria-pressed="(limitPowtorzen === p.wartosc).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="limitPowtorzen === p.wartosc
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="p.etykieta"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <!-- ============ KUCHNIA ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1.05rem] font-bold">Czym gotujecie</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Przepis mówiący „smaż na 6/9” to instrukcja do indukcji — na gazie nie znaczy nic.
+            Powiedz, co masz, a nowe dania od AI będą pod to pisane.
+          </p>
+
+          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Płyta</p>
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Rodzaj płyty">
+            <template x-for="p in PLYTY" :key="p.id">
+              <button type="button" @click="kuchnia.plyta = p.id; zapisz()"
+                      :aria-pressed="(kuchnia.plyta === p.id).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="kuchnia.plyta === p.id
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="p.etykieta"></span>
+              </button>
+            </template>
+          </div>
+
+          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Piekarnik</p>
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Rodzaj piekarnika">
+            <template x-for="p in PIEKARNIKI" :key="p.id">
+              <button type="button" @click="kuchnia.piekarnik = p.id; zapisz()"
+                      :aria-pressed="(kuchnia.piekarnik === p.id).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="kuchnia.piekarnik === p.id
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="p.etykieta"></span>
+              </button>
+            </template>
+          </div>
+
+          <p class="mt-4 mb-2 text-[0.75rem] font-semibold text-stone-600 dark:text-stone-400">Co masz w kuchni</p>
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Sprzęt kuchenny">
+            <template x-for="n in NACZYNIA" :key="n.id">
+              <button type="button" @click="przelaczNaczynie(n.id)"
+                      :aria-pressed="(kuchnia.naczynia?.includes(n.id) ?? false).toString()"
+                      class="min-h-[48px] rounded-full border-2 px-5 font-semibold transition active:scale-95"
+                      :class="kuchnia.naczynia?.includes(n.id)
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="n.etykieta"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <!-- ============ WASZE DANIA ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1.05rem] font-bold">Wasze dania</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Dania, które sami dodaliście. Możesz je pobrać jako plik i trzymać u siebie,
+            niezależnie od tej aplikacji.
+          </p>
+          <button type="button" @click="eksportuj()"
+                  class="mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                         border-2 border-stone-200 bg-white font-bold transition active:scale-[0.98]
+                         dark:border-stone-700 dark:bg-stone-900">
+            <svg class="ikona ikona-sm"><use href="#i-pobierz"/></svg> Pobierz nasze dania
+          </button>
+          <p x-show="stanEksportu" class="mt-2 text-center text-[0.82rem] text-stone-500"
+             x-text="stanEksportu"></p>
+        </section>
+
+        <!-- ============ WERSJA ============
+             Widoczna, żeby dało się zapytać kogoś „co masz na dole Ustawień”
+             i wiedzieć, czy patrzy na to samo co my. Przycisk obok wymusza
+             pobranie wszystkiego od nowa — na telefonie nie ma innego sposobu. -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <div class="flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-[0.82rem] text-stone-500 dark:text-stone-400">
+                Wersja aplikacji: <span class="font-bold text-stone-700 dark:text-stone-300"
+                                        x-text="WYDANIE"></span>
+              </p>
+              <p class="mt-1 text-[0.78rem] text-stone-400">
+                Jeśli coś wygląda inaczej niż u innych, dotknij „Pobierz najnowszą”.
+              </p>
+            </div>
+            <button type="button" @click="odswiezWszystko()" :disabled="odswiezanie"
+                    class="min-h-[44px] shrink-0 rounded-xl border-2 border-stone-200 px-4
+                           text-[0.85rem] font-bold transition active:scale-95
+                           disabled:opacity-50 dark:border-stone-700"
+                    x-text="odswiezanie ? 'Pobieram…' : 'Pobierz najnowszą'"></button>
+          </div>
+        </section>
+
+        <!-- ============ USUWANIE ============ -->
+        <section class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <button type="button" @click="zapomnij()"
+                  class="flex min-h-[44px] w-full items-center justify-center text-[0.85rem]
+                         text-stone-500 dark:text-stone-400">
+            To nie mój stół — zacznij od nowa
+          </button>
+          <button type="button" @click="usunStol()"
+                  class="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 text-[0.85rem]
+                         font-semibold text-red-700 dark:text-red-400">
+            <svg class="ikona ikona-sm"><use href="#i-kosz"/></svg>
+            <span x-text="usuwanieUzbrojone ? 'Na pewno? Dotknij ponownie — tego nie da się cofnąć'
+                                            : 'Usuń ten stół i wszystko, co przy nim zapisaliśmy'"></span>
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
+                dark:border-stone-800 dark:bg-stone-950/95"
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+      <div class="mx-auto flex h-16 max-w-lg">
+        <template x-for="z in zakladki" :key="z.id">
+          <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+             :aria-current="z.id === ekran ? 'page' : null"
+             :aria-disabled="zamknieta(z.id) ? 'true' : null"
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+                    font-semibold no-underline transition"
+             :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                     : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
+                                      : 'text-stone-500 dark:text-stone-400'">
+            <svg class="ikona" :style="z.id === ekran ? 'stroke-width:2.4' : ''">
+              <use :href="'#i-' + z.id"/></svg>
+            <span x-text="z.nazwa"></span>
+            <span x-show="z.id === ekran"
+                  class="absolute bottom-1 size-1 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+          </a>
+        </template>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<div x-show="toast" x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
+     class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-6"
+     style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+            shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
+</div>
+
+<script type="module">
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+/* Uchwyty do bazy wypełniane w init() po udanym połączeniu. Deklarowane tutaj,
+   bo używa ich cały ekran — a przypisywane dopiero wtedy, gdy SDK naprawdę się
+   pobrał. Dopóki są puste, ekran działa na tym, co ma w pamięci telefonu. */
+let db, ref, get, set, remove, push, update, onValue;
+
+import { stanPoczatkowy } from "./postep.js";
+import { WYDANIE } from "./wersja.js";
+import { danePowloki } from "./powloka.js";
+import { PLYTY, PIEKARNIKI, NACZYNIA, DOMYSLNA } from "./kuchnia.js";
+import { TYPY_POSILKOW } from "./prompt.js";
+
+
+const kodDomu = kodStolu();
+
+const POWTORKI = [
+  { wartosc: null, etykieta: "bez limitu" },
+  { wartosc: 1, etykieta: "raz" },
+  { wartosc: 2, etykieta: "do 2×" },
+  { wartosc: 3, etykieta: "do 3×" },
+];
+
+Alpine.data("ekranUstawienia", () => ({
+  ...danePowloki({
+    ekran: "ustawienia",
+    tytul: "Ustawienia",
+    opis: "Jak wygląda Wasz zwykły okres i czym gotujecie.",
+  }),
+
+  PLYTY, PIEKARNIKI, NACZYNIA, TYPY_POSILKOW, POWTORKI,
+  WYDANIE,
+  kod: kodDomu,
+  domownicy: [],
+  dlugoscOkresu: 7,
+  limitPowtorzen: null,
+  rytm: {},
+  kuchnia: { ...DOMYSLNA },
+  stanEksportu: "",
+  usuwanieUzbrojone: false,
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    if (!kodDomu) { pokazBrakStolu(); return; }
+    this.initPowloka();
+
+    /* Połączenie z bazą PO starcie ekranu, nie przed. Gdy się nie uda, ekran
+       zostaje użyteczny — pokazuje, co ma lokalnie, i mówi, że nie ma sieci. */
+    const fb = await polaczZBaza();
+    if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
+    else {
+      this.laduje = false;
+      this.komunikat = "Brak połączenia z bazą.";
+      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      return;
+    }
+
+
+    const [snapDom, snapUst, snapPref] = await Promise.all([
+      get(ref(db, `domy/${kodDomu}/domownicy`)),
+      get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      get(ref(db, `domy/${kodDomu}/preferencje`)),
+    ]);
+    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+    this.domownicy = Object.entries(snapDom.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
+
+    const u = snapUst.val() || {};
+    this.dlugoscOkresu = u.dlugoscOkresu || 7;
+    this.limitPowtorzen = u.limitPowtorzen ?? null;
+    this.kuchnia = u.kuchnia || { ...DOMYSLNA };
+    this.rytm = u.rytm || Object.fromEntries(
+      TYPY_POSILKOW.map(t => [t, { wlaczony: true, kto: this.domownicy.map(d => d.id) }])
+    );
+
+    // Osoba dodana po ostatnim zapisie ustawień nie może zniknąć z widoku.
+    for (const typ of TYPY_POSILKOW) {
+      if (!this.rytm[typ]) this.rytm[typ] = { wlaczony: true, kto: this.domownicy.map(d => d.id) };
+      this.rytm[typ].kto = (this.rytm[typ].kto || []).filter(id => this.domownicy.some(d => d.id === id));
+    }
+  },
+
+  /* Chwila zwłoki, żeby seria kliknięć nie robiła serii zapisów do bazy. */
+  zapisz() {
+    clearTimeout(this._t2);
+    this._t2 = setTimeout(async () => {
+      await set(ref(db, `domy/${kodDomu}/ustawienia`), {
+        dlugoscOkresu: this.dlugoscOkresu,
+        limitPowtorzen: this.limitPowtorzen,
+        rytm: this.rytm,
+        kuchnia: this.kuchnia,
+      });
+      this.komunikat = "Zapisane";
+    }, 400);
+  },
+
+  przelaczPosilek(typ) {
+    this.rytm[typ].wlaczony = !this.rytm[typ].wlaczony;
+    this.zapisz();
+    /* Wszystkie posiłki wyłączone — technicznie dozwolone, ale wtedy apka
+       nie ma co robić i lepiej to powiedzieć niż udawać, że wszystko gra. */
+    if (TYPY_POSILKOW.every(t => !this.rytm[t]?.wlaczony))
+      this.mrugnij("Wyłączyliście wszystko. Post czy pomyłka?");
+  },
+
+  przelaczOsobe(typ, id) {
+    const kto = this.rytm[typ].kto || [];
+    if (kto.includes(id)) {
+      // Posiłek bez ani jednej osoby nie ma sensu — wtedy po prostu go wyłącz.
+      if (kto.length === 1) this.rytm[typ].wlaczony = false;
+      this.rytm[typ].kto = kto.filter(x => x !== id);
+    } else {
+      this.rytm[typ].kto = [...kto, id];
+    }
+    this.zapisz();
+  },
+
+  przelaczNaczynie(id) {
+    const ma = this.kuchnia.naczynia || [];
+    this.kuchnia.naczynia = ma.includes(id) ? ma.filter(x => x !== id) : [...ma, id];
+    this.zapisz();
+  },
+
+  async kopiujKod() {
+    try {
+      await navigator.clipboard.writeText(this.kod);
+      this.mrugnij("Kod skopiowany");
+    } catch {
+      this.mrugnij("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie.");
+    }
+  },
+
+  async eksportuj() {
+    this.stanEksportu = "Zbieram…";
+    try {
+      const [snapW, snapP] = await Promise.all([
+        get(ref(db, `domy/${kodDomu}/wlasneDania`)),
+        get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
+      ]);
+      const dania = Object.values(snapW.val() || {});
+      if (!dania.length) { this.stanEksportu = "Nie dodaliście jeszcze żadnego własnego dania."; return; }
+      const paczka = {
+        apka: "Forkast",
+        pobrano: new Date().toISOString().slice(0, 10),
+        dania,
+        produktyWlasne: Object.values(snapP.val() || {}),
+      };
+      const blob = new Blob([JSON.stringify(paczka, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `forkast-nasze-dania-${paczka.pobrano}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      this.stanEksportu = `Pobrano ${dania.length} dań.`;
+    } catch {
+      this.stanEksportu = "Nie udało się pobrać — sprawdź internet i spróbuj ponownie.";
+    }
+  },
+
+  odswiezanie: false,
+
+  /* Kasuje pamięć podręczną i wyrejestrowuje service workera, po czym przeładowuje.
+     Na telefonie nie ma innego sposobu, żeby wymusić pobranie wszystkiego od nowa —
+     „odśwież mocno” istnieje tylko na laptopie. */
+  async odswiezWszystko() {
+    this.odswiezanie = true;
+    try {
+      if ("caches" in window) {
+        const klucze = await caches.keys();
+        await Promise.all(klucze.map(k => caches.delete(k)));
+      }
+      if ("serviceWorker" in navigator) {
+        const rej = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(rej.map(r => r.unregister()));
+      }
+    } catch { /* i tak przeładowujemy */ }
+    location.reload(true);
+  },
+
+  zapomnij() {
+    localStorage.removeItem("forkast-dom");
+    location.href = "index.html";
+  },
+
+  /* Dwustopniowe, bo nieodwracalne. Drugie dotknięcie w ciągu pięciu sekund kasuje. */
+  async usunStol() {
+    if (!this.usuwanieUzbrojone) {
+      this.usuwanieUzbrojone = true;
+      clearTimeout(this._tu);
+      this._tu = setTimeout(() => { this.usuwanieUzbrojone = false; }, 5000);
+      return;
+    }
+    clearTimeout(this._tu);
+    this.usuwanieUzbrojone = false;
+    try {
+      await remove(ref(db, `domy/${kodDomu}`));
+      localStorage.removeItem("forkast-dom");
+      location.href = "index.html";
+    } catch {
+      this.mrugnij("Nie udało się usunąć — sprawdź internet i spróbuj ponownie.");
+    }
+  },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

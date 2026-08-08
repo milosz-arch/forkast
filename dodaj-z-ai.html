@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Dodaj przez AI — Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+      x-data="ekranAI" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<div id="pomoc"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden md:flex-row">
+
+  <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
+              md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
+       aria-label="Nawigacja główna">
+    <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
+              text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
+    <template x-for="z in zakladki" :key="z.id">
+      <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+         :aria-disabled="zamknieta(z.id) ? 'true' : null"
+         class="flex h-12 items-center gap-3 rounded-xl px-3.5 no-underline transition
+                hover:bg-stone-100 dark:hover:bg-stone-800"
+         :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                                 : 'text-stone-500 dark:text-stone-400'">
+        <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+        <span x-text="z.nazwa"></span>
+      </a>
+    </template>
+    <a href="ustawienia.html"
+       class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
+              transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+      <svg class="ikona"><use href="#i-ustawienia"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+
+    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                   from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
+                   shadow-lg shadow-emerald-900/20 md:rounded-none"
+            style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight">Dodaj przez AI</h1>
+      <p class="mt-1 max-w-[38ch] text-[0.85rem] leading-snug text-white/85">
+        Nazwa, link, zdjęcie przepisu — albo zdjęcie samego talerza.
+      </p>
+      <button type="button" @click="pomocKlucz = 'dodawanie'"
+              aria-label="Jak to działa"
+              class="absolute flex size-11 items-center justify-center rounded-full border
+                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     backdrop-blur-md transition active:scale-95"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
+
+      <a href="ustawienia.html" aria-label="Ustawienia"
+         class="absolute flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95"
+         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
+      </a>
+    </header>
+
+    <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
+          style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+      <div class="mx-auto w-full max-w-lg">
+
+        <!-- ================= WEJŚCIE ================= -->
+        <div x-show="krok === 'wejscie'" x-transition>
+          <div class="mb-4 grid grid-cols-3 gap-2" role="group" aria-label="Sposób dodania">
+            <template x-for="t in TRYBY" :key="t.id">
+              <button type="button" @click="tryb = t.id" :aria-pressed="(tryb === t.id).toString()"
+                      class="min-h-[48px] rounded-xl border-2 px-2 text-[0.82rem] font-semibold transition"
+                      :class="tryb === t.id
+                        ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                        : 'border-stone-200 dark:border-stone-700'">
+                <span x-text="t.etykieta"></span>
+              </button>
+            </template>
+          </div>
+
+          <input x-show="tryb === 'nazwa'" type="text" x-model="nazwa" placeholder="np. Naleśniki z dżemem"
+                 class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+                        outline-none transition focus:border-emerald-600 focus:ring-4
+                        focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+
+          <input x-show="tryb === 'link'" type="url" x-model="url" placeholder="https://…"
+                 class="min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
+                        outline-none transition focus:border-emerald-600 focus:ring-4
+                        focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+
+          <div x-show="tryb === 'zdjecia'">
+            <label class="flex min-h-[110px] w-full cursor-pointer flex-col items-center justify-center
+                          rounded-2xl border-2 border-dashed border-stone-300 px-4 text-center
+                          dark:border-stone-700">
+              <input type="file" accept="image/*" multiple class="hidden" @change="wczytajZdjecia($event)">
+              <span class="font-semibold" x-text="opisZdjec"></span>
+              <span class="mt-1 text-[0.78rem] text-stone-400">
+                Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.
+              </span>
+              <span class="mt-0.5 text-[0.72rem] text-stone-400">
+                Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.
+              </span>
+            </label>
+            <div x-show="zdjecia.length" class="mt-3 flex flex-wrap gap-2">
+              <template x-for="(z, i) in zdjecia" :key="i">
+                <img :src="z.url" alt="" class="size-16 rounded-lg object-cover">
+              </template>
+            </div>
+          </div>
+
+          <button type="button" @click="wyslij()" :disabled="!gotoweDoWyslania"
+                  class="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                         bg-emerald-700 font-bold text-white transition active:scale-[0.98]
+                         disabled:opacity-40 dark:bg-emerald-600">
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Wyślij do AI
+          </button>
+
+          <a href="formularz.html" class="mt-3 flex min-h-[44px] w-full items-center justify-center
+             text-[0.85rem] font-semibold text-stone-500 no-underline dark:text-stone-400">
+            Wolisz wpisać ręcznie?
+          </a>
+        </div>
+
+        <!-- ================= CZEKANIE =================
+             Etapy zamiast kręcącego się kółka. Kółko wygląda tak samo przy trzech
+             sekundach i przy zawieszeniu — a to najdłuższe czekanie w aplikacji
+             i jedyne miejsce, w którym człowiek może uznać, że coś się zepsuło.
+
+             Etapy są szacunkiem, nie pomiarem: nie wiemy, kiedy model przechodzi
+             z czytania do pisania. Dlatego pasek rośnie skokowo i nie udaje,
+             że zna postęp co do procenta. -->
+        <div x-show="krok === 'czekam'" x-transition class="py-8">
+          <div class="etapy-pasek mx-auto mb-6 h-2 max-w-xs overflow-hidden rounded-full
+                      bg-stone-200 dark:bg-stone-800">
+            <i :style="`width:${(etap + 1) / ETAPY.length * 100}%`"></i>
+          </div>
+
+          <ul class="mx-auto max-w-xs space-y-3">
+            <template x-for="(e, i) in ETAPY" :key="e.tekst">
+              <li class="flex items-center gap-3 transition-opacity"
+                  :class="[i === etap ? 'etap-teraz' : '', i > etap ? 'opacity-35' : '']">
+                <span class="flex size-5 shrink-0 items-center justify-center">
+                  <svg x-show="i < etap" class="ikona" style="width:1.1rem;height:1.1rem;stroke-width:3"
+                       :class="'text-emerald-600 dark:text-emerald-400'"><use href="#i-ptaszek"/></svg>
+                  <span x-show="i >= etap" class="kropka size-2.5 rounded-full"
+                        :class="i === etap ? 'bg-emerald-600 dark:bg-emerald-400'
+                                           : 'bg-stone-300 dark:bg-stone-600'"></span>
+                </span>
+                <span class="text-[0.92rem]"
+                      :class="i === etap ? 'font-semibold' : 'text-stone-500 dark:text-stone-400'"
+                      x-text="e.tekst"></span>
+              </li>
+            </template>
+          </ul>
+
+          <p class="mt-6 text-center text-[0.8rem] text-stone-400" x-text="podpowiedzCzekania"></p>
+        </div>
+
+        <!-- ================= BŁĄD ================= -->
+        <div x-show="krok === 'blad'" x-transition class="space-y-3">
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.9rem] text-red-800
+                      dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200" x-text="blad"></div>
+          <button type="button" @click="krok = 'wejscie'"
+                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-emerald-700
+                         font-bold text-white dark:bg-emerald-600">Spróbuj jeszcze raz</button>
+        </div>
+
+        <!-- ================= PODGLĄD PRZED ZAPISEM =================
+             Nic nie trafia do bazy, dopóki człowiek tego nie zobaczy i nie kliknie.
+             To jedyny punkt kontroli nad treścią, której nie widzimy wcześniej:
+             w trybie „link” to AI otwiera obcą stronę, więc jej treść wpływa
+             na to, co wróci. Cała treść wstawiana przez x-text, nigdy jako HTML. -->
+        <div x-show="krok === 'podglad'" x-transition class="space-y-3">
+          <h2 class="text-lg font-bold">Sprawdź, zanim zapiszę</h2>
+
+          <template x-for="d in wynik.dania" :key="d.nazwa">
+            <article class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                            dark:border-stone-800 dark:bg-stone-900">
+              <h3 class="text-[1.15rem] font-bold leading-snug" x-text="d.nazwa"></h3>
+              <p class="mt-1 text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+                        text-emerald-700 dark:text-emerald-400"
+                 x-text="d.typy.join(' · ') + ' · na ' + d.porcje + ' os.'"></p>
+              <ul class="mt-3 space-y-1.5">
+                <template x-for="s in d.skladniki" :key="s.produkt">
+                  <li class="flex justify-between text-[0.9rem] text-stone-600 dark:text-stone-400">
+                    <span x-text="s.produkt"></span>
+                    <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
+                          x-text="s.gramy + ' g'"></span>
+                  </li>
+                </template>
+              </ul>
+            </article>
+          </template>
+
+          <template x-for="u in [...wynik.bledy, ...wynik.ostrzezenia]" :key="u">
+            <p class="rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
+                      dark:bg-amber-900/25 dark:text-amber-200" x-text="u"></p>
+          </template>
+
+          <p x-show="!wynik.dania.length" class="text-[0.9rem] text-stone-500">
+            Nie ma tu ani jednego dania, które da się zapisać.
+          </p>
+
+          <button type="button" x-show="wynik.dania.length" @click="zatwierdz()"
+                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-emerald-700
+                         font-bold text-white dark:bg-emerald-600">Dodaj do moich dań</button>
+          <button type="button" @click="odrzuc()"
+                  class="flex min-h-[52px] w-full items-center justify-center rounded-xl border-2
+                         border-stone-200 font-bold dark:border-stone-700">Odrzuć</button>
+        </div>
+
+        <!-- ================= ZAPISANE ================= -->
+        <div x-show="krok === 'zapisane'" x-transition
+             class="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-md
+                    dark:border-stone-800 dark:bg-stone-900">
+          <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-50
+                      dark:bg-emerald-500/10">
+            <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-ptaszek"/></svg>
+          </div>
+          <h2 class="mt-4 text-xl font-bold">Zapisane</h2>
+          <p class="mt-2 text-[0.9rem] text-stone-500 dark:text-stone-400" x-text="podsumowanie"></p>
+          <button type="button" @click="odNowa()"
+                  class="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-xl
+                         bg-emerald-700 font-bold text-white dark:bg-emerald-600">Dodaj kolejne</button>
+          <a href="talia.html" class="mt-2.5 flex min-h-[52px] w-full items-center justify-center
+             rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700">
+            Wróć do dań</a>
+        </div>
+      </div>
+    </main>
+
+    <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
+                dark:border-stone-800 dark:bg-stone-950/95"
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+      <div class="mx-auto flex h-16 max-w-lg">
+        <template x-for="z in zakladki" :key="z.id">
+          <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+             :aria-disabled="zamknieta(z.id) ? 'true' : null"
+             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+                    font-semibold no-underline transition"
+             :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                                     : 'text-stone-500 dark:text-stone-400'">
+            <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+            <span x-text="z.nazwa"></span>
+          </a>
+        </template>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<script type="module">
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+/* Uchwyty do bazy wypełniane w init() po udanym połączeniu. Deklarowane tutaj,
+   bo używa ich cały ekran — a przypisywane dopiero wtedy, gdy SDK naprawdę się
+   pobrał. Dopóki są puste, ekran działa na tym, co ma w pamięci telefonu. */
+let db, ref, get, set, remove, push, update, onValue;
+
+import { stanPoczatkowy } from "./postep.js";
+import { POMOC } from "./pomoc.js";
+import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
+import { parsujOdpowiedz } from "./parser.js";
+import { zbudujPrompt, zbudujPromptZLinku, zbudujPromptZeZdjec } from "./prompt.js";
+import { opisKuchni } from "./kuchnia.js";
+import { PRODUKTY } from "./produkty.js";
+
+
+const kodDomu = kodStolu();
+
+const MAKS_ZDJEC = 4;
+const slug = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/* 800 px w zupełności wystarcza, żeby model odczytał tekst ze zrzutu ekranu.
+   Mniejszy obraz to mniej tokenów, więc i szybsza odpowiedź, i mniejsze ryzyko
+   przekroczenia 10-sekundowego limitu darmowej funkcji Netlify. */
+async function skompresuj(plik, maxSzer = 800, jakosc = 0.65) {
+  const bitmap = await createImageBitmap(plik);
+  const skala = Math.min(1, maxSzer / bitmap.width);
+  const w = Math.round(bitmap.width * skala), h = Math.round(bitmap.height * skala);
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+  const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", jakosc));
+  const bajty = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < bajty.length; i++) bin += String.fromCharCode(bajty[i]);
+  return { mimeType: "image/jpeg", data: btoa(bin), url: URL.createObjectURL(blob) };
+}
+
+zarejestrujPrzeciaganie(Alpine);
+
+Alpine.data("ekranAI", () => ({
+  POMOC,
+  pomocKlucz: null,
+
+  ...danePowloki({ ekran: "dodaj", tytul: "Dodaj przez AI", opis: "" }),
+
+  TRYBY: [
+    { id: "nazwa",   etykieta: "Nazwa dania" },
+    { id: "link",    etykieta: "Link" },
+    { id: "zdjecia", etykieta: "Zdjęcia" },
+  ],
+  tryb: "nazwa",
+  krok: "wejscie",
+  etap: 0,
+  ETAPY: [],
+  podpowiedzCzekania: "",
+  _etapy: null,
+  nazwa: "", url: "",
+  zdjecia: [],
+  opisZdjec: "Dotknij, żeby wybrać zdjęcia",
+  slownik: [],
+  kuchniaTekst: "",
+  wynik: { dania: [], bledy: [], ostrzezenia: [], noweProdukty: [] },
+  blad: "",
+  podsumowanie: "",
+
+  get gotoweDoWyslania() {
+    if (this.tryb === "nazwa") return this.nazwa.trim().length > 0;
+    if (this.tryb === "link") return this.url.trim().length > 0;
+    return this.zdjecia.length > 0;
+  },
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    if (!kodDomu) { pokazBrakStolu(); return; }
+    this.initPowloka();
+
+    /* Połączenie z bazą PO starcie ekranu, nie przed. Gdy się nie uda, ekran
+       zostaje użyteczny — pokazuje, co ma lokalnie, i mówi, że nie ma sieci. */
+    const fb = await polaczZBaza();
+    if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
+    else {
+      this.laduje = false;
+      this.komunikat = "Brak połączenia z bazą.";
+      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      return;
+    }
+
+
+    const [snapProd, snapUst, snapPref] = await Promise.all([
+      get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
+      get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      get(ref(db, `domy/${kodDomu}/preferencje`)),
+    ]);
+    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+    this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
+    this.kuchniaTekst = opisKuchni((snapUst.val() || {}).kuchnia);
+  },
+
+  /* Po kolei, nie wszystkie naraz: telefon przetwarzający cztery zdjęcia
+     równocześnie potrafi przestać odpowiadać. Zły plik jest pomijany zamiast
+     zatrzymywać resztę — wcześniej jeden HEIC wieszał całą partię. */
+  async wczytajZdjecia(e) {
+    const pliki = [...e.target.files].slice(0, MAKS_ZDJEC);
+    this.zdjecia = [];
+    for (let i = 0; i < pliki.length; i++) {
+      this.opisZdjec = `Przetwarzam zdjęcie ${i + 1} z ${pliki.length}…`;
+      try { this.zdjecia.push(await skompresuj(pliki[i])); }
+      catch (err) { console.warn("Pominięto zdjęcie:", err); }
+    }
+    this.opisZdjec = this.zdjecia.length
+      ? `Wybrano ${this.zdjecia.length} — dotknij, żeby zmienić`
+      : "Nie udało się odczytać żadnego zdjęcia — spróbuj innych";
+  },
+
+  budujPrompt() {
+    if (this.tryb === "nazwa") return zbudujPrompt([this.nazwa.trim()], this.slownik, [], null, this.kuchniaTekst);
+    if (this.tryb === "link") return zbudujPromptZLinku(this.url.trim(), this.slownik, [], null, this.kuchniaTekst);
+    return zbudujPromptZeZdjec(this.slownik, [], null, this.kuchniaTekst);
+  },
+
+  /* Etapy dobrane pod tryb: przy zdjęciach dochodzi odczyt obrazu, który jest
+     najdłuższą częścią i najczęstszą przyczyną przekroczenia limitu czasu. */
+  ustawEtapy() {
+    this.ETAPY = this.tryb === "zdjecia"
+      ? [{ tekst: "Wysyłam zdjęcia", ms: 1200 },
+         { tekst: "AI odczytuje obraz", ms: 6000 },
+         { tekst: "Zapisuje przepis", ms: 5000 },
+         { tekst: "Sprawdzam składniki", ms: 3000 }]
+      : this.tryb === "link"
+      ? [{ tekst: "Otwieram stronę", ms: 2500 },
+         { tekst: "AI czyta przepis", ms: 6000 },
+         { tekst: "Sprawdzam składniki", ms: 3000 }]
+      : [{ tekst: "Pytam AI", ms: 2000 },
+         { tekst: "Powstaje przepis", ms: 6000 },
+         { tekst: "Sprawdzam składniki", ms: 3000 }];
+    this.etap = 0;
+    this.podpowiedzCzekania = "";
+
+    /* Ostatni etap nie przeskakuje sam — zostaje, dopóki odpowiedź nie wróci.
+       Pasek dobity do stu procent przy trwającym czekaniu byłby kłamstwem. */
+    let i = 0;
+    const dalej = () => {
+      if (i >= this.ETAPY.length - 1) {
+        this.podpowiedzCzekania = "Trwa dłużej niż zwykle, ale jeszcze liczy.";
+        return;
+      }
+      this._etapy = setTimeout(() => { this.etap = ++i; dalej(); }, this.ETAPY[i].ms);
+    };
+    dalej();
+  },
+
+  zatrzymajEtapy() { clearTimeout(this._etapy); this._etapy = null; },
+
+  async wyslij() {
+    this.krok = "czekam";
+    this.ustawEtapy();
+    try {
+      const odp = await fetch("/.netlify/functions/zapytaj-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: this.budujPrompt(),
+          kodDomu,
+          obrazy: this.tryb === "zdjecia"
+            ? this.zdjecia.map(z => ({ mimeType: z.mimeType, data: z.data })) : [],
+        }),
+      });
+
+      /* Odpowiedź czytamy najpierw jako tekst. Gdy funkcja przekroczy limit
+         czasu, Netlify odsyła stronę błędu w HTML — próba czytania tego jako
+         JSON wywalała się i użytkownik dostawał komunikat o internecie,
+         choć internet działał. */
+      const surowa = await odp.text();
+      let json = null;
+      try { json = JSON.parse(surowa); } catch { /* nie JSON — obsłużone niżej */ }
+
+      if (!json) {
+        this.blad = this.tryb === "zdjecia"
+          ? "AI nie zdążyło przeczytać tych zdjęć w wyznaczonym czasie. Spróbuj z mniejszą liczbą — najlepiej jednym lub dwoma."
+          : "AI nie zdążyło odpowiedzieć w wyznaczonym czasie. Spróbuj jeszcze raz.";
+        this.zatrzymajEtapy();
+        this.krok = "blad"; return;
+      }
+      if (!odp.ok) { this.blad = json.blad || "Coś poszło nie tak po stronie AI."; this.krok = "blad"; return; }
+
+      this.wynik = parsujOdpowiedz(json.tekst, this.slownik);
+      this.zatrzymajEtapy();
+      this.krok = "podglad";
+    } catch {
+      this.zatrzymajEtapy();
+      this.blad = "Nie udało się połączyć — sprawdź internet i spróbuj ponownie.";
+      this.krok = "blad";
+    }
+  },
+
+  async zatwierdz() {
+    try {
+      for (const d of this.wynik.dania) {
+        const nowyRef = push(ref(db, `domy/${kodDomu}/wlasneDania`));
+        await set(nowyRef, d);
+        await set(ref(db, `domy/${kodDomu}/preferencje/${nowyRef.key}`), "lubie");
+      }
+      if (this.wynik.noweProdukty.length) {
+        const zmiany = {};
+        for (const p of this.wynik.noweProdukty) zmiany[slug(p.n)] = p;
+        await update(ref(db, `domy/${kodDomu}/produktyWlasne`), zmiany);
+      }
+
+      /* Easter egg: pięćdziesiąte własne danie. To moment, w którym apka
+         przestaje być cudzą talią, a staje się czyjąś książką kucharską. */
+      const licznik = Number(localStorage.getItem("forkast-wlasnych") || 0) + this.wynik.dania.length;
+      localStorage.setItem("forkast-wlasnych", String(licznik));
+
+      this.podsumowanie = licznik >= 50 && licznik - this.wynik.dania.length < 50
+        ? "Pięćdziesiąt własnych dań. To już nie apka, to Wasza książka kucharska."
+        : `${this.wynik.dania.length} ${this.wynik.dania.length === 1 ? "danie trafiło" : "dania trafiły"} do Waszych dań.`;
+      this.krok = "zapisane";
+    } catch {
+      this.blad = "Nie udało się zapisać — sprawdź internet i spróbuj ponownie.";
+      this.zatrzymajEtapy();
+      this.krok = "blad";
+    }
+  },
+
+  odrzuc() {
+    this.wynik = { dania: [], bledy: [], ostrzezenia: [], noweProdukty: [] };
+    this.krok = "wejscie";
+  },
+
+  odNowa() {
+    this.nazwa = ""; this.url = ""; this.zdjecia = [];
+    this.opisZdjec = "Dotknij, żeby wybrać zdjęcia";
+    this.odrzuc();
+  },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

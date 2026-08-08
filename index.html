@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+      x-data="ekranWejscie" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden">
+
+  <header class="shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                 from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-center text-white
+                 shadow-lg shadow-emerald-900/20"
+          style="padding-top:calc(1.6rem + env(safe-area-inset-top,0px)); padding-bottom:1.75rem">
+    <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+    <h1 class="mt-2 text-[1.8rem] font-bold leading-tight tracking-tight">Cześć, tu Forkast</h1>
+    <p class="mx-auto mt-2 max-w-[34ch] text-[0.9rem] leading-snug text-white/85">
+      Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?
+    </p>
+  </header>
+
+  <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-6"
+        style="padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px))">
+    <div class="mx-auto w-full max-w-md">
+
+      <!-- ================= START ================= -->
+      <section x-show="krok === 'start'" x-transition class="space-y-3">
+        <button type="button" @click="nowyStol()" :disabled="zajety"
+                class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
+                       text-[1.05rem] font-bold text-white transition active:scale-[0.98]
+                       disabled:opacity-50 dark:bg-emerald-600"
+                x-text="zajety ? 'Zakładam…' : 'Nakrywam nowy stół'"></button>
+
+        <button type="button" @click="krok = 'kod'"
+                class="flex min-h-[56px] w-full items-center justify-center rounded-xl border-2
+                       border-stone-200 bg-white text-[1.05rem] font-bold transition active:scale-[0.98]
+                       dark:border-stone-700 dark:bg-stone-900">Dosiadam się — mam kod</button>
+
+        <p class="pt-3 text-[0.82rem] italic leading-relaxed text-stone-500 dark:text-stone-400">
+          Forkast zapisuje tylko to, co sam wpiszesz: imiona albo pseudonimy osób przy stole,
+          czego nie jecie i jakie dania lubicie. Dane leżą w bazie Google (Firebase) i możesz
+          je skasować jednym przyciskiem w każdej chwili.
+          <a href="mailto:buskomilosz@gmail.com?subject=Forkast%20%E2%80%94%20co%C5%9B%20nie%20dzia%C5%82a"
+             class="text-emerald-700 underline underline-offset-2 dark:text-emerald-400">Coś nie działa? Napisz do mnie</a>
+        </p>
+      </section>
+
+      <!-- ================= WPISANIE KODU ================= -->
+      <section x-show="krok === 'kod'" x-transition class="space-y-3">
+        <label for="poleKodu" class="block text-[0.9rem] font-semibold">Kod stołu</label>
+        <input id="poleKodu" type="text" x-model="wpisanyKod" maxlength="8" autocomplete="off"
+               autocapitalize="characters" placeholder="np. NH7XOO"
+               class="min-h-[56px] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                      text-center text-[1.4rem] font-bold tracking-[0.2em] uppercase outline-none
+                      transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15
+                      dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+
+        <p x-show="bladKodu" x-transition
+           class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.88rem] text-red-800
+                  dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200" x-text="bladKodu"></p>
+
+        <button type="button" @click="dolacz()" :disabled="sprawdzam"
+                class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
+                       font-bold text-white transition active:scale-[0.98] disabled:opacity-50
+                       dark:bg-emerald-600"
+                x-text="sprawdzam ? 'Sprawdzam…' : 'Dołącz'"></button>
+        <button type="button" @click="krok = 'start'; bladKodu = ''"
+                class="flex min-h-[44px] w-full items-center justify-center text-[0.85rem]
+                       text-stone-500 dark:text-stone-400">Wróć</button>
+      </section>
+
+      <!-- ================= OSOBY PRZY STOLE ================= -->
+      <section x-show="krok === 'osoby'" x-transition class="space-y-4">
+
+        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5
+                    dark:border-emerald-500/20 dark:bg-emerald-500/10">
+          <div class="flex items-center gap-4">
+            <div class="min-w-0 flex-1">
+              <p class="text-[0.8rem] font-semibold text-stone-600 dark:text-stone-400">Kod tego stołu</p>
+              <p class="zaznaczalne mt-0.5 text-[1.6rem] font-bold tracking-[0.22em] text-emerald-800
+                        dark:text-emerald-300" x-text="kodDomu"></p>
+              <p x-show="smacznyKod" class="mt-1 text-[0.8rem] font-semibold text-emerald-700
+                        dark:text-emerald-400" x-text="smacznyKod"></p>
+            </div>
+            <button type="button" @click="kopiuj()"
+                    class="flex min-h-[44px] shrink-0 items-center rounded-xl border-2
+                           border-emerald-700/20 bg-white px-4 text-[0.85rem] font-bold text-emerald-800
+                           transition active:scale-95 dark:border-emerald-400/30 dark:bg-stone-900
+                           dark:text-emerald-300">Kopiuj</button>
+          </div>
+          <p class="mt-3 text-[0.8rem] text-stone-600 dark:text-stone-400">
+            Podaj go tym, którzy siadają z Wami do stołu. Zapisz, zanim zamkniesz kartę.
+          </p>
+        </div>
+
+        <p class="text-[0.9rem] text-stone-600 dark:text-stone-400">
+          Kto siada do stołu? Dodaj przynajmniej siebie — resztę możesz dopisać kiedy chcesz.
+        </p>
+
+        <ul class="space-y-2">
+          <template x-for="d in domownicy" :key="d.id">
+            <li class="flex min-h-[56px] items-center gap-3 rounded-xl border border-stone-100
+                       bg-white px-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+              <span class="flex-1 font-medium" x-text="d.imie"></span>
+              <button type="button" @click="usun(d)" :aria-label="`Usuń ${d.imie} ze stołu`"
+                      class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
+                             transition active:bg-stone-100 dark:active:bg-stone-800">
+                <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
+              </button>
+            </li>
+          </template>
+        </ul>
+
+        <div class="flex gap-2">
+          <input type="text" x-model="noweImie" placeholder="Imię lub pseudonim" autocomplete="off"
+                 @keydown.enter="dodaj()"
+                 class="min-h-[52px] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
+                        text-[17px] outline-none transition focus:border-emerald-600
+                        dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+          <button type="button" @click="dodaj()"
+                  class="min-h-[52px] shrink-0 rounded-xl bg-emerald-700 px-6 font-bold text-white
+                         transition active:scale-95 dark:bg-emerald-600">Dodaj</button>
+        </div>
+
+        <p x-show="bladOsoby" class="text-[0.85rem] text-red-700 dark:text-red-400" x-text="bladOsoby"></p>
+
+        <a href="talia.html" x-show="domownicy.length"
+           class="flex min-h-[56px] w-full items-center justify-center rounded-xl bg-emerald-700
+                  text-[1.05rem] font-bold text-white no-underline dark:bg-emerald-600">
+          Dalej — wybierz dania
+        </a>
+        <p x-show="!domownicy.length" class="text-center text-[0.85rem] text-stone-400">
+          Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.
+        </p>
+
+        <div class="pt-2">
+          <button type="button" @click="zapomnij()"
+                  class="flex min-h-[44px] w-full items-center justify-center text-[0.82rem]
+                         text-stone-500 dark:text-stone-400">
+            To nie mój stół — zacznij od nowa
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div x-show="toast" x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
+     class="pointer-events-none fixed inset-x-0 bottom-8 z-50 flex justify-center px-6">
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-[0.85rem] font-semibold text-white shadow-xl
+            dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
+</div>
+
+<script type="module">
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+/* Uchwyty do bazy wypełniane w init() po udanym połączeniu. Deklarowane tutaj,
+   bo używa ich cały ekran — a przypisywane dopiero wtedy, gdy SDK naprawdę się
+   pobrał. Dopóki są puste, ekran działa na tym, co ma w pamięci telefonu. */
+let db, ref, get, set, remove, push, update, onValue;
+
+import { danePowloki } from "./powloka.js";
+import { generujKodDomu, znormalizujKod, kodPoprawny } from "./dom.js";
+
+
+/* Easter egg: kod stołu, który wylosował coś jadalnego. Przy 36^6 kombinacjach
+   trafia się rzadko, więc kto to zobaczy, ma powód do drobnej satysfakcji. */
+const SMACZNE = ["JEM", "ZUPA", "SOL", "MAK", "BOB", "RYZ", "CHLEB", "KASZA"];
+
+Alpine.data("ekranWejscie", () => ({
+  ...danePowloki({ ekran: "wejscie", tytul: "Forkast", opis: "" }),
+
+  krok: "start",
+  kodDomu: null,
+  wpisanyKod: "",
+  domownicy: [],
+  noweImie: "",
+  bladKodu: "",
+  bladOsoby: "",
+  zajety: false,
+  sprawdzam: false,
+  bledneProby: 0,
+  blokadaDo: 0,
+  smacznyKod: "",
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    this.initPowloka();
+
+    /* Połączenie z bazą PO starcie ekranu, nie przed. Gdy się nie uda, ekran
+       zostaje użyteczny — pokazuje, co ma lokalnie, i mówi, że nie ma sieci. */
+    const fb = await polaczZBaza();
+    if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
+    else {
+      this.laduje = false;
+      this.komunikat = "Brak połączenia z bazą.";
+      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      return;
+    }
+
+
+    const zapamietany = localStorage.getItem("forkast-dom");
+    if (zapamietany && kodPoprawny(zapamietany)) {
+      /* W try: ekran wejścia to jedyne miejsce, z którego da się wyjść
+         z każdego błędu — nie może sam być tym, co się psuje. */
+      try { this.wejdz(zapamietany); }
+      catch (e) { console.error("Nie udało się wejść do zapamiętanego stołu:", e); }
+    }
+  },
+
+  wejdz(kod) {
+    this.kodDomu = kod;
+    const trafione = SMACZNE.find(w => kod.includes(w));
+    this.smacznyKod = trafione ? `Twój kod ma w środku „${trafione}”. Dobry znak.` : "";
+    this.krok = "osoby";
+    onValue(ref(db, `domy/${kod}/domownicy`), snap => {
+      this.domownicy = Object.entries(snap.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
+    });
+  },
+
+  async nowyStol() {
+    this.zajety = true;
+    try {
+      /* Losujemy i sprawdzamy w bazie, że akurat ten nikomu nie trafił —
+         przy 36^6 to formalność, ale sprawdzamy, a nie zakładamy. */
+      let kod, wolny = false;
+      for (let i = 0; i < 5 && !wolny; i++) {
+        kod = generujKodDomu();
+        wolny = !(await get(ref(db, `domy/${kod}`))).exists();
+      }
+      /* Bez tego sprawdzenia pętla mogła wyjść z wolny === false, a kod i tak
+         zostawał użyty — nowa osoba lądowała w ISTNIEJĄCYM CUDZYM stole,
+         z cudzymi imionami i cudzym jadłospisem. Prawdopodobieństwo przy
+         dziesięciu domach jest znikome, ale skutkiem jest pokazanie komuś
+         cudzych danych, więc ta ścieżka nie może zostać nieosłonięta. */
+      if (!wolny) {
+        this.mrugnij("Nie udało się wylosować wolnego kodu — spróbuj jeszcze raz.");
+        return;
+      }
+      await set(ref(db, `domy/${kod}/utworzono`), Date.now());
+      localStorage.setItem("forkast-dom", kod);
+      this.wejdz(kod);
+    } catch {
+      this.mrugnij("Nie udało się założyć stołu — sprawdź internet.");
+    } finally {
+      this.zajety = false;
+    }
+  },
+
+  /* Po trzech błędnych próbach każda kolejna czeka coraz dłużej. To nie zatrzyma
+     skryptu zgadującego kody — pełna ochrona wymagałaby serwera i jest świadomie
+     odłożona — ale zatrzymuje przypadkowe wklepywanie i kosztuje tyle co nic. */
+  async dolacz() {
+    const teraz = Date.now();
+    if (teraz < this.blokadaDo) {
+      this.bladKodu = `Za dużo prób — odczekaj ${Math.ceil((this.blokadaDo - teraz) / 1000)} s.`;
+      return;
+    }
+    const kod = znormalizujKod(this.wpisanyKod);
+    this.bladKodu = "";
+
+    const nieudana = (tekst) => {
+      this.bledneProby++;
+      if (this.bledneProby >= 3) {
+        const czekaj = Math.min(2000 * 2 ** (this.bledneProby - 3), 30000);
+        this.blokadaDo = Date.now() + czekaj;
+        tekst += ` (kolejna próba za ${Math.ceil(czekaj / 1000)} s)`;
+      }
+      this.bladKodu = tekst;
+    };
+
+    if (!kodPoprawny(kod)) {
+      nieudana("To nie wygląda na poprawny kod — sprawdź, czy nie brakuje znaku.");
+      return;
+    }
+
+    this.sprawdzam = true;
+    try {
+      const snap = await get(ref(db, `domy/${kod}`));
+      if (!snap.exists()) { nieudana("Nie ma stołu z takim kodem. Sprawdź u osoby, która go wysłała."); return; }
+      this.bledneProby = 0;
+      localStorage.setItem("forkast-dom", kod);
+      this.wejdz(kod);
+    } catch {
+      this.bladKodu = "Nie udało się sprawdzić — sprawdź internet.";
+    } finally {
+      this.sprawdzam = false;
+    }
+  },
+
+  async dodaj() {
+    const imie = this.noweImie.trim();
+    this.bladOsoby = "";
+    if (!imie) { this.bladOsoby = "Wpisz imię albo pseudonim."; return; }
+    if (imie.length > 30) { this.bladOsoby = "Za długie — maksymalnie 30 znaków."; return; }
+    if (this.domownicy.some(d => d.imie.toLowerCase() === imie.toLowerCase())) {
+      this.bladOsoby = "Ktoś taki już siedzi przy stole."; return;
+    }
+    try {
+      const nowyRef = push(ref(db, `domy/${this.kodDomu}/domownicy`));
+      await set(nowyRef, { imie });
+      this.noweImie = "";
+      this.komunikat = `${imie} dołącza do stołu`;
+    } catch {
+      this.bladOsoby = "Nie udało się dodać — sprawdź internet.";
+    }
+  },
+
+  async usun(d) {
+    try { await remove(ref(db, `domy/${this.kodDomu}/domownicy/${d.id}`)); }
+    catch { this.mrugnij("Nie udało się usunąć — sprawdź internet."); }
+  },
+
+  async kopiuj() {
+    try { await navigator.clipboard.writeText(this.kodDomu); this.mrugnij("Kod skopiowany"); }
+    catch { this.mrugnij("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie."); }
+  },
+
+  zapomnij() {
+    localStorage.removeItem("forkast-dom");
+    this.kodDomu = null;
+    this.domownicy = [];
+    this.wpisanyKod = "";
+    this.bladKodu = "";
+    this.bledneProby = 0;
+    this.blokadaDo = 0;
+    this.krok = "start";
+  },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Wdrożenie Forkasta to przeciągnięcie paczki, bez żadnego budowania (Miłosz nie ma
+# gita ani terminala). Przy takim wdrożeniu Netlify publikuje pliki "jak są" i sam
+# z siebie nie wie, że folder netlify/functions/ ma być czymś więcej niż zwykłym
+# folderem. Ten plik mu to mówi.
+#
+# publish = "." bo pliki strony leżą w korzeniu paczki, nie w podfolderze typu dist/.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"

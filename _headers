@@ -1,0 +1,28 @@
+# Nagłówki dla Netlify. Bez tego przeglądarka może trzymać HTML i pliki modułów
+# w swojej własnej pamięci podręcznej — a wtedy nawet service worker pytający
+# o sieć dostaje starą odpowiedź, bo fetch() domyślnie respektuje cache przeglądarki.
+#
+# To była prawdopodobna przyczyna sytuacji „wysyłam link, a druga osoba widzi starą
+# wersję" z 3 sierpnia.
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/ikony.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Biblioteki i ikony mogą leżeć długo — zmieniają się tylko przy wymianie pliku
+/lib/*
+  Cache-Control: public, max-age=604800
+
+/*.png
+  Cache-Control: public, max-age=604800

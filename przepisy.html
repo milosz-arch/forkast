@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Przepisy — Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+      x-data="ekranPrzepisy" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<div id="pomoc"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden md:flex-row">
+
+  <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
+              md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
+       aria-label="Nawigacja główna">
+    <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
+              text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
+    <template x-for="z in zakladki" :key="z.id">
+      <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+         :aria-current="z.id === ekran ? 'page' : null"
+         :aria-disabled="zamknieta(z.id) ? 'true' : null"
+         class="flex h-12 items-center gap-3 rounded-xl px-3.5 no-underline transition"
+         :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                 : z.id === ekran
+                 ? 'bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+                 : 'text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'">
+        <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+        <span x-text="z.nazwa"></span>
+        <span x-show="z.id === ekran" class="ml-auto size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+      </a>
+    </template>
+    <a href="ustawienia.html"
+       class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
+              transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+      <svg class="ikona"><use href="#i-ustawienia"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+
+    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                   from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
+                   shadow-lg shadow-emerald-900/20 md:rounded-none"
+            style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+      <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
+              :aria-pressed="ekranSwieci.toString()"
+              :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
+                                       : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+              class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
+                     text-[0.66rem] font-bold backdrop-blur-md transition"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem"
+              :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
+                                  : 'border-white/40 bg-white/15 text-white/90'">
+        <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
+        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+      </button>
+      <button type="button" @click="pomocKlucz = 'przepisy'"
+              aria-label="Jak to działa"
+              class="absolute flex size-11 items-center justify-center rounded-full border
+                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     backdrop-blur-md transition active:scale-95"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
+
+      <a href="ustawienia.html" aria-label="Ustawienia"
+         class="absolute flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95"
+         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
+      </a>
+    </header>
+
+    <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
+          style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+      <div class="mx-auto w-full max-w-4xl">
+
+        <!-- Dodawanie przez AI jest jedną z najważniejszych funkcji, a dotąd dało
+             się do niego trafić tylko przez mały link na dole Dań. Przepisy to
+             jego naturalny dom: człowiek jest tu wtedy, gdy myśli o przepisach. -->
+        <div class="mb-4 grid gap-2.5 sm:grid-cols-2">
+          <a href="dodaj-z-ai.html"
+             class="flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-emerald-700
+                    font-bold text-white no-underline transition active:scale-[0.98] dark:bg-emerald-600">
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Dodaj przez AI
+          </a>
+          <a href="formularz.html"
+             class="flex min-h-[56px] items-center justify-center gap-2 rounded-xl border-2
+                    border-stone-200 bg-white font-bold no-underline transition active:scale-[0.98]
+                    dark:border-stone-700 dark:bg-stone-900">
+            <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Wpisz ręcznie
+          </a>
+        </div>
+
+        <label for="szukaj" class="sr-only">Szukaj dania</label>
+        <input id="szukaj" type="search" x-model="fraza" placeholder="Szukaj dania…"
+               x-show="!laduje && polubione.length"
+               class="mb-4 min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white px-4
+                      text-[17px] outline-none transition focus:border-emerald-600
+                      focus:ring-4 focus:ring-emerald-500/15
+                      dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+
+        <div x-show="laduje" class="space-y-2.5">
+          <template x-for="n in 4" :key="n">
+            <div class="szkielet rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+              <div class="h-5 w-3/5 rounded-lg bg-stone-200 dark:bg-stone-800"></div>
+              <div class="mt-2.5 h-2.5 w-1/3 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Pusto: nie wina użytkownika, tylko stan do wyjścia -->
+        <div x-show="!laduje && !polubione.length" x-transition
+             class="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm
+                    dark:border-stone-800 dark:bg-stone-900">
+          <p class="text-stone-500 dark:text-stone-400">
+            Nie masz jeszcze polubionych dań. Przejrzyj Dania — przepisy pojawią się tutaj same.
+          </p>
+          <a href="talia.html" class="mt-5 flex min-h-[52px] w-full items-center justify-center
+             rounded-xl bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600">
+            Przejdź do dań</a>
+          <a href="dodaj-z-ai.html" class="mt-2.5 flex min-h-[52px] w-full items-center justify-center
+             gap-2 rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700">
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Albo dodaj własny przepis</a>
+        </div>
+
+        <p x-show="!laduje && polubione.length && !widoczne.length" class="py-10 text-center text-stone-400">
+          Nic takiego nie masz.
+        </p>
+
+        <!-- Dwie kolumny na szerokim ekranie: przepisy różnią się długością,
+             więc kolumny CSS układają je ciaśniej niż siatka. -->
+        <div x-show="!laduje" class="md:columns-2 md:gap-4">
+          <template x-for="p in widoczne" :key="p.id">
+            <article class="mb-3 break-inside-avoid overflow-hidden rounded-2xl border border-stone-100
+                            bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
+                     x-data="{ otwarty: false }">
+              <button type="button" @click="otwarty = !otwarty" :aria-expanded="otwarty.toString()"
+                      class="flex min-h-[56px] w-full items-center gap-3 px-5 py-4 text-left transition
+                             active:bg-stone-50 dark:active:bg-stone-800/60">
+                <span class="min-w-0 flex-1">
+                  <span class="block font-bold leading-snug">
+                    <span class="mr-1" role="img"
+                          :title="`kuchnia ${kuchniaDania(p).nazwa}`"
+                          :aria-label="`kuchnia ${kuchniaDania(p).nazwa}`"
+                          x-text="kuchniaDania(p).flaga"></span><span x-text="p.nazwa"></span>
+                  </span>
+                  <span class="mt-0.5 block text-[0.58rem] font-extrabold uppercase tracking-[0.14em]
+                               text-emerald-700 dark:text-emerald-400"
+                        x-text="p.typy.join(' · ') + ' · na ' + p.porcje + ' os. · ' + opisCzasu(p)"></span>
+                </span>
+                <svg class="ikona ikona-sm shrink-0 text-stone-400 transition-transform"
+                     :class="otwarty ? 'rotate-180' : ''"><use href="#i-strzalka"/></svg>
+              </button>
+
+              <div x-show="otwarty" x-collapse>
+                <div class="border-t border-stone-100 px-5 pb-5 dark:border-stone-800">
+                  <template x-if="powodyCzasu(p).length">
+                    <p class="mt-4 rounded-xl bg-amber-50 px-4 py-2.5 text-[0.82rem]
+                              text-amber-900 dark:bg-amber-400/10 dark:text-amber-200"
+                       x-text="`Dłużej, bo: ${powodyCzasu(p).join('; ')}.`"></p>
+                  </template>
+                  <h3 class="mt-4 text-[0.58rem] font-extrabold uppercase tracking-[0.14em]
+                             text-emerald-700 dark:text-emerald-400"
+                      x-text="`Składniki na ${p.porcje} porcje`"></h3>
+                  <ul class="mt-2">
+                    <template x-for="s in p.skladniki" :key="s.produkt">
+                      <li class="flex justify-between py-1 text-[0.9rem] text-stone-600 dark:text-stone-400">
+                        <span x-text="s.produkt"></span>
+                        <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
+                              x-text="s.gramy + ' g'"></span>
+                      </li>
+                    </template>
+                  </ul>
+
+                  <template x-if="p.kroki?.length">
+                    <div>
+                      <h3 class="mt-5 text-[0.58rem] font-extrabold uppercase tracking-[0.14em]
+                                 text-emerald-700 dark:text-emerald-400">Jak to zrobić</h3>
+                      <ol class="mt-2 list-decimal space-y-2 pl-5 text-[0.9rem] leading-relaxed">
+                        <template x-for="k in p.kroki" :key="k"><li x-text="k"></li></template>
+                      </ol>
+                    </div>
+                  </template>
+
+                  <!-- Kroki są opcjonalne (decyzja 10): dania z ręcznego formularza
+                       ich nie mają i to jest w porządku — trzeba to tylko powiedzieć. -->
+                  <p x-show="!p.kroki?.length"
+                     class="mt-4 rounded-xl bg-stone-50 px-4 py-3 text-[0.85rem] italic text-stone-500
+                            dark:bg-stone-800/60 dark:text-stone-400">
+                    To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.
+                  </p>
+                </div>
+              </div>
+            </article>
+          </template>
+        </div>
+      </div>
+    </main>
+
+    <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
+                dark:border-stone-800 dark:bg-stone-950/95"
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+      <div class="mx-auto flex h-16 max-w-lg">
+        <template x-for="z in zakladki" :key="z.id">
+          <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+             :aria-current="z.id === ekran ? 'page' : null"
+             :aria-disabled="zamknieta(z.id) ? 'true' : null"
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+                    font-semibold no-underline transition"
+             :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                     : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
+                                      : 'text-stone-500 dark:text-stone-400'">
+            <svg class="ikona" :style="z.id === ekran ? 'stroke-width:2.4' : ''">
+              <use :href="'#i-' + z.id"/></svg>
+            <span x-text="z.nazwa"></span>
+            <span x-show="z.id === ekran"
+                  class="absolute bottom-1 size-1 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+          </a>
+        </template>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<script type="module">
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+/* Uchwyty do bazy wypełniane w init() po udanym połączeniu. Deklarowane tutaj,
+   bo używa ich cały ekran — a przypisywane dopiero wtedy, gdy SDK naprawdę się
+   pobrał. Dopóki są puste, ekran działa na tym, co ma w pamięci telefonu. */
+let db, ref, get, set, remove, push, update, onValue;
+
+import collapse from "./lib/alpine-collapse-esm.js";
+import { stanPoczatkowy } from "./postep.js";
+import { POMOC } from "./pomoc.js";
+import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
+import { TALIA_STARTOWA } from "./talia-startowa.js";
+import { opisCzasuDlaSprzetu, czasDlaSprzetu, wymagaWyprzedzenia } from "./czas.js";
+import { kuchniaDania } from "./kuchnie.js";
+
+
+const kodDomu = kodStolu();
+
+Alpine.plugin(collapse);
+
+zarejestrujPrzeciaganie(Alpine);
+
+Alpine.data("ekranPrzepisy", () => ({
+  POMOC,
+  pomocKlucz: null,
+
+  wymagaWyprzedzenia, kuchniaDania,
+  sprzet: null,
+  opisCzasu(d) { return opisCzasuDlaSprzetu(d, this.sprzet); },
+  powodyCzasu(d) { return czasDlaSprzetu(d, this.sprzet).powody; },
+
+  ...danePowloki({
+    ekran: "przepisy",
+    tytul: "Przepisy",
+    opis: "Wszystko, co polubiliście — z krokami i gramaturą.",
+  }),
+
+  laduje: true,
+  polubione: [],
+  fraza: "",
+
+  get widoczne() {
+    const f = this.fraza.trim().toLowerCase();
+    return f ? this.polubione.filter(d => d.nazwa.toLowerCase().includes(f)) : this.polubione;
+  },
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    if (!kodDomu) { pokazBrakStolu(); return; }
+    this.initPowloka();
+
+    /* Połączenie z bazą PO starcie ekranu, nie przed. Gdy się nie uda, ekran
+       zostaje użyteczny — pokazuje, co ma lokalnie, i mówi, że nie ma sieci. */
+    const fb = await polaczZBaza();
+    if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
+    else {
+      this.laduje = false;
+      this.komunikat = "Brak połączenia z bazą.";
+      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      return;
+    }
+
+
+    const [snapPref, snapWlasne, snapUst] = await Promise.all([
+      get(ref(db, `domy/${kodDomu}/preferencje`)),
+      get(ref(db, `domy/${kodDomu}/wlasneDania`)),
+      get(ref(db, `domy/${kodDomu}/ustawienia`)),
+    ]);
+    this.sprzet = (snapUst.val() || {}).kuchnia || null;
+    const preferencje = snapPref.val() || {};
+    this.ustawOdblokowanie(stanPoczatkowy(preferencje));
+    const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
+    this.polubione = [...TALIA_STARTOWA, ...wlasne]
+      .filter(d => preferencje[d.id] === "lubie")
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+    this.laduje = false;
+  },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

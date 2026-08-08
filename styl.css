@@ -1,0 +1,360 @@
+/* =====================================================================
+   FORKAST — warstwa nad Tailwindem.
+
+   WAŻNE dla kolejnych zmian: przeglądarkowa wersja Tailwinda kompiluje
+   WYŁĄCZNIE bloki <style type="text/tailwindcss"> w dokumencie. Zewnętrznego
+   arkusza NIE przetwarza — więc `@theme`, `@utility` i `@apply` w tym pliku
+   byłyby ignorowane. Dlatego wszystko poniżej to zwykły CSS, a kolory bierzemy
+   z wbudowanej palety `emerald` przez zwykłe klasy Tailwinda w HTML-u.
+
+   Zieleń emerald zamiast własnej: sprawdzone, że trzyma kontrast (emerald-700
+   na białym = 5.48:1, emerald-400 na stone-900 = 9.10:1), a nie wymaga
+   powtarzania definicji motywu w ośmiu plikach.
+
+   KTO TEGO UŻYWA: od prawniczki po trzydziestce po kurierkę przed
+   sześćdziesiątką. Ta druga rządzi każdą liczbą poniżej.
+   ===================================================================== */
+
+:root {
+  --skala: 1;
+
+  /* =====================================================================
+     KOLOR JAKO SYSTEM, NIE OZDOBA
+
+     Do 3 sierpnia zieleń znaczyła wszystko naraz: przyciski, nagłówki, akcenty,
+     stemple, postęp. Kolor, który znaczy wszystko, nie znaczy nic — i to jest
+     powód, dla którego aplikacja czytała się jak arkusz, a nie jak produkt.
+
+     Teraz każda barwa ma jedno zadanie:
+       zieleń   – akcja i postęp. Tylko to, co można kliknąć albo co rośnie.
+       bursztyn – domowa klasyka
+       niebieski– szybkie
+       fuksja   – kuchnie świata
+       szmaragd – nowoczesne
+       kamień   – neutralne i zrobione
+
+     Dzięki temu na ekranie Dań kolor mówi, z jakiego świata jest danie, zanim
+     ktokolwiek przeczyta stempel. A na liście zakupów zieleń oznacza wyłącznie
+     postęp, więc rzuca się w oczy dokładnie tam, gdzie ma. */
+  --kubelek-klasyka:  #B45309;
+  --kubelek-szybkie:  #0369A1;
+  --kubelek-swiat:    #A21CAF;
+  --kubelek-nowocz:   #047857;
+  --kubelek-brak:     #78716C;
+}
+
+.dark {
+  --kubelek-klasyka:  #FBBF24;
+  --kubelek-szybkie:  #38BDF8;
+  --kubelek-swiat:    #E879F9;
+  --kubelek-nowocz:   #34D399;
+  --kubelek-brak:     #A8A29E;
+}
+
+/* Tekst 18 px, nie 14. Skala do wyboru w Ustawieniach, bo zgadywanie jednego
+   dobrego rozmiaru dla grupy 28–60 lat jest gorsze niż oddanie tej decyzji. */
+html {
+  height: 100%;
+  font-size: calc(18px * var(--skala));
+  overscroll-behavior-y: contain;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  height: 100%;
+  overscroll-behavior-y: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, [contenteditable], .zaznaczalne {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Usuwa opóźnienie 300 ms i przybliżanie dwuklikiem — ale NIE odbiera
+   powiększania dwoma palcami. Wyłączenie go łamie WCAG 1.4.4 i uderza
+   dokładnie w osobę, dla której ta apka powstaje. */
+button, a, label, summary { touch-action: manipulation; }
+button, a, img { -webkit-touch-callout: none; }
+
+.plynne { -webkit-overflow-scrolling: touch; }
+.bez-paska::-webkit-scrollbar { display: none; }
+.bez-paska { -ms-overflow-style: none; scrollbar-width: none; }
+
+[x-cloak] { display: none !important; }
+
+/* Ikona z lokalnego sprite'a. Bez tej reguły SVG dostaje domyślne fill:black
+   i brak rozmiaru — czyli czarne kleksy zamiast kresek. Złapane 3 sierpnia,
+   gdy okazało się, że zewnętrzny arkusz nie jest kompilowany przez Tailwinda. */
+.ikona {
+  width: 1.45rem; height: 1.45rem; flex: none;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
+.ikona-sm { width: 1.1rem; height: 1.1rem; }
+
+/* Widoczny fokus klawiatury — nie tylko dla myszy i palca. */
+:focus-visible {
+  outline: 3px solid #10B981;
+  outline-offset: 2px;
+  border-radius: .5rem;
+}
+
+button:active, .opcja:active { transform: scale(.97); }
+button, .opcja { transition: transform .12s ease; }
+
+/* Skeleton: kształt tego, co się ładuje. Napis „Ładuję…" mówi, że coś się
+   dzieje; kształt mówi, co się zaraz pojawi — i ekran nie skacze. */
+@keyframes puls { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
+.szkielet { animation: puls 1.6s cubic-bezier(.4,0,.6,1) infinite; }
+
+/* Karta talii odjeżdża w stronę decyzji. */
+@keyframes odlotTak { to { transform: translateX(130%) rotate(12deg); opacity: 0 } }
+@keyframes odlotNie { to { transform: translateX(-130%) rotate(-12deg); opacity: 0 } }
+.odlot-tak { animation: odlotTak .32s cubic-bezier(.4,0,.7,.3) forwards; }
+.odlot-nie { animation: odlotNie .32s cubic-bezier(.4,0,.7,.3) forwards; }
+
+/* =====================================================================
+   ANIMACJE EKRANÓW
+
+   Trzy, każda rozwiązuje konkretny problem, nie zdobi:
+   1. odhaczona pozycja płynie na dół — bo dziś przeskakuje i wygląda jak usterka
+   2. karta dania wjeżdża po odlocie poprzedniej — bo bez tego nie wiadomo,
+      czy ekran zareagował
+   3. etapy czekania na AI — bo kręcące się kółko wygląda tak samo przy trzech
+      sekundach i przy zawieszeniu
+
+   Wszystkie wyłączają się przy prefers-reduced-motion, blok na końcu pliku.
+   ===================================================================== */
+
+/* --- 1. Lista zakupów: zmiana kolejności bez przeskoku ---
+   Pozycje mają własną warstwę i przesuwają się transformacją, którą liczy karta
+   graficzna. Bez tego przeglądarka przerysowuje całą listę i widać skok. */
+li.poz-zakupy {
+  transition: transform .42s cubic-bezier(.32, .72, .35, 1), opacity .25s ease;
+  will-change: transform;
+}
+li.poz-zakupy.plynie { z-index: 5; position: relative; }
+
+/* Odhaczenie: krótkie ściśnięcie, zanim pozycja odjedzie na dół. Sygnał, że
+   dotknięcie zostało przyjęte, nawet jeśli sama zmiana kolejności potrwa chwilę. */
+@keyframes odhaczone {
+  0%   { transform: scale(1) }
+  35%  { transform: scale(.965) }
+  100% { transform: scale(1) }
+}
+.poz-zakupy.wlasnie-odhaczone { animation: odhaczone .28s ease; }
+
+/* --- 2. Dania: nowa karta wjeżdża z dołu ---
+   Delikatny obrót, jakby ktoś dokładał kartę na stos. 220 ms, żeby przy szybkim
+   przesuwaniu dwudziestu dań pod rząd nie zaczęło to przeszkadzać. */
+@keyframes kartaWjazd {
+  from { transform: translateY(26px) rotate(1.6deg) scale(.97); opacity: 0 }
+  to   { transform: translateY(0) rotate(0) scale(1); opacity: 1 }
+}
+.karta-wjazd { animation: kartaWjazd .22s cubic-bezier(.22, .9, .38, 1); }
+
+/* --- 3. Czekanie na AI: etapy zamiast kółka ---
+   Kropka przy etapie bieżącym pulsuje, przy zrobionych stoi. */
+@keyframes etapPuls {
+  0%, 100% { transform: scale(1); opacity: 1 }
+  50%      { transform: scale(1.45); opacity: .55 }
+}
+.etap-teraz .kropka { animation: etapPuls 1.1s ease-in-out infinite; }
+
+/* Pasek etapów rośnie skokowo — świadomie, bo etapy są dyskretne.
+   Udawanie płynnego postępu byłoby kłamstwem o tym, co się dzieje. */
+.etapy-pasek i {
+  display: block; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-emerald-400), var(--color-emerald-600));
+  transition: width .5s cubic-bezier(.4, 0, .2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* =====================================================================
+   PASEK POSTĘPU
+
+   Był widelec ze spaghetti. Wyglądał jak grafika wektorowa, bo nią był — i to
+   jest granica tego medium: bez ilustracji albo zdjęcia nie da się zrobić
+   samym SVG czegoś, co wygląda realistycznie. Rzecz oglądana setki razy
+   w pierwszej sesji nie może być żartem, który przestaje śmieszyć za trzecim.
+
+   Zostaje pasek, ale nie zwykły. Różnica siedzi w jednym: przy każdym przyroście
+   ma DOBIJAĆ, a nie dopływać. To ta sama różnica co między przełącznikiem w iOS
+   a zwykłym polem wyboru — jeden potwierdza działanie ciałem, drugi tylko
+   zmienia stan.
+
+   Trzy stany, trzy zachowania:
+     spoczynek  – nic się nie rusza. Element w rogu ekranu, który miga, jest wadą,
+                  nie zaletą. Dlatego wypadł wędrujący połysk.
+     przyrost   – sprężysty dobieg z lekkim przekroczeniem celu + błysk na czole
+     domknięcie – jeden przebieg światła, 480 ms, raz. Nagroda ma być nagrodą,
+                  nie przeszkodą.
+
+   Wszystko na transform i opacity — zero przeliczania układu strony, więc chodzi
+   płynnie także na starym telefonie.
+   ===================================================================== */
+.pasek {
+  position: relative;
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--color-stone-200);
+  overflow: hidden;
+  /* Lekkie wgłębienie: tor ma być rowkiem, nie naklejką. */
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / .08);
+}
+.dark .pasek { background: var(--color-stone-800); box-shadow: inset 0 1px 2px rgb(0 0 0 / .35) }
+
+/* Wypełnienie skalowane, nie rozciągane szerokością — szerokość przelicza układ,
+   transform nie. Punkt zaczepienia po lewej, żeby rosło z właściwej strony. */
+.pasek i {
+  position: absolute; inset: 0;
+  display: block;
+  transform-origin: left center;
+  transform: scaleX(calc(var(--postep, 0) / 100));
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10B981, #047857);
+  /* Sprężysty dobieg: krzywa przekracza cel i wraca. Cała różnica między
+     „przesunęło się" a „dobiło do miejsca" siedzi w tej jednej linii. */
+  transition: transform .52s cubic-bezier(.16, 1.34, .38, 1);
+}
+.dark .pasek i { background: linear-gradient(90deg, #6EE7B7, #34D399) }
+
+/* Czoło wypełnienia: jaśniejszy pas na samym końcu. Nie animuje się w spoczynku —
+   jest po to, żeby przy 30% od razu było widać granicę. To najczęstszy przypadek,
+   nie 0% i nie 100%. */
+.pasek u {
+  position: absolute; top: 0; bottom: 0;
+  left: calc(var(--postep, 0) * 1%);
+  width: 16px; margin-left: -16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / .5));
+  opacity: clamp(0, calc(var(--postep, 0) * 1), 1);
+  transition: left .52s cubic-bezier(.16, 1.34, .38, 1);
+  pointer-events: none;
+}
+
+/* Błysk przy przyroście — krótki rozbłysk na czole, wyzwalany klasą z kodu.
+   260 ms, tyle co dotknięcie. */
+@keyframes uderzenie {
+  0%   { opacity: 0; transform: scaleY(1) }
+  22%  { opacity: 1; transform: scaleY(2.1) }
+  100% { opacity: 0; transform: scaleY(1) }
+}
+.pasek b {
+  position: absolute; top: 0; bottom: 0;
+  left: calc(var(--postep, 0) * 1%);
+  width: 3px; margin-left: -2px;
+  border-radius: 999px;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: left .52s cubic-bezier(.16, 1.34, .38, 1);
+}
+.pasek.przyrost b { animation: uderzenie .26s ease-out }
+
+/* Domknięcie: jeden przebieg światła i lekkie spęcznienie toru. Raz, bez pętli. */
+@keyframes przebieg { from { transform: translateX(-120%) } to { transform: translateX(240%) } }
+@keyframes pecznienie { 0%,100% { transform: scaleY(1) } 40% { transform: scaleY(1.35) } }
+
+.pasek.gotowe { animation: pecznienie .48s cubic-bezier(.34, 1.4, .5, 1) }
+.pasek.gotowe i::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 32%, rgb(255 255 255 / .8) 50%, transparent 68%);
+  animation: przebieg .48s ease-out;
+}
+
+/* =====================================================================
+   LICZBY, KTÓRE SIĘ PRZEWIJAJĄ
+
+   Liczba przeskakująca z 6 na 7 nie mówi nic. Liczba przewijająca się jak
+   w liczniku mówi „przybyło" — a to jest informacja, po którą człowiek patrzy
+   na ten ekran w sklepie.
+
+   Każda cyfra to okno wysokości jednego wiersza z kolumną 0–9 w środku.
+   Przesuwamy kolumnę transformem, więc kosztuje tyle co nic.
+   ===================================================================== */
+.licznik { display: inline-flex; line-height: 1 }
+.licznik .cyfra { display: block; height: 1em; overflow: hidden }
+.licznik .kolumna {
+  display: flex; flex-direction: column;
+  transform: translateY(calc(var(--c, 0) * -1em));
+  transition: transform .46s cubic-bezier(.16, 1.24, .4, 1);
+}
+.licznik .kolumna span { display: block; height: 1em }
+
+
+/* =====================================================================
+   PIECZĄTKA CZASU — odznaka „ile to zajmie" na karcie dania.
+
+   Zastępuje `.stempel-kubelka`, która nie miała ŻADNEGO CSS: renderowała się
+   jako goły tekst z wstawionym tłem, bez marginesu i bez zaokrąglenia, z kolorem
+   odziedziczonym z karty. Kontrast wychodził od 1.53:1 do 3.48:1 — sześć par
+   na sześć poniżej progu 4.5:1.
+
+   KSZTAŁT od Claude Design (brief `BRIEF-pieczatka-czasu.md`), PALETA nasza.
+   Dwie ramki w stałej odległości — zewnętrzna na krawędzi, wewnętrzna wsunięta
+   przez `::after` — dają wrażenie odbitego znaczka bez żadnej tekstury. Symulowany
+   rozmyty tusz odpada z tego samego powodu, co widelec ze spaghetti: wektor udający
+   fizyczny ślad wygląda jak filtr, nie jak odbicie.
+
+   WSZYSTKO W `em`, nie w pikselach — element skaluje się wyłącznie rozmiarem
+   czcionki rodzica, więc ten sam kod działa i przy 1.55 rem na karcie dania,
+   i przy 0.58 rem w nagłówku przepisu. `max(1px, …)` pilnuje, żeby przy najmniejszym
+   rozmiarze ramka nie zeszła poniżej jednego piksela i nie zniknęła.
+
+   BEZ ANIMACJI PRZY POJAWIENIU, świadomie: ten element widać przy każdym daniu,
+   setki razy w pierwszej sesji. Cokolwiek się rusza, po dziesiątej karcie staje się
+   szumem. Obrót 2° — przy większym element czyta się jako „krzywo", nie „z charakterem".
+
+   KONTRASTY, policzone (WCAG), nie oszacowane. Najniższa z sześciu par: 6.02:1.
+   Tekst w motywie ciemnym to dokładnie wartości z PROGI w `czas.js`; w jasnym
+   ciemniejszy odcień tej samej rodziny barw, bo na jasnym tinte sam PROGI dawał
+   4.51:1 — przechodziło, ale bez marginesu.
+   ===================================================================== */
+.stempel-czasu {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: .16em;
+  font-weight: 800;
+  font-size: .62em;
+  line-height: 1;
+  padding: .34em .55em;
+  border-radius: .3em;
+  border: max(1px, .09em) solid currentColor;
+  transform: rotate(-2deg);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+.stempel-czasu::after {
+  content: "";
+  position: absolute;
+  inset: .14em;
+  border: max(1px, .045em) solid currentColor;
+  border-radius: .17em;
+  opacity: .55;
+}
+/* Jednostka mniejsza i wyciszona: liczba jest odpowiedzią, „min" tylko ją opisuje. */
+.stempel-czasu .jednostka { font-size: .72em; font-weight: 700; opacity: .8 }
+
+.stempel-czasu--szybko  { background: #e0f2fe; color: #075985 }   /* 6.59:1 */
+.stempel-czasu--srednio { background: #fef3c7; color: #92400E }   /* 6.37:1 */
+.stempel-czasu--dlugo   { background: #fae8ff; color: #86198F }   /* 7.08:1 */
+.stempel-czasu--brak    { background: #f5f5f4; color: #57534E }   /* 6.99:1 */
+
+.dark .stempel-czasu--szybko  { background: #082f49; color: #38BDF8 }   /* 6.48:1 */
+.dark .stempel-czasu--srednio { background: #451a03; color: #FBBF24 }   /* 8.97:1 */
+.dark .stempel-czasu--dlugo   { background: #4a044e; color: #E879F9 }   /* 6.02:1 */
+.dark .stempel-czasu--brak    { background: #292524; color: #D6D3D1 }   /* 10.18:1 */

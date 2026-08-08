@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFAF6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Forkast">
+<title>Jadłospis — Forkast</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<!-- Ta jedna deklaracja MUSI być tutaj, nie w styl.css.
+     Przeglądarkowy Tailwind kompiluje wyłącznie bloki <style type="text/tailwindcss">
+     w dokumencie — w zewnętrznym arkuszu jest ignorowana, a wtedy `dark:` działa
+     po ustawieniu systemu i przełącznik w Ustawieniach nic nie zmienia. -->
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100"
+      x-data="ekranJadlospis" x-init="init()" x-cloak>
+
+<div id="ikony"></div>
+<div id="pomoc"></div>
+<p aria-live="polite" class="sr-only" x-text="komunikat"></p>
+
+<div class="flex h-dvh flex-col overflow-hidden md:flex-row">
+
+  <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
+              md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
+       aria-label="Nawigacja główna">
+    <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
+              text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
+    <template x-for="z in zakladki" :key="z.id">
+      <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+         :aria-current="z.id === ekran ? 'page' : null"
+         :aria-disabled="zamknieta(z.id) ? 'true' : null"
+         class="flex h-12 items-center gap-3 rounded-xl px-3.5 no-underline transition"
+         :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                 : z.id === ekran
+                 ? 'bg-emerald-50 font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+                 : 'text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'">
+        <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
+        <span x-text="z.nazwa"></span>
+        <span x-show="z.id === ekran" class="ml-auto size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+      </a>
+    </template>
+    <a href="ustawienia.html"
+       class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
+              transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
+      <svg class="ikona"><use href="#i-ustawienia"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+
+    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+                   from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
+                   shadow-lg shadow-emerald-900/20 md:rounded-none"
+            style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+      <p class="text-[0.55rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <h1 class="mt-1.5 text-[1.65rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.85rem] leading-snug text-white/85" x-text="opis"></p>
+
+      <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
+              :aria-pressed="ekranSwieci.toString()"
+              :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
+                                       : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+              class="absolute flex min-h-[44px] items-center gap-1.5 rounded-full border px-3
+                     text-[0.66rem] font-bold backdrop-blur-md transition"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem"
+              :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
+                                  : 'border-white/40 bg-white/15 text-white/90'">
+        <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
+        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+      </button>
+      <button type="button" @click="pomocKlucz = 'jadlospis'"
+              aria-label="Jak to działa"
+              class="absolute flex size-11 items-center justify-center rounded-full border
+                     border-white/35 bg-white/15 text-[0.95rem] font-bold text-white
+                     backdrop-blur-md transition active:scale-95"
+              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
+
+      <a href="ustawienia.html" aria-label="Ustawienia"
+         class="absolute flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95"
+         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
+      </a>
+    </header>
+
+    <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
+          style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+      <div class="mx-auto w-full max-w-5xl">
+
+        <!-- Nie dwie równe kolumny: przy szerokości iPhone'a 13 dają po 185 px,
+             a „Ułóż automatycznie” z ikoną się tam nie mieści i łamie się brzydko.
+             Główny przycisk bierze resztę miejsca, „Wyczyść” tylko tyle, ile trzeba. -->
+        <div class="mb-4 flex gap-2.5 md:max-w-md">
+          <button type="button" @click="ulozPlan()"
+                  class="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-xl
+                         bg-emerald-700 px-3 text-[0.92rem] font-bold text-white shadow-sm
+                         transition active:scale-95 dark:bg-emerald-600">
+            <svg class="ikona ikona-sm shrink-0"><use href="#i-iskra"/></svg>
+            <span class="truncate">Ułóż automatycznie</span>
+          </button>
+          <button type="button" @click="wyczysc()"
+                  class="min-h-[52px] shrink-0 rounded-xl border-2 border-stone-200 bg-white px-5
+                         text-[0.92rem] font-bold transition active:scale-95
+                         dark:border-stone-700 dark:bg-stone-900">Wyczyść</button>
+        </div>
+
+        <!-- Uwagi automatu: jedno zbiorcze zamiast sześciu identycznych -->
+        <template x-for="u in uwagi" :key="u">
+          <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.88rem]
+                      text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/25 dark:text-amber-200"
+               x-text="u"></div>
+        </template>
+
+        <div x-show="laduje" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <template x-for="n in 3" :key="n">
+            <div class="szkielet rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+              <div class="h-3 w-2/5 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+              <div class="mt-4 space-y-4">
+                <template x-for="i in 3" :key="i">
+                  <div>
+                    <div class="h-2.5 w-1/4 rounded-full bg-stone-200 dark:bg-stone-800"></div>
+                    <div class="mt-2 h-4 w-3/4 rounded-lg bg-stone-200 dark:bg-stone-800"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Siatka dni: jedna kolumna na telefonie, do trzech na szerokim ekranie -->
+        <div x-show="!laduje" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <template x-for="d in siatka" :key="d.data">
+            <article class="relative rounded-2xl border bg-white p-5 shadow-sm
+                            dark:bg-stone-900"
+                     :class="czyDzis(d.data)
+                       ? 'border-transparent dzis-obwodka'
+                       : 'border-stone-100 dark:border-stone-800'">
+
+              <!-- Nagłówek dnia: nazwa, znacznik „dziś”, licznik zaplanowanych.
+                   Wcześniej wszystkie dni ważyły tyle samo i oko nie miało
+                   się o co zaczepić. -->
+              <div class="mb-3 flex items-baseline gap-2">
+                <h2 class="min-w-0 flex-1 truncate text-[0.72rem] font-extrabold uppercase
+                           tracking-[0.14em]"
+                    :class="czyDzis(d.data) ? 'text-emerald-700 dark:text-emerald-400'
+                                            : 'text-stone-400 dark:text-stone-500'"
+                    x-text="podpisDnia(d.data)"></h2>
+                <span x-show="czyDzis(d.data)"
+                      class="shrink-0 rounded-full bg-emerald-600 px-2 py-0.5 text-[0.55rem]
+                             font-extrabold uppercase tracking-wider text-white
+                             dark:bg-emerald-500 dark:text-stone-900">dziś</span>
+                <span class="shrink-0 text-[0.7rem] font-bold tabular-nums"
+                      :class="pelnyDzien(d) ? 'text-emerald-700 dark:text-emerald-400'
+                                            : 'text-stone-400'"
+                      x-text="`${zaplanowane(d)}/${Object.keys(d.posilki).length}`"></span>
+              </div>
+
+              <p x-show="!Object.keys(d.posilki).length"
+                 class="text-[0.85rem] italic text-stone-400">
+                Wszystkie posiłki wyłączone tego dnia.
+              </p>
+
+              <ul class="divide-y divide-stone-100 dark:divide-stone-800">
+                <template x-for="typ in TYPY_POSILKOW.filter(t => d.posilki[t])" :key="typ">
+                  <li class="relative py-2.5">
+                    <div class="flex items-baseline gap-2 pr-12">
+                      <!-- Kropka w kolorze kubełka: z jakiego świata jest to danie,
+                           widoczne bez otwierania. -->
+                      <span class="size-2 shrink-0 rounded-full"
+                            :style="`background:${barwaPosilku(d, typ)}`"></span>
+                      <span class="text-[0.58rem] font-extrabold uppercase tracking-[0.12em]
+                                   text-stone-400 dark:text-stone-500" x-text="typ"></span>
+                      <span class="truncate text-[0.7rem] text-stone-400"
+                            x-text="d.posilki[typ].kto.map(imieOsoby).join(', ')"></span>
+                    </div>
+                    <button type="button" @click="dotknij(d, typ)"
+                            class="block min-h-[44px] w-full pr-12 text-left"
+                            :aria-label="`${typ}, ${podpisDnia(d.data)}: ${opisPosilku(d, typ)}. Dotknij, żeby zmienić.`">
+                      <span x-show="d.posilki[typ].bezSkladnikow"
+                            class="text-[0.95rem] font-semibold text-stone-500 dark:text-stone-400"
+                            x-text="d.posilki[typ].bezSkladnikow"></span>
+                      <span x-show="flagaPosilku(d, typ)" class="mr-1" role="img"
+                            :title="`kuchnia ${flagaPosilku(d, typ)?.nazwa}`"
+                            :aria-label="`kuchnia ${flagaPosilku(d, typ)?.nazwa}`"
+                            x-text="flagaPosilku(d, typ)?.flaga"></span>
+                      <span x-show="!d.posilki[typ].bezSkladnikow && d.posilki[typ].danie"
+                            class="text-[0.95rem] font-medium"
+                            x-text="nazwaDania(d.posilki[typ].danie)"></span>
+                      <span x-show="czasPosilku(d, typ)"
+                            class="ml-1.5 text-[0.72rem] font-semibold text-stone-400"
+                            x-text="czasPosilku(d, typ)"></span>
+                      <!-- Danie w planie, którego tym sprzętem nie da się zrobić.
+                           Lepiej powiedzieć teraz niż przy garnku. -->
+                      <span x-show="niewykonalnePosilku(d, typ)"
+                            class="ml-1 rounded-full bg-red-50 px-1.5 text-[0.62rem] font-bold
+                                   text-red-800 dark:bg-red-400/15 dark:text-red-300">
+                        bez piekarnika nie zrobisz
+                      </span>
+                      <span x-show="!d.posilki[typ].bezSkladnikow && !d.posilki[typ].danie"
+                            class="text-[0.95rem] italic text-stone-300 dark:text-stone-600">
+                        — dotknij, żeby wybrać —</span>
+                    </button>
+                    <button type="button" @click="wylacz(d, typ)"
+                            :aria-label="`Wyłącz ${typ}, ${podpisDnia(d.data)}`"
+                            class="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center
+                                   justify-center rounded-xl text-stone-300 transition
+                                   active:bg-stone-100 dark:text-stone-600 dark:active:bg-stone-800">
+                      <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </article>
+          </template>
+        </div>
+
+        <a x-show="!laduje" href="zakupy.html"
+           class="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl
+                  bg-emerald-700 font-bold text-white no-underline md:max-w-md dark:bg-emerald-600">
+          <svg class="ikona ikona-sm"><use href="#i-zakupy"/></svg> Zobacz listę zakupów
+        </a>
+      </div>
+    </main>
+
+    <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
+                dark:border-stone-800 dark:bg-stone-950/95"
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+      <div class="mx-auto flex h-16 max-w-lg">
+        <template x-for="z in zakladki" :key="z.id">
+          <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
+             :aria-current="z.id === ekran ? 'page' : null"
+             :aria-disabled="zamknieta(z.id) ? 'true' : null"
+             :aria-label="zamknieta(z.id) ? `${z.nazwa} — otworzy się po ${brakujeDan} daniach` : null"             class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.56rem]
+                    font-semibold no-underline transition"
+             :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
+                     : z.id === ekran ? 'text-emerald-700 dark:text-emerald-400'
+                                      : 'text-stone-500 dark:text-stone-400'">
+            <svg class="ikona" :style="z.id === ekran ? 'stroke-width:2.4' : ''">
+              <use :href="'#i-' + z.id"/></svg>
+            <span x-text="z.nazwa"></span>
+            <span x-show="z.id === ekran"
+                  class="absolute bottom-1 size-1 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+          </a>
+        </template>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<!-- ==================== PRZEPIS ====================
+     Okienko, nie osobna strona: człowiek stoi przy garnku i chce wrócić
+     do planu jednym dotknięciem, bez przeładowania. -->
+<div x-show="przepis" @click.self="przepis = null" x-transition.opacity.duration.200ms
+     class="fixed inset-0 z-[55] flex items-end justify-center bg-stone-900/50 backdrop-blur-sm
+            md:items-center">
+  <div x-show="przepis" x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0"
+       x-data="przeciagany(() => przepis = null)" x-bind="uchwyty"
+       class="plynne bez-paska max-h-[86vh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem]
+              bg-stone-50 px-5 pt-3 dark:bg-stone-950 md:rounded-[1.75rem]"
+       style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
+    <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700 md:hidden"></div>
+
+    <template x-if="przepis">
+      <div>
+        <h3 class="text-[1.35rem] font-bold leading-tight" x-text="przepis.danie.nazwa"></h3>
+        <p class="mt-1 text-[0.62rem] font-extrabold uppercase tracking-[0.14em]
+                  text-emerald-700 dark:text-emerald-400"
+           x-text="`${przepis.typ} · ${podpisDnia(przepis.data)}`"></p>
+
+        <div class="mt-4 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
+                    dark:border-stone-800 dark:bg-stone-900">
+          <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+                    text-emerald-700 dark:text-emerald-400"
+             x-text="`Składniki na ${przepis.ileOsob} ${przepis.ileOsob === 1 ? 'osobę' : 'osoby'}`"></p>
+          <ul class="mt-2">
+            <template x-for="s in przepis.skladniki" :key="s.produkt">
+              <li class="flex justify-between py-1 text-[0.92rem] text-stone-600 dark:text-stone-400">
+                <span x-text="s.produkt"></span>
+                <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
+                      x-text="s.gramy + ' g'"></span>
+              </li>
+            </template>
+          </ul>
+          <p x-show="przepis.przeliczone"
+             class="mt-3 text-[0.75rem] italic text-stone-400"
+             x-text="`Przeliczone z przepisu na ${przepis.danie.porcje} os.`"></p>
+        </div>
+
+        <div x-show="przepis.danie.kroki?.length"
+             class="mt-3 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
+                    dark:border-stone-800 dark:bg-stone-900">
+          <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+                    text-emerald-700 dark:text-emerald-400">Jak to zrobić</p>
+          <ol class="mt-2 list-decimal space-y-2.5 pl-5 text-[0.92rem] leading-relaxed">
+            <template x-for="k in przepis.danie.kroki" :key="k"><li x-text="k"></li></template>
+          </ol>
+        </div>
+
+        <p x-show="!przepis.danie.kroki?.length"
+           class="mt-3 rounded-2xl bg-stone-100 px-4 py-3 text-[0.85rem] italic text-stone-500
+                  dark:bg-stone-800/60 dark:text-stone-400">
+          To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.
+        </p>
+
+        <div class="mt-4 grid grid-cols-2 gap-2.5">
+          <button type="button" @click="zmienZPrzepisu()"
+                  class="min-h-[52px] rounded-xl border-2 border-stone-200 bg-white font-bold
+                         dark:border-stone-700 dark:bg-stone-900">Zmień danie</button>
+          <button type="button" @click="przepis = null"
+                  class="min-h-[52px] rounded-xl bg-emerald-700 font-bold text-white
+                         dark:bg-emerald-600">Zamknij</button>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- ==================== ARKUSZ WYBORU DANIA ==================== -->
+<div x-show="arkusz" @click.self="zamknijArkusz()" x-transition.opacity.duration.200ms
+     class="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/45 backdrop-blur-sm">
+  <div x-show="arkusz" x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="translate-y-full"
+       x-data="przeciagany(() => zamknijArkusz())" x-bind="uchwyty"
+       class="plynne bez-paska max-h-[86vh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem]
+              bg-stone-50 px-4 pt-3 dark:bg-stone-950"
+       style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
+    <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700"></div>
+    <h3 class="mb-3 text-lg font-bold" x-text="arkusz ? `${arkusz.typ} — ${podpisDnia(arkusz.dzien.data)}` : ''"></h3>
+
+    <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.85rem] text-stone-500">
+      Nie masz polubionego dania, które pasuje na ten posiłek.
+    </p>
+
+    <template x-for="d in pasujaceDania" :key="d.id">
+      <button type="button" @click="wybierzDanie(d)"
+              class="mb-2 flex min-h-[52px] w-full flex-col justify-center rounded-xl border
+                     border-stone-100 bg-white px-4 py-3 text-left transition
+                     active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
+        <span class="font-medium" x-text="d.nazwa"></span>
+        <span class="mt-0.5 text-[0.72rem] text-stone-400" x-text="d.skladniki.length + ' składników'"></span>
+      </button>
+    </template>
+
+    <p class="mb-2 mt-4 ml-1 text-[0.6rem] font-extrabold uppercase tracking-[0.14em]
+              text-stone-400">Bez gotowania</p>
+    <template x-for="p in BEZ_SKLADNIKOW" :key="p.etykieta">
+      <button type="button" @click="wybierzBez(p)"
+              class="mb-2 flex min-h-[52px] w-full flex-col justify-center rounded-xl border
+                     border-stone-100 bg-white px-4 py-3 text-left transition
+                     active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
+        <span class="font-medium" x-text="p.etykieta"></span>
+        <span class="mt-0.5 text-[0.72rem] text-stone-400">nie wchodzi do listy zakupów</span>
+      </button>
+    </template>
+
+    <button type="button" @click="zamknijArkusz()"
+            class="mt-2 min-h-[52px] w-full rounded-xl border-2 border-stone-200 bg-white font-bold
+                   dark:border-stone-700 dark:bg-stone-900">Zamknij</button>
+  </div>
+</div>
+
+<div x-show="toast" x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
+     class="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-6"
+     style="bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
+  <p class="rounded-full bg-stone-900 px-5 py-3 text-center text-[0.85rem] font-semibold text-white
+            shadow-xl dark:bg-stone-100 dark:text-stone-900" x-text="toast"></p>
+</div>
+
+<script type="module">
+import Alpine from "./lib/alpine-esm.js";
+import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
+/* Uchwyty do bazy wypełniane w init() po udanym połączeniu. Deklarowane tutaj,
+   bo używa ich cały ekran — a przypisywane dopiero wtedy, gdy SDK naprawdę się
+   pobrał. Dopóki są puste, ekran działa na tym, co ma w pamięci telefonu. */
+let db, ref, get, set, remove, push, update, onValue;
+
+import { stanPoczatkowy } from "./postep.js";
+import { POMOC } from "./pomoc.js";
+import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
+import { WERSJA_DANYCH, sprawdzWersje } from "./wersja.js";
+import { nowyOkres, dniOkresu, domyslnyRytm, pustaSiatka, wylaczPosilek,
+         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne } from "./rytm.js";
+import { ulozPlan as ulozAutomatem } from "./automat.js";
+import { TALIA_STARTOWA } from "./talia-startowa.js";
+import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
+import { kuchniaDania } from "./kuchnie.js";
+import { TYPY_POSILKOW } from "./prompt.js";
+
+
+const kodDomu = kodStolu();
+
+const DNI_PL = ["niedziela","poniedziałek","wtorek","środa","czwartek","piątek","sobota"];
+const MIES_PL = ["stycznia","lutego","marca","kwietnia","maja","czerwca",
+                 "lipca","sierpnia","września","października","listopada","grudnia"];
+
+/* Pozycje zajmujące miejsce w planie, ale niegenerujące składników (decyzja 12).
+   Nazwy celowo nie są urzędowe — „resztki” brzmi jak coś do wyrzucenia,
+   a to odwrotność tego, co robi ktoś dojadający wczorajszy obiad. */
+const BEZ_SKLADNIKOW = [
+  { etykieta: "na mieście",     reakcja: "Zasłużyłeś. Miłego!" },
+  { etykieta: "co się nawinie", reakcja: "Zero marnowania. Szacun." },
+  { etykieta: "coś z paczki",   reakcja: "No dobra, każdy ma taki dzień." },
+];
+
+zarejestrujPrzeciaganie(Alpine);
+
+Alpine.data("ekranJadlospis", () => ({
+  POMOC,
+  pomocKlucz: null,
+
+  ...danePowloki({
+    ekran: "jadlospis",
+    tytul: "Jadłospis",
+    opis: "Ułóż sam albo daj apce ułożyć z tego, co lubicie.",
+  }),
+
+  TYPY_POSILKOW, BEZ_SKLADNIKOW,
+  laduje: true,
+  siatka: [],
+  okres: null,
+  domownicy: [],
+  wszystkieDania: [],
+  polubione: [],
+  uwagi: [],
+  arkusz: null,
+  ustawienia: {},
+
+  get pasujaceDania() {
+    if (!this.arkusz) return [];
+    return this.polubione.filter(d => d.typy.includes(this.arkusz.typ));
+  },
+
+  async init() {
+    try { await this.initEkranu(); }
+    catch (e) {
+      /* ZŁAPANY BŁĄD STARTU — ekran ma zostać użyteczny nawet wtedy, gdy
+         odczyt z bazy albo cokolwiek innego padnie. Bez tego wyjątek przerywał
+         init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
+      console.error("Błąd startu ekranu:", e);
+      this.laduje = false;
+      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+    }
+  },
+
+  async initEkranu() {
+    if (!kodDomu) { pokazBrakStolu(); return; }
+    this.initPowloka();
+
+    /* Połączenie z bazą PO starcie ekranu, nie przed. Gdy się nie uda, ekran
+       zostaje użyteczny — pokazuje, co ma lokalnie, i mówi, że nie ma sieci. */
+    const fb = await polaczZBaza();
+    if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
+    else {
+      this.laduje = false;
+      this.komunikat = "Brak połączenia z bazą.";
+      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      return;
+    }
+
+
+
+    const [snapDom, snapPref, snapWlasne, snapUst] = await Promise.all([
+      get(ref(db, `domy/${kodDomu}/domownicy`)),
+      get(ref(db, `domy/${kodDomu}/preferencje`)),
+      get(ref(db, `domy/${kodDomu}/wlasneDania`)),
+      get(ref(db, `domy/${kodDomu}/ustawienia`)),
+    ]);
+
+    this.domownicy = Object.entries(snapDom.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
+    const preferencje = snapPref.val() || {};
+    const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
+    this.wszystkieDania = [...TALIA_STARTOWA, ...wlasne];
+    this.polubione = this.wszystkieDania.filter(d => preferencje[d.id] === "lubie");
+    this.ustawienia = snapUst.val() || {};
+    this.sprzet = this.ustawienia.kuchnia || null;
+    this.ustawOdblokowanie(stanPoczatkowy(preferencje));
+
+    /* onValue, nie get: gdy ktoś przy tym samym stole zmieni plan na swoim
+       telefonie, ten ekran zobaczy to bez odświeżania. */
+    onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => {
+      /* Przy otwartym arkuszu wyboru odkładamy zdalną zmianę na później.
+         Bez tego siatka przestawiała się pod ręką, a wybór dania zapisywał
+         stan sprzed podmiany — czyli cofał zmianę drugiej osoby. */
+      if (this.arkusz) { this._oczekujaca = snap.val(); return; }
+      this.zastosujZdalne(snap.val());
+    });
+  },
+
+  /* Rytm z ustawień, a jeśli go nie ma — domyślny, w którym wszyscy jedzą
+     wszystko. Domyślny NIE zakłada niczego o rytmie dnia: to jedyny wybór,
+     który nie jest cudzym trybem życia przepisanym na regułę (decyzja 12). */
+  rytm() {
+    const u = this.ustawienia.rytm;
+    if (!u) return domyslnyRytm(this.domownicy, TYPY_POSILKOW);
+    const wynik = {};
+    for (const typ of TYPY_POSILKOW) {
+      const w = u[typ];
+      if (!w?.wlaczony) continue;
+      const kto = (w.kto || []).filter(id => this.domownicy.some(d => d.id === id));
+      if (kto.length) wynik[typ] = { wlaczony: true, kto };
+    }
+    return Object.keys(wynik).length ? wynik : domyslnyRytm(this.domownicy, TYPY_POSILKOW);
+  },
+
+  czyDzis(iso) {
+    const t = new Date();
+    const dzis = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+    return iso === dzis;
+  },
+
+  zaplanowane(d) {
+    return Object.values(d.posilki).filter(w => w.danie || w.bezSkladnikow).length;
+  },
+  pelnyDzien(d) {
+    const ile = Object.keys(d.posilki).length;
+    return ile > 0 && this.zaplanowane(d) === ile;
+  },
+
+  /* Kolor kubełka dania w tym posiłku. Pozycje bez składników i puste dostają
+     neutralny kamień — kolor ma znaczyć „skąd to danie”, a nie „coś tu jest”. */
+  /* Kropka w kolorze progu czasowego: widać, czy dzień jest zastawiony samymi
+     długimi daniami, bez otwierania czegokolwiek. Pozycje bez składników
+     („na mieście”) dostają neutralny kamień. */
+  sprzet: null,
+
+  barwaPosilku(d, typ) {
+    const w = d.posilki[typ];
+    if (!w?.danie || w.bezSkladnikow) return "var(--kubelek-brak)";
+    const danie = this.wszystkieDania.find(x => x.id === w.danie);
+    const p = danie && progDlaSprzetu(danie, this.sprzet);
+    if (!p) return "var(--kubelek-brak)";
+    return document.documentElement.classList.contains("dark") ? p.barwaCiemna : p.barwa;
+  },
+
+  /* Flaga kuchni przy daniu — druga oś obok czasu. Czas mówi „zdążę?”,
+     kuchnia mówi „na co mam ochotę?”. */
+  flagaPosilku(d, typ) {
+    const w = d.posilki[typ];
+    if (!w?.danie || w.bezSkladnikow) return null;
+    const danie = this.wszystkieDania.find(x => x.id === w.danie);
+    return danie ? kuchniaDania(danie) : null;
+  },
+
+  niewykonalnePosilku(d, typ) {
+    const w = d.posilki[typ];
+    if (!w?.danie || w.bezSkladnikow) return false;
+    const danie = this.wszystkieDania.find(x => x.id === w.danie);
+    return danie ? czasDlaSprzetu(danie, this.sprzet).niewykonalne : false;
+  },
+
+  /* Czas przy nazwie dania — najczęstsze pytanie przy planowaniu wieczoru. */
+  czasPosilku(d, typ) {
+    const w = d.posilki[typ];
+    if (!w?.danie || w.bezSkladnikow) return null;
+    const danie = this.wszystkieDania.find(x => x.id === w.danie);
+    return danie ? opisCzasuDlaSprzetu(danie, this.sprzet) : null;
+  },
+
+  podpisDnia(iso) {
+    const [r, m, d] = iso.split("-").map(Number);
+    const data = new Date(r, m - 1, d, 12);
+    return `${DNI_PL[data.getDay()]}, ${d} ${MIES_PL[m - 1]}`;
+  },
+  nazwaDania(id) { return this.wszystkieDania.find(d => d.id === id)?.nazwa || "(usunięte danie)"; },
+  imieOsoby(id) { return this.domownicy.find(d => d.id === id)?.imie || "?"; },
+  opisPosilku(d, typ) {
+    const w = d.posilki[typ];
+    return w.bezSkladnikow || (w.danie ? this.nazwaDania(w.danie) : "nie wybrano dania");
+  },
+
+  /* Zapis całościowy — tylko dla operacji, które CELOWO nadpisują wszystko:
+     ułożenie automatem i wyczyszczenie. */
+  async zapisz() {
+    await set(ref(db, `domy/${kodDomu}/jadlospis`),
+              { wersja: WERSJA_DANYCH, okres: this.okres, siatka: this.siatka });
+  },
+
+  /* Zapis punktowy — dla zmiany jednego posiłku jednego dnia.
+
+     Wcześniej każda taka zmiana zapisywała CAŁE drzewo, więc gdy dwie osoby
+     przy stole edytowały plan w tej samej chwili, wygrywał ten, kto zapisał
+     później, a zmiana drugiej znikała bez śladu. Dotyczyło to funkcji, którą
+     sami wpisaliśmy jako największą zdobycz dnia. */
+  async zapiszPosilek(data, typ) {
+    const i = this.siatka.findIndex(d => d.data === data);
+    if (i < 0) return;
+    const wpis = this.siatka[i].posilki[typ];
+    const sciezka = `domy/${kodDomu}/jadlospis/siatka/${i}/posilki/${typ}`;
+    if (wpis) await set(ref(db, sciezka), wpis);
+    else await remove(ref(db, sciezka));
+  },
+
+  async ulozPlan() {
+    /* Easter egg: planowanie posiłków między drugą a piątą nad ranem. */
+    const g = new Date().getHours();
+    if (g >= 2 && g < 5) this.mrugnij("O tej porze to już nawet nie kolacja.");
+
+    const { siatka, bledy } = ulozAutomatem(this.siatka, this.polubione,
+                                            this.ustawienia.limitPowtorzen ?? null);
+    this.siatka = siatka;
+    await this.zapisz();
+
+    /* Automat zgłasza brak dania osobno dla każdego dnia, więc przy tygodniu
+       bez lunchu robi się sześć identycznych komunikatów. Wygląda jak awaria,
+       a jest jedną informacją — grupujemy po typie posiłku. */
+    const wgTypu = new Map();
+    for (const b of bledy) {
+      const m = b.match(/na "([^"]+)"/);
+      const typ = m ? m[1] : "posiłek";
+      wgTypu.set(typ, (wgTypu.get(typ) || 0) + 1);
+    }
+    this.uwagi = [...wgTypu].map(([typ, ile]) => ile === 1
+      ? `Jednego dnia zabrakło dania na ${typ}.`
+      : `W ${ile} dniach nie ma czego wstawić na ${typ} — polub więcej takich dań albo wyłącz ten posiłek w Ustawieniach.`);
+
+    if (!bledy.length) this.mrugnij("Plan gotowy. Lista zakupów policzy się sama.");
+  },
+
+  async wyczysc() {
+    this.okres = nowyOkres(new Date(), this.ustawienia.dlugoscOkresu || 7);
+    this.siatka = pustaSiatka(this.okres, this.rytm());
+    this.uwagi = [];
+    await remove(ref(db, `domy/${kodDomu}/jadlospis`));
+    this.komunikat = "Jadłospis wyczyszczony";
+  },
+
+  zastosujZdalne(zapisany) {
+    const ostrzezenie = sprawdzWersje(zapisany);
+    if (ostrzezenie) { this.uwagi = [ostrzezenie]; return; }
+
+    if (zapisany?.siatka?.length) {
+      this.okres = zapisany.okres;
+      this.siatka = zapisany.siatka;
+    } else {
+      this.okres = nowyOkres(new Date(), this.ustawienia.dlugoscOkresu || 7);
+      this.siatka = pustaSiatka(this.okres, this.rytm());
+    }
+    this.laduje = false;
+  },
+
+  przepis: null,
+
+  /* Dotknięcie posiłku: przepis, jeśli danie jest wybrane; wybór, jeśli nie ma
+     czego pokazać albo to pozycja bez składników („na mieście”). */
+  dotknij(dzien, typ) {
+    const wpis = dzien.posilki[typ];
+    if (!wpis?.danie || wpis.bezSkladnikow) { this.otworzWybor(dzien, typ); return; }
+    const danie = this.wszystkieDania.find(x => x.id === wpis.danie);
+    if (!danie) { this.otworzWybor(dzien, typ); return; }
+
+    /* Gramatura przeliczona na tylu ludzi, ilu realnie je ten posiłek — bo to
+       oni siadają do stołu, a nie liczba z przepisu. Zaokrąglamy do grama. */
+    const ileOsob = porcjePotrzebne(dzien, typ) || danie.porcje;
+    const wsp = ileOsob / danie.porcje;
+    this.przepis = {
+      danie, typ, data: dzien.data, ileOsob,
+      przeliczone: Math.abs(wsp - 1) > 0.01,
+      skladniki: danie.skladniki.map(s => ({ ...s, gramy: Math.round(s.gramy * wsp) })),
+      _dzien: dzien,
+    };
+  },
+
+  zmienZPrzepisu() {
+    const { _dzien, typ } = this.przepis;
+    this.przepis = null;
+    this.otworzWybor(_dzien, typ);
+  },
+
+  otworzWybor(dzien, typ) { this.arkusz = { dzien, typ }; },
+
+  /* Po zamknięciu arkusza nadrabiamy to, co przyszło w międzyczasie. */
+  zamknijArkusz() {
+    this.arkusz = null;
+    if (this._oczekujaca !== undefined) {
+      this.zastosujZdalne(this._oczekujaca);
+      this._oczekujaca = undefined;
+    }
+  },
+
+  async wybierzDanie(d) {
+    const { data, typ } = { data: this.arkusz.dzien.data, typ: this.arkusz.typ };
+    this.siatka = przypiszDanie(this.siatka, data, typ, d.id);
+    this.zamknijArkusz();
+    await this.zapiszPosilek(data, typ);
+
+    /* Plan bez ani jednej luki, ułożony ręcznie. Rzadkie i zasługuje na
+       odnotowanie — automat robi to w sekundę, człowiek nie. */
+    const wszystkie = this.siatka.flatMap(dz => Object.values(dz.posilki));
+    if (wszystkie.length >= 5 && wszystkie.every(w => w.danie || w.bezSkladnikow))
+      this.mrugnij("Cały okres zaplanowany. Nic tu po mnie.");
+  },
+
+  async wybierzBez(p) {
+    const { data, typ } = { data: this.arkusz.dzien.data, typ: this.arkusz.typ };
+    this.siatka = oznaczBezSkladnikow(this.siatka, data, typ, p.etykieta);
+    this.zamknijArkusz();
+    await this.zapiszPosilek(data, typ);
+
+    /* Trzy „na mieście” w jednym okresie. Bez oceniania — apka nie jest
+       od pilnowania budżetu, ale trudno udawać, że tego nie widzi. */
+    const ileNaMiescie = this.siatka.flatMap(d => Object.values(d.posilki))
+      .filter(w => w.bezSkladnikow === "na mieście").length;
+    if (p.etykieta === "na mieście" && ileNaMiescie === 3) {
+      this.mrugnij("Trzeci raz na mieście. Restauracje Cię lubią.");
+      return;
+    }
+    this.mrugnij(p.reakcja);
+  },
+
+  async wylacz(dzien, typ) {
+    this.siatka = wylaczPosilek(this.siatka, dzien.data, typ);
+    await this.zapiszPosilek(dzien.data, typ);
+    this.komunikat = `Wyłączono ${typ}`;
+  },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
+
+/* Sprite ikon i okienko pomocy dociągane PO starcie Alpine, nie przed.
+
+   Wcześniej były przed — z `await` na górnym poziomie modułu. Skutek: jeśli
+   którekolwiek pobranie zawisło (a service worker potrafi zawiesić żądanie
+   przy zerwanej sieci), `Alpine.start()` nigdy się nie wykonywał, `x-cloak`
+   nigdy nie schodził i człowiek dostawał BIAŁY EKRAN.
+
+   Ikony pojawiające się o pół sekundy później to koszt, którego nikt nie
+   zauważy. Biały ekran to koszt, po którym nikt nie wraca.
+
+   Limit czasu, bo `fetch` bez niego potrafi czekać w nieskończoność. */
+(async () => {
+  const pobierz = (plik) => Promise.race([
+    fetch(plik).then(r => r.text()),
+    new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error("limit czasu")), 5000)),
+  ]);
+  for (const [id, plik] of [["ikony", "ikony.html"], ["pomoc", "pomoc.html"]]) {
+    const cel = document.getElementById(id);
+    if (!cel) continue;
+    try { cel.innerHTML = await pobierz(plik); }
+    catch (e) { console.warn(`Nie udało się wczytać ${plik}:`, e); }
+  }
+})();
+</script>
+
+<script>
+/* BEZPIECZNIK BIAŁEGO EKRANU
+
+   `x-cloak` ukrywa całą stronę, dopóki Alpine nie przejmie kontroli. Gdy Alpine
+   wywali się przy starcie — bo padł import, bo sieć zerwała moduł, bo cokolwiek —
+   atrybut nigdy nie znika i człowiek dostaje BIAŁY EKRAN bez żadnej informacji.
+   Nie ma wtedy nawet przycisku, żeby wyjść.
+
+   Po dwóch sekundach zdejmujemy zasłonę siłą i pokazujemy, co się stało, razem
+   z dwiema drogami wyjścia. Lepszy nieostylowany ekran z komunikatem niż biel.
+
+   Dwie sekundy: Alpine startuje w ~200 ms nawet na starym telefonie przy zimnym
+   cache, więc jeśli po dwóch go nie ma, to go nie będzie. */
+(function () {
+  var start = Date.now();
+  setTimeout(function () {
+    if (!window.Alpine) {
+      document.body.removeAttribute("x-cloak");
+      var box = document.createElement("div");
+      box.setAttribute("style",
+        "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
+        "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      box.innerHTML =
+        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
+        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+      document.body.appendChild(box);
+      document.getElementById("fk-reset").onclick = function () {
+        if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations()
+          .then(function (r) { r.forEach(function (x) { x.unregister(); }); });
+        setTimeout(function () { location.reload(true); }, 300);
+      };
+    }
+  }, 2000);
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
