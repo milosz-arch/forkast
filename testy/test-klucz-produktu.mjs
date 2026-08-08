@@ -7,6 +7,7 @@
    do drugiej osoby. Dokładnie ten objaw zgłoszony 3 sierpnia.
    ===================================================================== */
 import { PRODUKTY } from "../produkty.js";
+import { kluczProduktu } from "../spizarnia.js";
 
 const klucz = nazwa => nazwa.toLowerCase()
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -57,6 +58,27 @@ test("klucz jest stabilny — ta sama nazwa zawsze daje ten sam wynik", () => {
      i odhaczenia by się nie spotykały. */
   rowne(klucz("Pierś z kurczaka"), klucz("Pierś z kurczaka"));
   rowne(klucz("PIERŚ Z KURCZAKA"), klucz("pierś z kurczaka"));
+});
+
+test("„ł” NIE jest zamieniane na „l” i to jest zapisane, nie przeoczone", () => {
+  /* `normalize("NFD")` rozkłada litery z ogonkiem i kreską na literę + znak
+     łączący, więc `ą` `ę` `ż` `ś` `ć` `ź` `ó` `ń` schodzą do ASCII same. `ł` NIE
+     rozkłada się na nic — to osobny znak Unicode bez wersji łączącej — więc
+     wpada w `[^a-z0-9]` i staje się myślnikiem.
+
+     Skutek: „Płatki owsiane” to `p-atki-owsiane`, nie `platki-owsiane`.
+     Wygląda źle w konsoli bazy, ale JEST SPÓJNE: ta sama funkcja liczy klucz
+     przy zapisie i przy odczycie, a test niżej pilnuje, że żadne dwa produkty
+     nie dostają tego samego klucza.
+
+     Ten test istnieje po to, żeby nikt tego „nie poprawił” bez migracji:
+     zmiana kluczy odcięłaby ludziom spiżarnie i odhaczenia zapisane wcześniej.
+     To ta sama rodzina co `\b` niedziałające na polskich literach (decyzja 64). */
+  rowne(kluczProduktu("Płatki owsiane"), "p-atki-owsiane");
+  rowne(kluczProduktu("Masło"), "mas-o");
+  rowne(kluczProduktu("Orzechy włoskie"), "orzechy-w-oskie");
+  rowne(kluczProduktu("Ryż basmati"), "ryz-basmati", "ż rozkłada się normalnie");
+  rowne(kluczProduktu("Ćwikła"), "cwik-a", "ć schodzi, ł nie");
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

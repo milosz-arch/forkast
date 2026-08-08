@@ -1,5 +1,6 @@
 import { generujKodDomu, znormalizujKod, kodPoprawny,
-         nowyDomownik, dodajDomownika, usunDomownika, zmienImie } from "../dom.js";
+         nowyDomownik, dodajDomownika, usunDomownika, zmienImie,
+         ktoJestem, ustawKimJestem, ktoJestemWsrod } from "../dom.js";
 
 let zdane = 0, oblane = 0;
 function test(nazwa, fn) {
@@ -99,6 +100,48 @@ test("zmienImie podmienia tylko właściwego, przycina spacje", () => {
 test("zmienImie rzuca na puste imię", () => {
   try { zmienImie([{ id: "id1", imie: "Ala" }], "id1", "  "); throw new Error("nie rzucił"); }
   catch (e) { prawda(/imię/i.test(e.message)); }
+});
+
+console.log("\n— kim jestem przy tym stole —");
+
+/* Podstawiona pamięć telefonu: te same trzy metody, których używa kod. */
+function pamiecTestowa(startowa = {}) {
+  const dane = { ...startowa };
+  return {
+    getItem: k => (k in dane ? dane[k] : null),
+    setItem: (k, v) => { dane[k] = String(v); },
+    removeItem: k => { delete dane[k]; },
+  };
+}
+
+test("na czystym telefonie nie wiadomo, kim jestem", () => {
+  rowne(ktoJestem(pamiecTestowa()), null);
+});
+
+test("wybór zostaje zapamiętany i odczytany", () => {
+  const p = pamiecTestowa();
+  ustawKimJestem("d1", p);
+  rowne(ktoJestem(p), "d1");
+});
+
+test("wybór da się wyczyścić", () => {
+  const p = pamiecTestowa({ "forkast-ja": "d1" });
+  ustawKimJestem(null, p);
+  rowne(ktoJestem(p), null);
+});
+
+test("pamięć, która rzuca przy zapisie, nie wywala apki", () => {
+  /* Safari w trybie prywatnym: getItem działa, setItem rzuca. Pułapka 16. */
+  const zepsuta = { getItem: () => null, setItem: () => { throw new Error("quota"); },
+                    removeItem: () => {} };
+  rowne(ustawKimJestem("d1", zepsuta), false, "ma zwrócić fałsz, nie rzucić");
+});
+
+test("gdy mnie usunięto ze stołu z drugiego telefonu, wybór przestaje obowiązywać", () => {
+  /* Inaczej licznik doliczałby kalorie osobie, której już nie ma przy stole. */
+  const p = pamiecTestowa({ "forkast-ja": "d9" });
+  rowne(ktoJestemWsrod([{ id: "d1", imie: "Ala" }], p), null);
+  rowne(ktoJestemWsrod([{ id: "d9", imie: "Ola" }], p), "d9");
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

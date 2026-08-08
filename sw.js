@@ -10,7 +10,7 @@
    dane na żywo nie mają czego szukać w pamięci podręcznej, a odpowiedź AI
    zapisana z poprzedniego razu byłaby wręcz szkodliwa.
    ===================================================================== */
-const CACHE = "forkast-v52";
+const CACHE = "forkast-v53";
 const SZKIELET = [
   "./index.html", "./talia.html", "./jadlospis.html", "./zakupy.html",
   "./przepisy.html", "./ustawienia.html", "./formularz.html", "./dodaj-z-ai.html",
@@ -20,7 +20,7 @@ const SZKIELET = [
   "./powloka.js", "./baza.js", "./instalacja.js", "./wersja.js", "./postep.js", "./spizarnia.js", "./czas.js", "./kuchnie.js", "./pomoc.js", "./pomoc.html", "./ekran.js", "./tekst.js", "./kuchnia.js",
   "./dom.js", "./rytm.js", "./automat.js", "./zakupy.js", "./wykluczenia.js",
   "./parser.js", "./prompt.js", "./formularz.js",
-  "./produkty.js", "./talia-startowa.js"
+  "./produkty.js", "./talia-startowa.js", "./licznik.js"
 ];
 
 self.addEventListener("install", e => {

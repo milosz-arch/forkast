@@ -70,3 +70,44 @@ export function zmienImie(domownicy, id, imie) {
   if (!czyste) throw new Error("Imię nie może być puste.");
   return domownicy.map(d => (d.id === id ? { ...d, imie: czyste } : d));
 }
+
+/* =====================================================================
+   KIM JESTEM PRZY TYM STOLE
+
+   Apka od początku wie, KTO siada do stołu, i nigdy nie wiedziała, KTO trzyma
+   ten telefon. Do niczego nie było to potrzebne: plan i lista są wspólne dla
+   całego domu. Licznik to zmienia — „Twoje kalorie” nie mają się do czego
+   odnieść, dopóki telefon nie wie, którym domownikiem jesteś (decyzja 78).
+
+   Świadomie w pamięci telefonu, nie w bazie: to jest fakt o URZĄDZENIU, nie
+   o stole. Dwie osoby przy jednym stole mają dwa telefony i każdy zna swojego
+   właściciela. Telefon współdzielony przez dwoje ludzi ustawi się na jedną
+   osobę i można to zmienić w Ustawieniach — nie udajemy, że rozwiązujemy
+   przypadek, którego nie znamy.
+   ===================================================================== */
+
+const KLUCZ_JA = "forkast-ja";
+
+/** Kim jestem — albo null, jeśli nikt jeszcze nie powiedział. */
+export function ktoJestem(pamiec = globalThis.localStorage) {
+  try { return pamiec?.getItem(KLUCZ_JA) || null; } catch { return null; }
+}
+
+/** Zapamiętuje wybór na tym telefonie. Zapis może się nie udać (Safari
+    w trybie prywatnym) i to nie może wywalić ekranu — patrz pułapka 16. */
+export function ustawKimJestem(id, pamiec = globalThis.localStorage) {
+  try {
+    if (id) pamiec?.setItem(KLUCZ_JA, id); else pamiec?.removeItem(KLUCZ_JA);
+    return true;
+  } catch { return false; }
+}
+
+/**
+ * Czy zapamiętany wybór nadal ma sens.
+ * Kogoś mogli usunąć ze stołu z drugiego telefonu — wtedy trzeba zapytać
+ * jeszcze raz, zamiast liczyć kalorie osobie, której już nie ma.
+ */
+export function ktoJestemWsrod(domownicy = [], pamiec = globalThis.localStorage) {
+  const id = ktoJestem(pamiec);
+  return domownicy.some(d => d.id === id) ? id : null;
+}

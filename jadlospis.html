@@ -180,6 +180,14 @@
                       x-text="`${zaplanowane(d)}/${Object.keys(d.posilki).length}`"></span>
               </div>
 
+              <!-- LICZNIK DNIA. Bez celu, bez oceny, bez paska „ile Ci zostało” —
+                   liczba jest liczbą, nie zarzutem (decyzja 77). Pokazuje się dopiero,
+                   gdy wiadomo, kim jest ten telefon, bo inaczej nie ma czyich kalorii
+                   liczyć (decyzja 78). -->
+              <p x-show="ja && Object.keys(d.posilki).length"
+                 class="mt-0.5 text-[0.82rem] tabular-nums text-stone-400 dark:text-stone-500"
+                 x-text="podpisLicznika(d)"></p>
+
               <p x-show="!Object.keys(d.posilki).length"
                  class="text-[0.82rem] italic text-stone-400">
                 Wszystkie posiłki wyłączone tego dnia.
@@ -188,7 +196,7 @@
               <ul class="divide-y divide-stone-100 dark:divide-stone-800">
                 <template x-for="typ in TYPY_POSILKOW.filter(t => d.posilki[t])" :key="typ">
                   <li class="relative py-2.5">
-                    <div class="flex items-baseline gap-2 pr-12">
+                    <div class="flex items-baseline gap-2 pr-24">
                       <!-- Kropka w kolorze kubełka: z jakiego świata jest to danie,
                            widoczne bez otwierania. -->
                       <span class="size-2 shrink-0 rounded-full"
@@ -196,10 +204,10 @@
                       <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]
                                    text-stone-400 dark:text-stone-500" x-text="typ"></span>
                       <span class="truncate text-[0.82rem] text-stone-400"
-                            x-text="d.posilki[typ].kto.map(imieOsoby).join(', ')"></span>
+                            x-text="d.posilki[typ].kto.map(id => imieOsoby(id)).join(', ')"></span>
                     </div>
                     <button type="button" @click="dotknij(d, typ)"
-                            class="block min-h-[2.5rem] w-full pr-12 text-left"
+                            class="block min-h-[2.5rem] w-full pr-24 text-left"
                             :aria-label="`${typ}, ${podpisDnia(d.data)}: ${opisPosilku(d, typ)}. Dotknij, żeby zmienić.`">
                       <span x-show="d.posilki[typ].bezSkladnikow"
                             class="text-[1rem] font-semibold text-stone-500 dark:text-stone-400"
@@ -221,6 +229,39 @@
                             class="text-[1rem] italic text-stone-300 dark:text-stone-600">
                         — dotknij, żeby wybrać —</span>
                     </button>
+                    <!-- PTASZEK: ugotowane i zjedzone przeze mnie.
+
+                         Odhaczasz za siebie — posiłek dla dwojga ma dwa ptaszki,
+                         po jednym z każdego telefonu. Jeden dotyk zmienia kalorie
+                         dnia, spiżarnię i przez nią listę zakupów (decyzja 77).
+
+                         Przy posiłku, którego nie mogę odhaczyć (pusty, „na mieście”,
+                         albo nie dla mnie), ptaszek zostaje wygaszony zamiast zniknąć —
+                         znikający przycisk czyta się jak usterka, nie jak reguła. -->
+                    <button type="button" @click="przelaczPtaszek(d, typ)"
+                            x-show="ja"
+                            :aria-pressed="mojPtaszek(d, typ).toString()"
+                            :aria-label="mojPtaszek(d, typ)
+                              ? `Odznacz ${typ}, ${podpisDnia(d.data)} — cofnie kalorie i odda zapas do spiżarni`
+                              : `Odhacz ${typ}, ${podpisDnia(d.data)} jako zjedzone przez Ciebie`"
+                            class="absolute right-11 top-1/2 flex size-11 -translate-y-1/2 items-center
+                                   justify-center rounded-xl transition active:scale-95"
+                            :class="!mogeOdhaczyc(d, typ)
+                                      ? 'text-stone-200 dark:text-stone-800'
+                                      : mojPtaszek(d, typ)
+                                        ? 'text-emerald-700 dark:text-emerald-400'
+                                        : 'text-stone-300 dark:text-stone-600'">
+                      <svg class="ikona ikona-sm"><use href="#i-ptaszek"/></svg>
+                      <!-- „2” w rogu: ilu domowników odhaczyło ten posiłek.
+                           Pokazujemy dopiero od dwóch, bo przy jednym nie niesie
+                           informacji, a dokłada szumu. -->
+                      <span x-show="ilePtaszkow(d, typ) > 1"
+                            class="absolute -right-0.5 -top-0.5 rounded-full bg-emerald-700 px-1
+                                   text-[0.68rem] font-bold text-white dark:bg-emerald-500
+                                   dark:text-stone-900"
+                            x-text="ilePtaszkow(d, typ)"></span>
+                    </button>
+
                     <button type="button" @click="wylacz(d, typ)"
                             :aria-label="`Wyłącz ${typ}, ${podpisDnia(d.data)}`"
                             class="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center
@@ -408,6 +449,11 @@ import { ulozPlan as ulozAutomatem } from "./automat.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
 import { TYPY_POSILKOW } from "./prompt.js";
+import { PRODUKTY } from "./produkty.js";
+import { ktoJestemWsrod } from "./dom.js";
+import { poZuzyciu, kluczProduktu } from "./spizarnia.js";
+import { porcjaDania, zuzycieJednejOsoby, kluczPosilku,
+         dzienOsoby, czyZjadlem, ileOdhaczylo, opisDnia } from "./licznik.js";
 
 
 const kodDomu = kodStolu();
@@ -440,6 +486,12 @@ Alpine.data("ekranJadlospis", () => ({
   TYPY_POSILKOW, BEZ_SKLADNIKOW,
   laduje: true,
   siatka: [],
+  /* LICZNIK (decyzja 77). `zjedzone` to wspólny stan stołu: kto co odhaczył.
+     `ja` jest lokalne — mówi, którym domownikiem jest ten telefon (decyzja 78).
+     `spizarnia` trzymamy tu tylko po to, żeby ptaszek miał od czego odjąć. */
+  zjedzone: {},
+  ja: null,
+  spizarnia: {},
   okres: null,
   domownicy: [],
   wszystkieDania: [],
@@ -502,6 +554,10 @@ Alpine.data("ekranJadlospis", () => ({
     ]);
 
     this.domownicy = Object.entries(snapDom.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
+    /* Kim jest ten telefon. Gdy przy stole siedzi jedna osoba, nie ma o co pytać;
+       gdy mnie usunięto z drugiego telefonu, wybór przestaje obowiązywać. */
+    this.ja = ktoJestemWsrod(this.domownicy)
+              || (this.domownicy.length === 1 ? this.domownicy[0].id : null);
     const preferencje = snapPref.val() || {};
     const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
     this.wszystkieDania = [...TALIA_STARTOWA, ...wlasne];
@@ -526,6 +582,127 @@ Alpine.data("ekranJadlospis", () => ({
         ? "Baza nie pozwala czytać jadłospisu — to reguły dostępu, nie internet."
         : `Nie dochodzą zmiany jadłospisu: ${blad?.code || blad?.message || blad}`);
     });
+
+    /* Odhaczone posiłki i spiżarnia — wspólne dla stołu, więc na żywo.
+       Nasłuchy z obsługą błędu, bo cicha odmowa odczytu wygląda jak brak
+       danych (decyzja 76). */
+    onValue(ref(db, `domy/${kodDomu}/zjedzone`), snap => {
+      this.zjedzone = snap.val() || {};
+    }, blad => this.nasluchPadl("odhaczonych posiłków", blad));
+
+    onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
+      this.spizarnia = snap.val() || {};
+    }, blad => this.nasluchPadl("spiżarni", blad));
+  },
+
+  nasluchPadl(co, blad) {
+    console.error(`Nasłuch ${co} padł:`, blad);
+    const powod = blad?.code || blad?.message || String(blad);
+    this.mrugnij?.(/permission/i.test(powod)
+      ? `Baza nie pozwala czytać ${co} — to reguły dostępu, nie internet.`
+      : `Nie dochodzą zmiany ${co}: ${powod}`);
+  },
+
+  /* =====================================================================
+     PTASZEK: „ugotowane i zjedzone przeze mnie”
+
+     Jeden gest, trzy skutki — kalorie dnia, spiżarnia i przez nią lista
+     zakupów (decyzja 77). Odhacza się ZA SIEBIE: posiłek dla dwojga ma dwa
+     ptaszki, po jednym z każdego telefonu (odpowiedź Miłosza z 8 sierpnia).
+
+     Ze spiżarni schodzi PORCJA JEDNEJ OSOBY — ten sam ułamek, którym lista
+     zakupów tę porcję wcześniej policzyła. Cofnięcie ptaszka oddaje ją z powrotem.
+     ===================================================================== */
+  mojPtaszek(d, typ) {
+    return czyZjadlem(this.zjedzone, d.data, typ, this.ja);
+  },
+
+  ilePtaszkow(d, typ) {
+    return ileOdhaczylo(this.zjedzone, d.data, typ);
+  },
+
+  /* Ile osób ma ten posiłek w planie — do podpisu „1 z 2”. */
+  iluJe(d, typ) {
+    return d.posilki[typ]?.kto?.length || 0;
+  },
+
+  podpisLicznika(d) {
+    return opisDnia(dzienOsoby(d, this.zjedzone, this.ja, this.wszystkieDania, PRODUKTY));
+  },
+
+  /* Posiłek, którego nie da się odhaczyć: pusty, „na mieście”, albo taki,
+     w którym mnie nie ma. Nie chowamy ptaszka — pokazujemy go wygaszonego,
+     żeby nie wyglądało, że część posiłków go z niewiadomych powodów nie ma. */
+  mogeOdhaczyc(d, typ) {
+    const w = d.posilki[typ];
+    return Boolean(this.ja && w?.danie && !w.bezSkladnikow && w.kto?.includes(this.ja));
+  },
+
+  async przelaczPtaszek(d, typ) {
+    if (!this.mogeOdhaczyc(d, typ)) {
+      if (!this.ja) this.mrugnij("Najpierw powiedz w Ustawieniach, kim jesteś przy tym stole.");
+      else if (!d.posilki[typ]?.kto?.includes(this.ja)) this.mrugnij("Ten posiłek nie jest zaplanowany dla Ciebie.");
+      return;
+    }
+    const danie = this.wszystkieDania.find(x => x.id === d.posilki[typ].danie);
+    if (!danie) return;
+
+    const klucz = kluczPosilku(d.data, typ);
+    const bylo = this.mojPtaszek(d, typ);
+    const wpis = { ...(this.zjedzone[klucz] || {}) };
+    if (bylo) delete wpis[this.ja]; else wpis[this.ja] = true;
+
+    /* Optymistycznie, jak wszędzie w tej apce: liczby mają drgnąć od razu. */
+    const lokalne = { ...this.zjedzone };
+    if (Object.keys(wpis).length) lokalne[klucz] = wpis; else delete lokalne[klucz];
+    this.zjedzone = lokalne;
+
+    /* Spiżarnia: odhaczenie zabiera moją porcję, cofnięcie ją oddaje.
+       `poZuzyciu` odejmuje tylko to, co w spiżarni jest — czego nie mieliśmy,
+       tego nie odliczamy (decyzja 37). */
+    const moje = zuzycieJednejOsoby(danie);
+    const nowaSpizarnia = { ...this.spizarnia };
+    if (bylo) {
+      for (const x of moje) {
+        const k = kluczProduktu(x.produkt);
+        if (nowaSpizarnia[k] != null) nowaSpizarnia[k] = Math.round(nowaSpizarnia[k] + x.gramy);
+      }
+    } else {
+      for (const [k, v] of Object.entries(poZuzyciu(nowaSpizarnia, moje))) {
+        if (v === null) delete nowaSpizarnia[k]; else nowaSpizarnia[k] = v;
+      }
+    }
+    this.spizarnia = nowaSpizarnia;
+
+    const p = porcjaDania(danie, PRODUKTY);
+    if (!bylo) {
+      this.mrugnij(p.nieznane.length
+        ? `Odhaczone. ${p.kcal} kcal — bez ${p.nieznane.join(", ")}, tego nie ma w słowniku.`
+        : `Odhaczone. ${p.kcal} kcal.`);
+    }
+
+    if (!db) return;
+    try {
+      /* CAŁA GAŁĄŹ, NIE POJEDYNCZE DZIECKO — i to dotyczy też kasowania.
+
+         Pułapka 2 mówi o wartości prostej pod gałęzią z nasłuchem, a `null`
+         wysyłane po to, żeby skasować wpis, jest właśnie taką wartością. Odznaczenie
+         ptaszka wywalało się tym samym „i.insert is not a function”, co spiżarnia
+         wczoraj wieczorem — złapał to stend z podstawioną bazą, zanim ktokolwiek
+         dotknął tego na telefonie. Wysyłamy więc obiekt całej gałęzi, w którym
+         skasowanego wpisu po prostu nie ma. */
+      const wszystko = { ...this.zjedzone };
+      if (!Object.keys(wpis).length) delete wszystko[klucz];
+      /* ZAWSZE OBIEKT, NIGDY `null`. Pusty obiekt Firebase i tak kasuje węzeł
+         (pułapka 15), a `null` to wartość prosta — czyli dokładnie ten kształt,
+         który pod nasłuchem nie dochodzi (pułapka 2). Jedno i drugie kasuje,
+         tylko jedno działa. */
+      await set(ref(db, `domy/${kodDomu}/zjedzone`), wszystko);
+      await set(ref(db, `domy/${kodDomu}/spizarnia`), nowaSpizarnia);
+    } catch (e) {
+      console.error("Zapis odhaczenia nie przeszedł:", e);
+      this.mrugnij(`Nie udało się zapisać: ${e?.code || e?.message || e}`);
+    }
   },
 
   /* Rytm z ustawień, a jeśli go nie ma — domyślny, w którym wszyscy jedzą

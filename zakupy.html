@@ -332,20 +332,15 @@
             </template>
           </ul>
 
-          <!-- Odliczenie po ugotowaniu. Dwustopniowe, bo zmienia liczby,
-               których człowiek nie pamięta z głowy. -->
-          <div x-show="Object.keys(spizarnia).length"
-               class="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
-            <button type="button" @click="odliczZuzycie()"
-                    class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
-                           border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
-                           dark:border-stone-700 dark:bg-stone-950"
-                    x-text="odliczanieUzbrojone ? 'Na pewno? Dotknij ponownie'
-                                                : 'Ugotowane — odlicz zużycie okresu'"></button>
-            <p class="mt-1.5 text-center text-[0.82rem] text-stone-400">
-              Odejmie od spiżarni to, co zjedliście przez ten okres.
-            </p>
-          </div>
+          <!-- BYŁ TU PRZYCISK „Ugotowane — odlicz zużycie okresu”.
+
+               Odejmował całą gramaturę okresu naraz. Od chwili, gdy posiłki
+               odhacza się pojedynczo w jadłospisie, oba mechanizmy odjęłyby to
+               samo dwa razy — a wtedy lista zakupów kazałaby kupować to, co leży
+               w domu. Wybór Miłosza: zostaje ptaszek, przycisk znika (decyzja 77).
+
+               Świadomy koszt: kto nie odhacza posiłków, temu spiżarnia zastyga
+               i trzeba ją poprawić ręcznie. Za to nic nie odejmuje się dwa razy. -->
         </div>
       </section>
 
@@ -406,7 +401,7 @@ import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
 import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie } from "./zakupy.js";
-import { nalozSpizarnie, poZuzyciu, opisZapasu, kluczProduktu } from "./spizarnia.js";
+import { nalozSpizarnie, opisZapasu, kluczProduktu } from "./spizarnia.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { PRODUKTY } from "./produkty.js";
 
@@ -763,7 +758,6 @@ Alpine.data("ekranZakupy", () => ({
   },
 
   pozycjeSurowe: [],
-  odliczanieUzbrojone: false,
 
   /* STAN SPIŻARNI — pola, których do 8 sierpnia po prostu nie było.
      Metody niżej pisały do nich (`this.spizarnia[klucz] = ...`), ale szablon
@@ -837,8 +831,11 @@ Alpine.data("ekranZakupy", () => ({
          nadpiszą sobie nawzajem ostatnią zmianę. Przy zapasach w domu to zdarzenie
          teoretyczne, a jedyna alternatywa to zapis, który nie dociera wcale. */
       const stan = { ...this.spizarnia };
-      await set(ref(db, `domy/${kodDomu}/spizarnia`),
-                Object.keys(stan).length ? stan : null);
+      /* ZAWSZE OBIEKT, NIGDY `null`. Pusty obiekt Firebase i tak kasuje węzeł
+         (pułapka 15), a `null` to wartość prosta — czyli dokładnie ten kształt,
+         który pod nasłuchem nie dochodzi (pułapka 2). Jedno i drugie kasuje,
+         tylko jedno działa. */
+      await set(ref(db, `domy/${kodDomu}/spizarnia`), stan);
     } catch (e) {
       /* POWÓD, NIE DOMYSŁ. „Sprawdź internet” było zgadywaniem: baza odmawia
          zapisu także wtedy, gdy internet działa bez zarzutu, a nie zgadzają się
@@ -852,37 +849,11 @@ Alpine.data("ekranZakupy", () => ({
     }
   },
 
-  /* Dwustopniowe, bo zmienia liczby, których człowiek nie pamięta z głowy. */
-  async odliczZuzycie() {
-    if (!this.odliczanieUzbrojone) {
-      this.odliczanieUzbrojone = true;
-      clearTimeout(this._to);
-      this._to = setTimeout(() => { this.odliczanieUzbrojone = false; }, 5000);
-      return;
-    }
-    clearTimeout(this._to);
-    this.odliczanieUzbrojone = false;
-    const zmiany = poZuzyciu(this.spizarnia, this.pozycjeSurowe);
-    if (!Object.keys(zmiany).length) { this.mrugnij("Nie ma czego odliczyć."); return; }
-    for (const [k, v] of Object.entries(zmiany)) {
-      if (v === null) delete this.spizarnia[k]; else this.spizarnia[k] = v;
-    }
-    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-    if (this.fb) {
-      try {
-        const { db, ref, set } = this.fb;
-        /* Ten sam kształt co wyżej: cała gałąź naraz (decyzja 76). */
-        const stan = { ...this.spizarnia };
-        await set(ref(db, `domy/${kodDomu}/spizarnia`),
-                  Object.keys(stan).length ? stan : null);
-      } catch (e) {
-        console.error("Odliczenie zużycia nie przeszło:", e);
-        this.mrugnij(`Nie udało się zapisać: ${e?.code || e?.message || e}`);
-        return;
-      }
-    }
-    this.mrugnij("Odliczone. Spiżarnia zaktualizowana.");
-  },
+  /* `odliczZuzycie()` i `odliczanieUzbrojone` zniknęły razem z przyciskiem
+     „Ugotowane — odlicz zużycie okresu”: spiżarnię odejmuje teraz ptaszek przy
+     posiłku w jadłospisie, po jednej porcji naraz (decyzja 77). Zostawienie
+     martwej metody kusiłoby, żeby ją kiedyś z powrotem podpiąć — a wtedy
+     odjęłoby się dwa razy. */
 
   /* Nakłada na listę dwie warstwy: co już macie w domu (spiżarnia) i co już
      wzięliście ze sklepu (odhaczenia). Trzymamy surową listę osobno, bo obie
@@ -996,8 +967,11 @@ Alpine.data("ekranZakupy", () => ({
          to najświeższy stan, jaki ten telefon zna. */
       const { db, ref, set } = this.fb;
       const komplet = Object.fromEntries([...this.odhaczone].map(x => [x, true]));
-      await set(ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}`),
-                Object.keys(komplet).length ? komplet : null);
+      /* ZAWSZE OBIEKT, NIGDY `null`. Pusty obiekt Firebase i tak kasuje węzeł
+         (pułapka 15), a `null` to wartość prosta — czyli dokładnie ten kształt,
+         który pod nasłuchem nie dochodzi (pułapka 2). Jedno i drugie kasuje,
+         tylko jedno działa. */
+      await set(ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}`), komplet);
     } catch {
       /* Nie cofamy stanu: człowiek widzi, że odhaczył, i tak ma być.
          Zapis dogoni bazę przy następnym wejściu z zasięgiem. */
