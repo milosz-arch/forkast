@@ -818,22 +818,27 @@ Alpine.data("ekranZakupy", () => ({
 
     if (!this.fb) return;
     try {
-      const { db, ref, update } = this.fb;
-      /* ZAPIS PRZEZ `update` NA GAŁĘZI, NIE `set` NA POJEDYNCZYM DZIECKU.
+      const { db, ref, set } = this.fb;
+      /* ZAPISUJEMY CAŁĄ GAŁĄŹ, NIE POJEDYNCZE DZIECKO.
 
-         Marzena dostała przy dodawaniu produktu:
-         „i.insert is not a function (In 'i.insert(e,e.node)', 'i.insert' is undefined)”.
-         To wyjątek ze ŚRODKA Firebase, nie z naszego kodu — wywalał się mechanizm
-         wstawiania pojedynczego dziecka do gałęzi, na której wisi nasłuch. Reguły
-         dostępu sprawdzone i pozwalają; internet działał, bo ta sama karta chwilę
-         wcześniej pobrała z tej bazy całą listę zakupów (decyzja 76).
+         Kształt zapisu okazał się mieć znaczenie i widać to wprost w bazie.
+         Istnieją tam: `jadlospis` (obiekt na całej gałęzi), `domownicy` (obiekt
+         pod gałęzią), `preferencje` (wartość prosta, ale bez nasłuchu) i
+         `wykluczenia`. NIE ISTNIEJĄ: `spizarnia` i `odhaczone` — jedyne dwa
+         miejsca, gdzie zapisywaliśmy WARTOŚĆ PROSTĄ (liczbę, `true`) pod gałąź,
+         na której wisi nasłuch. Każda taka próba kończyła się wyjątkiem ze środka
+         Firebase: „i.insert is not a function”. `update` z jednym kluczem zachował
+         się tak samo, bo w środku biblioteki to ta sama droga (decyzja 76).
 
-         `update` na gałęzi z jednym kluczem robi to samo co `set` na dziecku —
-         nadpisuje jedną pozycję, nie rusza reszty, `null` kasuje — ale idzie inną
-         drogą wewnątrz biblioteki. To obejście, nie zrozumiana przyczyna, i tak
-         jest opisane w decyzji. */
-      const galaz = ref(db, `domy/${kodDomu}/spizarnia`);
-      await update(galaz, { [klucz]: gramy > 0 ? gramy : null });
+         Dlatego piszemy tu tym kształtem, który w tej apce działa od tygodnia:
+         obiekt na całej gałęzi, dokładnie jak jadłospis.
+
+         Koszt, świadomy: dwie osoby zmieniające spiżarnię w tej samej sekundzie
+         nadpiszą sobie nawzajem ostatnią zmianę. Przy zapasach w domu to zdarzenie
+         teoretyczne, a jedyna alternatywa to zapis, który nie dociera wcale. */
+      const stan = { ...this.spizarnia };
+      await set(ref(db, `domy/${kodDomu}/spizarnia`),
+                Object.keys(stan).length ? stan : null);
     } catch (e) {
       /* POWÓD, NIE DOMYSŁ. „Sprawdź internet” było zgadywaniem: baza odmawia
          zapisu także wtedy, gdy internet działa bez zarzutu, a nie zgadzają się
@@ -865,8 +870,11 @@ Alpine.data("ekranZakupy", () => ({
     this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
     if (this.fb) {
       try {
-        const { db, ref, update } = this.fb;
-        await update(ref(db, `domy/${kodDomu}/spizarnia`), zmiany);
+        const { db, ref, set } = this.fb;
+        /* Ten sam kształt co wyżej: cała gałąź naraz (decyzja 76). */
+        const stan = { ...this.spizarnia };
+        await set(ref(db, `domy/${kodDomu}/spizarnia`),
+                  Object.keys(stan).length ? stan : null);
       } catch (e) {
         console.error("Odliczenie zużycia nie przeszło:", e);
         this.mrugnij(`Nie udało się zapisać: ${e?.code || e?.message || e}`);
@@ -978,14 +986,18 @@ Alpine.data("ekranZakupy", () => ({
 
     if (!this.fb || !this.startOkresu) return;
     try {
-      /* Tak samo jak przy spiżarni: `update` na gałęzi zamiast `set` na dziecku.
-         Ten zapis ma dokładnie ten sam kształt, więc gdyby to jego dotyczył ten sam
-         błąd z wnętrza Firebase, odhaczanie po cichu nie docierałoby do drugiej
-         osoby — a tego nikt by nie zauważył, bo komunikat mówi „zsynchronizuje się,
-         gdy wróci internet” (decyzja 76). */
-      const { db, ref, update } = this.fb;
-      const galaz = ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}`);
-      await update(galaz, { [k]: p.wKoszyku ? true : null });
+      /* Odhaczeń też nie było w bazie — ten sam kształt zapisu, ten sam błąd,
+         tylko niewidoczny, bo komunikat mówił „zsynchronizuje się, gdy wróci
+         internet”. Czyli obietnica z decyzji 35 — dwie osoby przy jednym stole
+         widzą jedną listę — nie działała ani razu (decyzja 76).
+
+         Wysyłamy komplet odhaczonych, nie pojedynczy klucz. `this.odhaczone` jest
+         na bieżąco nadpisywane przez nasłuch, więc to nie jest widok sprzed minuty:
+         to najświeższy stan, jaki ten telefon zna. */
+      const { db, ref, set } = this.fb;
+      const komplet = Object.fromEntries([...this.odhaczone].map(x => [x, true]));
+      await set(ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}`),
+                Object.keys(komplet).length ? komplet : null);
     } catch {
       /* Nie cofamy stanu: człowiek widzi, że odhaczył, i tak ma być.
          Zapis dogoni bazę przy następnym wejściu z zasięgiem. */
