@@ -818,9 +818,22 @@ Alpine.data("ekranZakupy", () => ({
 
     if (!this.fb) return;
     try {
-      const { db, ref, set, remove } = this.fb;
-      const sciezka = ref(db, `domy/${kodDomu}/spizarnia/${klucz}`);
-      if (gramy > 0) await set(sciezka, gramy); else await remove(sciezka);
+      const { db, ref, update } = this.fb;
+      /* ZAPIS PRZEZ `update` NA GAŁĘZI, NIE `set` NA POJEDYNCZYM DZIECKU.
+
+         Marzena dostała przy dodawaniu produktu:
+         „i.insert is not a function (In 'i.insert(e,e.node)', 'i.insert' is undefined)”.
+         To wyjątek ze ŚRODKA Firebase, nie z naszego kodu — wywalał się mechanizm
+         wstawiania pojedynczego dziecka do gałęzi, na której wisi nasłuch. Reguły
+         dostępu sprawdzone i pozwalają; internet działał, bo ta sama karta chwilę
+         wcześniej pobrała z tej bazy całą listę zakupów (decyzja 76).
+
+         `update` na gałęzi z jednym kluczem robi to samo co `set` na dziecku —
+         nadpisuje jedną pozycję, nie rusza reszty, `null` kasuje — ale idzie inną
+         drogą wewnątrz biblioteki. To obejście, nie zrozumiana przyczyna, i tak
+         jest opisane w decyzji. */
+      const galaz = ref(db, `domy/${kodDomu}/spizarnia`);
+      await update(galaz, { [klucz]: gramy > 0 ? gramy : null });
     } catch (e) {
       /* POWÓD, NIE DOMYSŁ. „Sprawdź internet” było zgadywaniem: baza odmawia
          zapisu także wtedy, gdy internet działa bez zarzutu, a nie zgadzają się
@@ -965,9 +978,14 @@ Alpine.data("ekranZakupy", () => ({
 
     if (!this.fb || !this.startOkresu) return;
     try {
-      const { db, ref, set, remove } = this.fb;
-      const sciezka = ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}/${k}`);
-      if (p.wKoszyku) await set(sciezka, true); else await remove(sciezka);
+      /* Tak samo jak przy spiżarni: `update` na gałęzi zamiast `set` na dziecku.
+         Ten zapis ma dokładnie ten sam kształt, więc gdyby to jego dotyczył ten sam
+         błąd z wnętrza Firebase, odhaczanie po cichu nie docierałoby do drugiej
+         osoby — a tego nikt by nie zauważył, bo komunikat mówi „zsynchronizuje się,
+         gdy wróci internet” (decyzja 76). */
+      const { db, ref, update } = this.fb;
+      const galaz = ref(db, `domy/${kodDomu}/odhaczone/${this.startOkresu}`);
+      await update(galaz, { [k]: p.wKoszyku ? true : null });
     } catch {
       /* Nie cofamy stanu: człowiek widzi, że odhaczył, i tak ma być.
          Zapis dogoni bazę przy następnym wejściu z zasięgiem. */

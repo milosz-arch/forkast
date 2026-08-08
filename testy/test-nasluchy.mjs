@@ -76,5 +76,54 @@ for (const plik of EKRANY) {
   });
 }
 
+/* =====================================================================
+   KAŻDA UŻYTA FUNKCJA BAZY MUSI BYĆ WYPAKOWANA Z POŁĄCZENIA
+
+   Zmieniając zapis spiżarni z `set` na `update` zostawiłem w rozpakowaniu
+   `const { db, ref, set, remove } = this.fb` — czyli `update` nie istniało,
+   a zapis kończył się komunikatem „update is not defined”. W Node ten kod się
+   nie wykonuje, więc żaden zestaw tego nie widział; złapał to dopiero stend
+   z podstawioną bazą (decyzja 76).
+
+   Idziemy linia po linii: przy każdym wywołaniu funkcji bazy patrzymy wstecz
+   na najbliższe rozpakowanie i sprawdzamy, czy ta nazwa w nim była.
+   ===================================================================== */
+console.log("\n— funkcje bazy są wypakowane przed użyciem —");
+
+const FUNKCJE_BAZY = ["get", "set", "remove", "update", "push", "onValue"];
+
+for (const plik of EKRANY) {
+  test(`${plik}: każda użyta funkcja bazy jest wypakowana z połączenia`, () => {
+    const linie = readFileSync(new URL(plik, KORZEN), "utf8").split("\n");
+    /* Dwa wzorce w tym projekcie: `const { … } = this.fb` wewnątrz metody
+       (znika przy następnej metodzie) oraz `({ … } = fb)` na poziomie modułu,
+       do zmiennych zadeklarowanych wyżej (zostaje do końca pliku). */
+    let wMetodzie = new Set();
+    const wModule = new Set();
+    const braki = [];
+    for (let i = 0; i < linie.length; i++) {
+      const l = linie[i];
+      const globalne = l.match(/\(\{([^}]*)\} = fb\)/);
+      if (globalne) {
+        for (const n of globalne[1].split(",")) wModule.add(n.trim());
+        continue;
+      }
+      const lokalne = l.match(/const \{([^}]*)\} = (?:this\.)?fb;/);
+      if (lokalne) {
+        wMetodzie = new Set(lokalne[1].split(",").map(x => x.trim()));
+        continue;
+      }
+      if (/^  [A-Za-z_$][\w$]*\(/.test(l) || /^  (?:async |get )/.test(l)) wMetodzie = new Set();
+      for (const f of FUNKCJE_BAZY) {
+        if (wMetodzie.has(f) || wModule.has(f)) continue;
+        const uzyte = l.includes(f + "(") && !l.includes("." + f + "(")
+                      && !l.trim().startsWith("*") && !l.trim().startsWith("//");
+        if (uzyte) braki.push(`${f}() w linii ${i + 1} — bez wypakowania`);
+      }
+    }
+    prawda(braki.length === 0, braki.join(", "));
+  });
+}
+
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
 process.exit(oblane ? 1 : 0);
