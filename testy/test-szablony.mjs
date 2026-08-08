@@ -301,29 +301,38 @@ for (const plik of EKRANY) {
 }
 
 /* =====================================================================
-   KONTROLKI W NAGŁÓWKU NIE MOGĄ STAĆ W TYM SAMYM MIEJSCU
+   KONTROLKI NAGŁÓWKA NIE MOGĄ BYĆ WYJĘTE Z UKŁADU STRONY
 
-   Nagłówek każdego ekranu trzyma dwie–cztery okrągłe kontrolki ustawione
-   na sztywno od prawej krawędzi, na siatce co 3.2rem. W Zakupach dwie z nich
-   miały tę samą wartość `right` — przycisk pomocy leżał na połowie przełącznika
-   blokady ekranu i przejmował jego dotknięcia. Zmierzone w przeglądarce:
-   50×45 px wspólnego pola (decyzja 73).
+   Pierwsza wersja tego testu pilnowała, żeby dwie kontrolki nie miały tej samej
+   wartości `right` — bo tak się zderzyły w Zakupach. Ale to była kontrola siatki,
+   której nikt nie widzi, a prawdziwy problem był szerszy: kontrolka wyjęta
+   z układu strony potrafi wejść nie tylko na drugą kontrolkę, ale i na TYTUŁ.
+   Na iPhonie „Lista zakupów" leżała pod trzema ikonami (decyzja 74).
+
+   Dlatego pilnujemy teraz rzeczy mocniejszej i prostszej: w nagłówku nie ma
+   pozycjonowania bezwzględnego w ogóle. Kontrolki stoją w zwykłym wierszu,
+   więc nie mają jak na nic wejść — a test nie musi znać żadnej siatki.
+
+   Uwaga na przyszłość: poprzednia wersja tego testu po przebudowie nagłówków
+   przechodziłaby ZAWSZE, bo szukałaby wartości `right`, których już nie ma.
+   Test na pustym zbiorze wygląda dokładnie tak samo jak test zdany.
    ===================================================================== */
-console.log("\n— rozstaw kontrolek w nagłówkach —");
+console.log("\n— kontrolki w nagłówkach stoją w układzie strony —");
 
 for (const plik of EKRANY) {
-  test(`${plik}: żadne dwie kontrolki nagłówka nie stoją w tym samym miejscu`, () => {
+  test(`${plik}: nagłówek nie pozycjonuje kontrolek bezwzględnie`, () => {
     const surowy = readFileSync(plik, "utf8");
-    const naglowek = surowy.slice(surowy.indexOf("<header"), surowy.indexOf("</header>"));
-    if (naglowek.length < 10) return;                    // ekran bez nagłówka
+    const i = surowy.indexOf("<header");
+    if (i === -1) return;
+    const naglowek = surowy.slice(i, surowy.indexOf("</header>"));
 
-    const pozycje = [...naglowek.matchAll(/right:\s*([\d.]+)rem/g)].map(m => m[1]);
-    const ile = {};
-    for (const p of pozycje) ile[p] = (ile[p] || 0) + 1;
-    const zderzenia = Object.entries(ile).filter(([, n]) => n > 1).map(([p, n]) => `${p}rem ×${n}`);
+    const wyjete = [
+      ...naglowek.matchAll(/(?:right|left):\s*[\d.]+rem/g),
+      ...naglowek.matchAll(/class="[^"]*\babsolute\b/g),
+    ].map(m => m[0].slice(0, 40));
 
-    prawda(zderzenia.length === 0,
-           `kontrolki jedna na drugiej: ${zderzenia.join(", ")} — siatka to 1 / 4.2 / 7.4 / 10.6rem`);
+    prawda(wyjete.length === 0,
+           `kontrolka wyjęta z układu strony: ${wyjete.join(", ")} — może wejść na tytuł`);
   });
 }
 

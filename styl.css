@@ -419,3 +419,80 @@ p, li { text-wrap: pretty }
    Wszystko w `rem`, bo `html` ma `font-size: calc(18px * var(--skala))` —
    dzięki temu ustawienie „większy tekst” podnosi cały ekran proporcjonalnie.
    ===================================================================== */
+
+/* =====================================================================
+   PIĘĆ KLAS BEZ ŻADNEGO CSS — ta sama pułapka co `.stempel-kubelka`
+
+   `.liczba-glowna`, `.liczba-drobna`, `.naglowek-dzialu`, `.btn-glowny`
+   i `.pasek-kubelka` były używane w HTML-u i nie miały tu ani jednej reguły.
+   Przeglądarka nie zgłasza nieznanej klasy — po prostu nic nie robi, więc
+   element renderuje się jak zwykły tekst i wygląda „jakoś”, zamiast wyglądać źle.
+
+   Skutek widoczny na telefonie Miłosza: duża liczba w koszyku była tego samego
+   rozmiaru co reszta strony i stała krzywo obok „/ 10”, licznik przy dziale nie
+   szedł do prawej krawędzi, a pasek w kolorze czasu na karcie dania nie istniał
+   wcale. Dokładnie ta sama historia co z pieczątką czasu w decyzji 63 —
+   trzeci raz w tym projekcie (decyzja 74).
+
+   Kolory zostawiamy w HTML-u (klasy Tailwinda), bo tam już są i mają policzony
+   kontrast. Tutaj tylko kształt: rozmiar, waga, układ.
+   ===================================================================== */
+
+/* Liczba, po którą człowiek patrzy na ten ekran stojąc w sklepie. */
+.liczba-glowna {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* „/ 10” obok niej — czytelne, ale wyraźnie drugorzędne. */
+.liczba-drobna {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #78716c;                      /* stone-500, 4.59:1 na tle listy */
+}
+.dark .liczba-drobna { color: #a8a29e } /* stone-400 na ciemnym tle */
+
+/* Nagłówek działu sklepu: nazwa po lewej, „zostało N” dociśnięte do prawej.
+   Bez `flex` margines `ml-auto` w środku nie ma czego zrobić i licznik
+   przyklejał się do nazwy działu. */
+.naglowek-dzialu {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+/* Główny przycisk w pustym stanie listy („Przejdź do jadłospisu”).
+   Kontrast biały na #047857 to 5.48:1. */
+.btn-glowny {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0 1.25rem;
+  border-radius: .75rem;
+  background: #047857;
+  color: #fff;
+  font-weight: 700;
+  transition: transform .12s ease;
+}
+.btn-glowny:active { transform: scale(.98) }
+
+/* Pasek w kolorze czasu na górze karty dania. Kolor wstawia HTML
+   (`:style="background:…"`), tutaj jest tylko miejsce i grubość. */
+.pasek-kubelka {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: .3rem;
+  border-radius: .3rem .3rem 0 0;
+}

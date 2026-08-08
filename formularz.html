@@ -56,22 +56,35 @@
 
   <div class="flex min-h-0 min-w-0 flex-1 flex-col">
 
-    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+    <header class="shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
                    from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                    shadow-lg shadow-emerald-900/20 md:rounded-none"
             style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
+    <!-- KONTROLKI NA WŁASNEJ LINII, NIE NA TYTULE.
+
+         Do 8 sierpnia stały bezwzględnie w prawym górnym rogu, na sztywnej siatce
+         co 3.2rem. Dwie wady, obie zgłoszone z prawdziwego telefonu (decyzja 74):
+         przy dłuższym tytule („Lista zakupów”) kontrolki po prostu na nim leżały,
+         a dwie o tej samej wartości `right` leżały na sobie nawzajem.
+
+         Teraz to zwykły wiersz: napis „Forkast” po lewej, kontrolki po prawej,
+         tytuł pod spodem. Nic nie może na nic wejść, bo nic nie jest wyjęte
+         z układu strony — i nie trzeba pamiętać o żadnej siatce. -->
+    <div class="flex min-h-[2.75rem] items-center gap-2">
       <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <div class="ml-auto flex shrink-0 items-center gap-2">
+        <a href="ustawienia.html" aria-label="Ustawienia"
+         class="flex size-11 items-center justify-center rounded-full border
+                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
+                transition active:scale-95">
+        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
+      </a>
+      </div>
+    </div>
       <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj danie</h1>
       <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85">
         Bez AI — po prostu to, co i tak gotujecie.
       </p>
-      <a href="ustawienia.html" aria-label="Ustawienia"
-         class="absolute flex size-11 items-center justify-center rounded-full border
-                border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
-                transition active:scale-95"
-         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
-        <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
-      </a>
     </header>
 
     <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"

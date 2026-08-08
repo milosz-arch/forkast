@@ -67,58 +67,51 @@
   <div class="flex min-h-0 min-w-0 flex-1 flex-col">
 
     <!-- ========================= NAGŁÓWEK ========================= -->
-    <header class="relative shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
+    <header class="shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br
                  from-emerald-600 via-emerald-700 to-emerald-800 px-5 text-white
                  shadow-lg shadow-emerald-900/20 md:rounded-none"
           style="padding-top:calc(1.15rem + env(safe-area-inset-top,0px)); padding-bottom:1.4rem">
-    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-    <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
-    <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
+    <!-- KONTROLKI NA WŁASNEJ LINII, NIE NA TYTULE.
 
-    <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
+         Do 8 sierpnia stały bezwzględnie w prawym górnym rogu, na sztywnej siatce
+         co 3.2rem. Dwie wady, obie zgłoszone z prawdziwego telefonu (decyzja 74):
+         przy dłuższym tytule („Lista zakupów”) kontrolki po prostu na nim leżały,
+         a dwie o tej samej wartości `right` leżały na sobie nawzajem.
+
+         Teraz to zwykły wiersz: napis „Forkast” po lewej, kontrolki po prawej,
+         tytuł pod spodem. Nic nie może na nic wejść, bo nic nie jest wyjęte
+         z układu strony — i nie trzeba pamiętać o żadnej siatce. -->
+    <div class="flex min-h-[2.75rem] items-center gap-2">
+      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
+      <div class="ml-auto flex shrink-0 items-center gap-2">
+        <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
             :aria-pressed="ekranSwieci.toString()"
             :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
                                      : 'Ekran gaśnie. Dotknij, żeby świecił.'"
-            class="absolute flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
+            class="flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
                    text-[0.68rem] font-bold backdrop-blur-md transition"
-            style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:10.6rem"
             :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                 : 'border-white/40 bg-white/15 text-white/90'">
       <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
       <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
     </button>
-
-      <!-- DRZWI DO SPIŻARNI. Arkusz niżej istniał od v41 w komplecie — z polami,
-           listą zawartości i odliczaniem zużycia — i przez cały ten czas NIC nie
-           ustawiało `arkuszSpizarni` na prawdę, więc nie dało się go otworzyć.
-           Ikona i tekst pomocy też już czekały gotowe (decyzja 73).
-
-           Kontrolki w tym nagłówku stoją na siatce co 3.2rem, licząc od prawej:
-           1rem ustawienia, 4.2rem pomoc, 7.4rem spiżarnia, 10.6rem blokada ekranu.
-           Dwie o tej samej wartości nachodzą na siebie — tak było tu do dziś. -->
-      <button type="button" @click="arkuszSpizarni = true"
-              aria-label="Spiżarnia — co macie w domu"
-              class="absolute flex size-11 items-center justify-center rounded-full border
-                     border-white/35 bg-white/15 text-white backdrop-blur-md
-                     transition active:scale-95"
-              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:7.4rem">
-        <svg class="ikona ikona-sm"><use href="#i-spizarnia"/></svg>
-      </button>
-
-      <button type="button" @click="pomocKlucz = 'zakupy'"
+        <button type="button" @click="pomocKlucz = 'zakupy'"
               aria-label="Jak to działa"
-              class="absolute flex size-11 items-center justify-center rounded-full border
+              class="flex size-11 items-center justify-center rounded-full border
                      border-white/35 bg-white/15 text-[1rem] font-bold text-white
-                     backdrop-blur-md transition active:scale-95"
-              style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:4.2rem">i</button>
-
-      <a href="ustawienia.html" aria-label="Ustawienia"
-         class="absolute flex size-11 items-center justify-center rounded-full border
+                     backdrop-blur-md transition active:scale-95">i</button>
+        <a href="ustawienia.html" aria-label="Ustawienia"
+         class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
-                transition active:scale-95"
-         style="top:calc(0.9rem + env(safe-area-inset-top,0px)); right:1rem">
+                transition active:scale-95">
         <svg class="ikona ikona-sm"><use href="#i-ustawienia"/></svg>
       </a>
+      </div>
+    </div>
+    <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="tytul"></h1>
+    <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="opis"></p>
+
+
     </header>
 
     <!-- ========================== TREŚĆ ========================== -->
@@ -253,6 +246,109 @@
         </template>
       </div>
 
+      <!-- ============ ZAPASY W SPIŻARNI DOMOWEJ ============
+
+           Stała sekcja na dole listy, nie wysuwane okienko. Poprzednia wersja
+           chowała to za ikoną w nagłówku — czyli za czymś, o czym trzeba wiedzieć,
+           że istnieje. Miłosz po pierwszym użyciu: „spiżarnia jest bardzo user NIE
+           friendly, wolałbym to jako stałą kategorię na dole listy zakupów, która
+           nigdy nie znika” (decyzja 74).
+
+           Sekcja jest widoczna ZAWSZE, także przy pustej liście zakupów — zapas
+           w domu leży tam niezależnie od tego, czy akurat jest co kupować. -->
+      <section class="mt-8">
+        <h2 class="naglowek-dzialu mb-2 ml-1 text-stone-400 dark:text-stone-500">
+          <span>Zapasy w spiżarni domowej</span>
+          <button type="button" @click="pomocKlucz = 'spizarnia'" aria-label="Po co spiżarnia"
+                  class="ml-auto flex size-6 items-center justify-center rounded-full border
+                         border-stone-300 text-[0.68rem] font-bold text-stone-400 normal-case
+                         transition active:scale-95 dark:border-stone-700">i</button>
+        </h2>
+
+        <div class="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm
+                    dark:border-stone-800 dark:bg-stone-900">
+          <p class="px-4 pt-4 text-[0.82rem] leading-snug text-stone-500 dark:text-stone-400">
+            Wpiszcie, ile czego macie w domu. Lista wyżej odejmie to od zakupów, żeby nie
+            kazała Wam kupować kilograma mąki co tydzień.
+          </p>
+
+          <!-- Dodawanie.
+               `min-w-0` przy polu tekstowym nie jest ozdobą: element w układzie flex
+               domyślnie NIE kurczy się poniżej swojej naturalnej szerokości, a pole
+               tekstowe ma ją sporą. Bez tego pole „gramy” było wypychane poza ekran —
+               przy 390 px o 29 px, przy 320 px o 99 px (decyzja 73). -->
+          <div class="flex gap-2 px-4 pt-3">
+            <input type="text" x-model="nowyProdukt" list="produkty-spizarnia" placeholder="Produkt"
+                   class="min-h-[2.9rem] min-w-0 flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
+                          text-[17px] outline-none transition focus:border-emerald-600
+                          dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100">
+            <input type="number" x-model.number="nowaIlosc" placeholder="gramy" min="1"
+                   @keydown.enter="dodajDoSpizarni()"
+                   class="min-h-[2.9rem] w-24 shrink-0 rounded-xl border-2 border-stone-200 bg-white px-3
+                          text-[17px] outline-none transition focus:border-emerald-600
+                          dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100">
+          </div>
+          <datalist id="produkty-spizarnia">
+            <template x-for="n in nazwyProduktow" :key="n"><option :value="n"></option></template>
+          </datalist>
+          <div class="px-4 pb-4 pt-2">
+            <button type="button" @click="dodajDoSpizarni()" :disabled="!nowyProdukt.trim() || !nowaIlosc"
+                    class="flex min-h-[2.7rem] w-full items-center justify-center gap-2 rounded-xl
+                           bg-emerald-700 font-bold text-white transition active:scale-[0.98]
+                           disabled:opacity-40 dark:bg-emerald-600">
+              <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj do spiżarni
+            </button>
+          </div>
+
+          <p x-show="!Object.keys(spizarnia).length"
+             class="border-t border-stone-100 px-4 py-5 text-center text-[0.82rem] text-stone-400
+                    dark:border-stone-800 dark:text-stone-500">
+            Spiżarnia jest pusta. To w porządku — wpiszcie tylko to, czego macie więcej
+            niż na jeden raz.
+          </p>
+
+          <ul x-show="Object.keys(spizarnia).length" role="list"
+              class="border-t border-stone-100 dark:border-stone-800">
+            <template x-for="w in zawartoscSpizarni" :key="w.klucz">
+              <li class="flex items-center gap-3 border-b border-stone-100 px-4 py-3 last:border-0
+                         dark:border-stone-800">
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-medium" x-text="w.nazwa"></span>
+                  <span class="block text-[0.82rem] text-stone-400" x-text="w.opis"></span>
+                </span>
+                <input type="number" :value="w.gramy" min="0"
+                       @change="ustawWSpizarni(w.klucz, $event.target.value)"
+                       :aria-label="`Ile gramów: ${w.nazwa}`"
+                       class="min-h-[2.5rem] w-20 shrink-0 rounded-xl border-2 border-stone-200 bg-white px-2
+                              text-center text-[16px] outline-none focus:border-emerald-600
+                              dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100">
+                <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
+                        :aria-label="`Usuń ${w.nazwa} ze spiżarni`"
+                        class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
+                               transition active:bg-stone-100 dark:active:bg-stone-800">
+                  <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
+                </button>
+              </li>
+            </template>
+          </ul>
+
+          <!-- Odliczenie po ugotowaniu. Dwustopniowe, bo zmienia liczby,
+               których człowiek nie pamięta z głowy. -->
+          <div x-show="Object.keys(spizarnia).length"
+               class="border-t border-stone-100 px-4 py-4 dark:border-stone-800">
+            <button type="button" @click="odliczZuzycie()"
+                    class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
+                           border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
+                           dark:border-stone-700 dark:bg-stone-950"
+                    x-text="odliczanieUzbrojone ? 'Na pewno? Dotknij ponownie'
+                                                : 'Ugotowane — odlicz zużycie okresu'"></button>
+            <p class="mt-1.5 text-center text-[0.82rem] text-stone-400">
+              Odejmie od spiżarni to, co zjedliście przez ten okres.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <p x-show="stanSieci" x-text="stanSieci"
          class="mt-4 text-center text-[0.82rem] text-stone-400"></p>
     </div>
@@ -282,101 +378,6 @@
         </template>
     </div>
     </nav>
-  </div>
-</div>
-
-<!-- ==================== SPIŻARNIA ==================== -->
-<div x-show="arkuszSpizarni" @click.self="arkuszSpizarni = false" x-transition.opacity.duration.200ms
-     class="fixed inset-0 z-[55] flex items-end justify-center bg-stone-900/50 backdrop-blur-sm
-            md:items-center">
-  <div x-show="arkuszSpizarni" x-transition:enter="transition ease-out duration-250"
-       x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0"
-       x-data="przeciagany(() => arkuszSpizarni = false)" x-bind="uchwyty"
-       class="plynne bez-paska max-h-[86vh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem]
-              bg-stone-50 px-5 pt-3 dark:bg-stone-950 md:rounded-[1.75rem]"
-       style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
-    <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700 md:hidden"></div>
-
-    <h3 class="text-[1.25rem] font-bold">Spiżarnia</h3>
-    <p class="mt-1 text-[0.82rem] leading-snug text-stone-500 dark:text-stone-400">
-      Wpiszcie, ile czego macie w domu. Apka odejmie to od listy zakupów, żeby nie kazała
-      Wam kupować kilograma mąki co tydzień.
-    </p>
-
-    <!-- Dodawanie.
-         `min-w-0` przy polu tekstowym nie jest ozdobą: element w układzie flex
-         domyślnie NIE kurczy się poniżej swojej naturalnej szerokości, a pole
-         tekstowe ma ją sporą. Bez tego pole „gramy” było wypychane poza ekran —
-         przy 390 px o 29 px, przy 320 px o 99 px (decyzja 73). -->
-    <div class="mt-4 flex gap-2">
-      <input type="text" x-model="nowyProdukt" list="produkty-spizarnia" placeholder="Produkt"
-             class="min-h-[2.9rem] min-w-0 flex-1 rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
-                    outline-none transition focus:border-emerald-600
-                    dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
-      <input type="number" x-model.number="nowaIlosc" placeholder="gramy" min="1"
-             @keydown.enter="dodajDoSpizarni()"
-             class="min-h-[2.9rem] w-28 rounded-xl border-2 border-stone-200 bg-white px-3 text-[17px]
-                    outline-none transition focus:border-emerald-600
-                    dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
-    </div>
-    <datalist id="produkty-spizarnia">
-      <template x-for="n in nazwyProduktow" :key="n"><option :value="n"></option></template>
-    </datalist>
-    <button type="button" @click="dodajDoSpizarni()" :disabled="!nowyProdukt.trim() || !nowaIlosc"
-            class="mt-2 flex min-h-[2.7rem] w-full items-center justify-center gap-2 rounded-xl
-                   bg-emerald-700 font-bold text-white transition active:scale-[0.98]
-                   disabled:opacity-40 dark:bg-emerald-600">
-      <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj do spiżarni
-    </button>
-
-    <!-- Zawartość -->
-    <p x-show="!Object.keys(spizarnia).length"
-       class="mt-5 rounded-2xl bg-stone-100 px-4 py-6 text-center text-[1rem] text-stone-500
-              dark:bg-stone-900 dark:text-stone-400">
-      Spiżarnia jest pusta. To w porządku — wpiszcie tylko to, czego macie więcej
-      niż na jeden raz.
-    </p>
-
-    <ul x-show="Object.keys(spizarnia).length" role="list"
-        class="mt-5 overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm
-               dark:border-stone-800 dark:bg-stone-900">
-      <template x-for="w in zawartoscSpizarni" :key="w.klucz">
-        <li class="flex items-center gap-3 border-b border-stone-100 px-4 py-3 last:border-0
-                   dark:border-stone-800">
-          <span class="min-w-0 flex-1">
-            <span class="block truncate font-medium" x-text="w.nazwa"></span>
-            <span class="block text-[0.82rem] text-stone-400" x-text="w.opis"></span>
-          </span>
-          <input type="number" :value="w.gramy" min="0"
-                 @change="ustawWSpizarni(w.klucz, $event.target.value)"
-                 :aria-label="`Ile gramów: ${w.nazwa}`"
-                 class="min-h-[2.5rem] w-24 rounded-xl border-2 border-stone-200 bg-white px-3
-                        text-center text-[16px] outline-none focus:border-emerald-600
-                        dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100">
-          <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
-                  :aria-label="`Usuń ${w.nazwa} ze spiżarni`"
-                  class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
-                         transition active:bg-stone-100 dark:active:bg-stone-800">
-            <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
-          </button>
-        </li>
-      </template>
-    </ul>
-
-    <!-- Odliczenie po ugotowaniu -->
-    <button type="button" x-show="Object.keys(spizarnia).length" @click="odliczZuzycie()"
-            class="mt-3 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
-                   border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
-                   dark:border-stone-700 dark:bg-stone-900"
-            x-text="odliczanieUzbrojone ? 'Na pewno? Dotknij ponownie'
-                                        : 'Ugotowane — odlicz zużycie okresu'"></button>
-    <p x-show="Object.keys(spizarnia).length" class="mt-1.5 text-center text-[0.82rem] text-stone-400">
-      Odejmie od spiżarni to, co zjedliście przez ten okres.
-    </p>
-
-    <button type="button" @click="arkuszSpizarni = false"
-            class="mt-4 min-h-[2.9rem] w-full rounded-xl bg-emerald-700 font-bold text-white
-                   dark:bg-emerald-600">Zamknij</button>
   </div>
 </div>
 
@@ -551,9 +552,29 @@ Alpine.data("ekranZakupy", () => ({
        Jadłospis synchronizował się na żywo, lista się przeliczała, ale to, co ktoś
        odhaczył w sklepie, nie docierało do drugiej osoby. Dokładnie odwrotnie niż
        obiecuje ta apka: dwie osoby przy jednym stole widzą jedną listę. */
-    if (this.odsubOdhaczen) { this.odsubOdhaczen(); this.odsubOdhaczen = null; }
-    if (!this.fb) return;
+    this.podepnijNasluchy(startOkresu);
+  },
+
+  /* PODPINANIE NASŁUCHÓW ODDZIELONE OD USTAWIANIA OKRESU — i to nie jest
+     porządkowanie kodu, tylko naprawa.
+
+     `ustawOkres` wołane jest DWA razy: raz od razu na starcie, na podstawie listy
+     zapisanej w telefonie, i drugi raz, gdy przyjdzie jadłospis z bazy. Pierwsze
+     wywołanie leci ZANIM istnieje połączenie, więc kończyło się na `if (!this.fb)
+     return` — bez żadnego nasłuchu. Drugie wywołanie miało warunek „rób tylko, gdy
+     okres się zmienił”, a okres się nie zmieniał, bo pierwsze wywołanie już go ustawiło.
+
+     Skutek: telefon, który miał zapisaną listę — czyli każdy, który już raz tu był —
+     NIE SŁUCHAŁ ANI SPIŻARNI, ANI ODHACZEŃ. Zmiany drugiej osoby nie docierały nigdy.
+     Zgłoszone przez Miłosza jako „spiżarnia działa u jednego, u drugiego nic”;
+     dotyczyło tak samo odhaczeń, czyli obietnicy z decyzji 35 (decyzja 74).
+
+     Dlatego ta funkcja jest osobna, wolno ją wołać wielokrotnie i wołamy ją
+     ZAWSZE po ustaleniu połączenia. */
+  podepnijNasluchy(startOkresu) {
+    if (!this.fb || !startOkresu) return;
     const { db, ref, onValue } = this.fb;
+
     /* Spiżarnia jest wspólna dla stołu i nie zależy od okresu — zapas leży w domu
        niezależnie od tego, jaki tydzień planujecie. */
     if (!this.odsubSpizarni) {
@@ -563,6 +584,13 @@ Alpine.data("ekranZakupy", () => ({
       });
     }
 
+    /* Odhaczenia leżą w bazie, nie tylko na telefonie.
+
+       Do 3 sierpnia były wyłącznie lokalne — czyli każde urządzenie miało własne.
+       Jadłospis synchronizował się na żywo, lista się przeliczała, ale to, co ktoś
+       odhaczył w sklepie, nie docierało do drugiej osoby. Dokładnie odwrotnie niż
+       obiecuje ta apka: dwie osoby przy jednym stole widzą jedną listę. */
+    if (this.odsubOdhaczen) { this.odsubOdhaczen(); this.odsubOdhaczen = null; }
     this.odsubOdhaczen = onValue(
       ref(db, `domy/${kodDomu}/odhaczone/${startOkresu}`),
       snap => {
@@ -615,6 +643,9 @@ Alpine.data("ekranZakupy", () => ({
       return;
     }
     this.fb = fb;
+    /* Połączenie dopiero teraz istnieje, a `ustawOkres` mogło już przelecieć
+       wcześniej na zapisanej liście i nic nie podpiąć. Podpinamy tutaj (decyzja 74). */
+    this.podepnijNasluchy(this.startOkresu);
     const { db, ref, get, onValue } = fb;
 
     try {
@@ -681,12 +712,12 @@ Alpine.data("ekranZakupy", () => ({
   pozycjeSurowe: [],
   odliczanieUzbrojone: false,
 
-  /* STAN SPIŻARNI — cztery pola, których do 8 sierpnia po prostu nie było.
+  /* STAN SPIŻARNI — pola, których do 8 sierpnia po prostu nie było.
      Metody niżej pisały do nich (`this.spizarnia[klucz] = ...`), ale szablon
      czytał je, zanim cokolwiek je stworzyło: `Object.keys(spizarnia)` i
      `!nowyProdukt.trim()` wywalały się na undefined przy pierwszym rysowaniu
-     arkusza — czyli spiżarni nie dało się otworzyć ani razu (decyzja 70). */
-  arkuszSpizarni: false,
+     (decyzja 70). `arkuszSpizarni` zniknęło razem z wysuwanym okienkiem —
+     spiżarnia jest teraz stałą sekcją listy, nie okienkiem (decyzja 74). */
   spizarnia: {},
   nowyProdukt: "",
   nowaIlosc: null,
