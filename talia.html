@@ -95,8 +95,14 @@
       </a>
     </header>
 
+    <!-- Zapas na dole: przy talii przyciski decyzji stoją teraz w osobnym pasku
+         POD tym obszarem, więc treść nie musi się spod nich chować — wystarczy
+         odstęp na oddech. Na pozostałych krokach ekranu zapas zostaje większy,
+         bo tam pod spodem jest tylko dolna nawigacja. -->
     <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
-          style="padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))">
+          :style="krok === 'talia' && !laduje && danie
+                  ? 'padding-bottom:1.25rem'
+                  : 'padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px))'">
       <div class="mx-auto w-full max-w-2xl">
 
         <!-- ==================== KROK 1: WYKLUCZENIA ==================== -->
@@ -269,29 +275,6 @@
               </ul>
             </article>
 
-            <!-- Dwa przyciski równej wagi. Żaden nie jest domyślny — to ma być
-                 realny wybór, nie potwierdzenie sugestii. -->
-            <div class="mt-4 grid grid-cols-2 gap-3">
-              <button type="button" @click="zdecyduj('nie')"
-                      class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl border-2
-                             border-stone-200 bg-white font-bold text-stone-600 transition active:scale-95
-                             dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-                <svg class="ikona ikona-sm"><use href="#i-x"/></svg> Nie lubię
-              </button>
-              <button type="button" @click="zdecyduj('tak')"
-                      class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl
-                             bg-emerald-700 font-bold text-white shadow-sm transition active:scale-95
-                             dark:bg-emerald-600">
-                <svg class="ikona ikona-sm"><use href="#i-serce"/></svg> Lubię
-              </button>
-            </div>
-
-            <button type="button" @click="cofnij()" x-show="historia.length" x-transition.opacity
-                    class="mt-3 flex min-h-[2.5rem] w-full items-center justify-center gap-2 rounded-xl
-                           text-[0.82rem] font-semibold text-stone-500 dark:text-stone-400">
-              <svg class="ikona ikona-sm"><use href="#i-cofnij"/></svg> Cofnij ostatnią
-            </button>
-
             <!-- Dwie drogi, nie jedna. Wcześniej ten przycisk prowadził wprost
                  do ręcznego formularza, z pominięciem AI — czyli tej drogi,
                  która ma być najczęstsza (link do przepisu albo zdjęcie strony
@@ -351,6 +334,42 @@
         </section>
       </div>
     </main>
+
+    <!-- PRZYCISKI DECYZJI POZA OBSZAREM PRZEWIJANIA (decyzja 69).
+         Stały tu wcześniej w normalnym układzie strony, tuż pod kartą przepisu —
+         a karta rośnie i kurczy się razem z liczbą składników, więc przy 6 składnikach
+         przyciski były wyżej niż przy 7. Na ekranie oglądanym setki razy i obsługiwanym
+         kciukiem bez patrzenia to czuć jak usterkę: kciuk uczy się jednego miejsca,
+         a apka je co danie przesuwa. Sekcja `shrink-0` poza `main` nie rusza się wraz
+         z treścią — ten sam mechanizm co dolny pasek zakładek pod spodem. -->
+    <div x-show="krok === 'talia' && !laduje && danie"
+         class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 px-4 pb-3 pt-3 backdrop-blur-xl
+                dark:border-stone-800 dark:bg-stone-950/95">
+      <div class="mx-auto w-full max-w-2xl">
+        <!-- Dwa przyciski równej wagi. Żaden nie jest domyślny — to ma być
+             realny wybór, nie potwierdzenie sugestii. -->
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" @click="zdecyduj('nie')"
+                  class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl border-2
+                         border-stone-200 bg-white font-bold text-stone-600 transition active:scale-95
+                         dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
+            <svg class="ikona ikona-sm"><use href="#i-x"/></svg> Nie lubię
+          </button>
+          <button type="button" @click="zdecyduj('tak')"
+                  class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl
+                         bg-emerald-700 font-bold text-white shadow-sm transition active:scale-95
+                         dark:bg-emerald-600">
+            <svg class="ikona ikona-sm"><use href="#i-serce"/></svg> Lubię
+          </button>
+        </div>
+
+        <button type="button" @click="cofnij()" x-show="historia.length" x-transition.opacity
+                class="mt-2 flex min-h-[2.5rem] w-full items-center justify-center gap-2 rounded-xl
+                       text-[0.82rem] font-semibold text-stone-500 dark:text-stone-400">
+          <svg class="ikona ikona-sm"><use href="#i-cofnij"/></svg> Cofnij ostatnią
+        </button>
+      </div>
+    </div>
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
