@@ -581,7 +581,7 @@ Alpine.data("ekranZakupy", () => ({
       this.odsubSpizarni = onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
         this.spizarnia = snap.val() || {};
         this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-      });
+      }, blad => this.nasluchPadl("spiżarni", blad));
     }
 
     /* Odhaczenia leżą w bazie, nie tylko na telefonie.
@@ -598,7 +598,22 @@ Alpine.data("ekranZakupy", () => ({
         this.odhaczone = zBazy;
         localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...zBazy]));
         this.pozycje = this.pozycje.map(x => ({ ...x, wKoszyku: zBazy.has(klucz(x.produkt)) }));
-      });
+      }, blad => this.nasluchPadl("odhaczeń", blad));
+  },
+
+  /* NASŁUCH, KTÓRY PADŁ, MUSI BYĆ WIDOCZNY.
+
+     `onValue` bez trzeciego argumentu nie zgłasza niczego na ekranie: gdy baza
+     odmówi odczytu, po prostu nie przychodzą dane. Pusta spiżarnia bez prawa
+     dostępu wygląda identycznie jak spiżarnia, do której nikt nic nie wpisał —
+     i przez to wyglądało to na „nie synchronizuje się” zamiast na „baza mówi nie”
+     (decyzja 76). */
+  nasluchPadl(co, blad) {
+    console.error(`Nasłuch ${co} padł:`, blad);
+    const powod = blad?.code || blad?.message || String(blad);
+    this.stanSieci = /permission/i.test(powod)
+      ? `Baza nie pozwala czytać ${co} — to reguły dostępu, nie internet.`
+      : `Nie dochodzą zmiany ${co}: ${powod}`;
   },
 
   async init() {
@@ -738,7 +753,7 @@ Alpine.data("ekranZakupy", () => ({
         localStorage.setItem(this.kluczListy, JSON.stringify({
           okres: start, pozycje: plaskie, pominiete: wynik.pominiete, kiedy: Date.now(),
         }));
-      });
+      }, blad => this.nasluchPadl("jadłospisu", blad));
     } catch {
       this.laduje = false;
       this.stanSieci = lokalna
@@ -806,8 +821,16 @@ Alpine.data("ekranZakupy", () => ({
       const { db, ref, set, remove } = this.fb;
       const sciezka = ref(db, `domy/${kodDomu}/spizarnia/${klucz}`);
       if (gramy > 0) await set(sciezka, gramy); else await remove(sciezka);
-    } catch {
-      this.mrugnij("Nie udało się zapisać — sprawdź internet.");
+    } catch (e) {
+      /* POWÓD, NIE DOMYSŁ. „Sprawdź internet” było zgadywaniem: baza odmawia
+         zapisu także wtedy, gdy internet działa bez zarzutu, a nie zgadzają się
+         reguły dostępu. Marzena widziała ten komunikat przy pełnym zasięgu —
+         i przez to szukaliśmy problemu w zupełnie złym miejscu (decyzja 76). */
+      console.error("Zapis do spiżarni nie przeszedł:", e);
+      const powod = e?.code || e?.message || String(e);
+      this.mrugnij(/permission|PERMISSION/i.test(powod)
+        ? "Baza nie pozwala zapisać spiżarni — to reguły dostępu, nie internet."
+        : `Nie udało się zapisać: ${powod}`);
     }
   },
 
@@ -831,7 +854,11 @@ Alpine.data("ekranZakupy", () => ({
       try {
         const { db, ref, update } = this.fb;
         await update(ref(db, `domy/${kodDomu}/spizarnia`), zmiany);
-      } catch { this.mrugnij("Nie udało się zapisać — sprawdź internet."); return; }
+      } catch (e) {
+        console.error("Odliczenie zużycia nie przeszło:", e);
+        this.mrugnij(`Nie udało się zapisać: ${e?.code || e?.message || e}`);
+        return;
+      }
     }
     this.mrugnij("Odliczone. Spiżarnia zaktualizowana.");
   },

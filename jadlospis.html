@@ -518,6 +518,13 @@ Alpine.data("ekranJadlospis", () => ({
          stan sprzed podmiany — czyli cofał zmianę drugiej osoby. */
       if (this.arkusz) { this._oczekujaca = snap.val(); return; }
       this.zastosujZdalne(snap.val());
+    }, blad => {
+      /* Odmowa odczytu z bazy wygląda dokładnie tak samo jak pusty jadłospis —
+         czyli jak coś, co człowiek uzna za swoją winę. Mówimy wprost (decyzja 76). */
+      console.error("Nasłuch jadłospisu padł:", blad);
+      this.mrugnij?.(/permission/i.test(blad?.code || blad?.message || "")
+        ? "Baza nie pozwala czytać jadłospisu — to reguły dostępu, nie internet."
+        : `Nie dochodzą zmiany jadłospisu: ${blad?.code || blad?.message || blad}`);
     });
   },
 

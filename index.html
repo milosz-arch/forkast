@@ -262,6 +262,9 @@ Alpine.data("ekranWejscie", () => ({
     this.krok = "osoby";
     onValue(ref(db, `domy/${kod}/domownicy`), snap => {
       this.domownicy = Object.entries(snap.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
+    }, blad => {
+      console.error("Nasłuch domowników padł:", blad);
+      this.mrugnij?.(`Nie dochodzą zmiany osób przy stole: ${blad?.code || blad?.message || blad}`);
     });
   },
 
