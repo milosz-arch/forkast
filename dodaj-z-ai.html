@@ -207,6 +207,9 @@
         <div x-show="krok === 'podglad'" x-transition class="space-y-3">
           <h2 class="text-lg font-bold">Sprawdź, zanim zapiszę</h2>
 
+          <p x-show="pomiar" class="text-[0.75rem] tabular-nums text-stone-400 dark:text-stone-500"
+             x-text="pomiar"></p>
+
           <template x-for="d in wynik.dania" :key="d.nazwa">
             <article class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                             dark:border-stone-800 dark:bg-stone-900">
@@ -349,6 +352,7 @@ Alpine.data("ekranAI", () => ({
   slownik: [],
   kuchniaTekst: "",
   wynik: { dania: [], bledy: [], ostrzezenia: [], noweProdukty: [] },
+  pomiar: "",
   blad: "",
   podsumowanie: "",
 
@@ -483,6 +487,14 @@ Alpine.data("ekranAI", () => ({
         this.krok = "blad"; return;
       }
       if (!odp.ok) { this.blad = json.blad || "Coś poszło nie tak po stronie AI."; this.krok = "blad"; return; }
+
+      /* Zmierzony czas trzymamy i pokazujemy na ekranie podglądu. Konsoli
+         przeglądarki na telefonie nikt nie otworzy, a bez liczby jedyne, co
+         wiadomo o szybkości, to „chyba szybciej niż wczoraj”. */
+      const c = json.czasy;
+      this.pomiar = c
+        ? `${(c.razem / 1000).toFixed(1).replace(".", ",")} s · AI ${(c.gemini / 1000).toFixed(1).replace(".", ",")} s · stół ${(c.baza / 1000).toFixed(1).replace(".", ",")} s · ${c.model}`
+        : "";
 
       this.wynik = parsujOdpowiedz(json.tekst, this.slownik);
       this.zatrzymajEtapy();

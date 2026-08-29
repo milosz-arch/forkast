@@ -26,12 +26,20 @@
 
    Pro celowo nie ma na liście — na darmowym pułapie ma kilkadziesiąt zapytań dziennie
    zamiast kilkuset i wyczerpałby limit pierwszego wieczoru po wysłaniu linku. */
+/* Pole `mysli` mówi, czy model przyjmuje ustawienie budżetu myślenia. Modele 2.5
+   i nowsze domyślnie MYŚLĄ przed odpowiedzią — same decydują, ile tokenów na to
+   wydać, i decydują to po trudności zadania. Dla „opisz naleśniki” to ułamek
+   sekundy, dla „przeczytaj dwa zrzuty ekranu” potrafi być kilka sekund, których
+   nie widać w żadnym logu. Ustawienie budżetu na zero wyłącza to całkowicie.
+
+   Modelom starszym (2.0) tego pola wysłać NIE WOLNO — odpowiadają wtedy błędem 400
+   i wypadają z próby, mimo że działają. Stąd flaga zamiast jednej reguły dla wszystkich. */
 const MODELE_ZAPASOWE = [
-  { wersja: "v1beta", nazwa: "gemini-flash-latest" },
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash" },
-  { wersja: "v1",     nazwa: "gemini-2.5-flash" },
-  { wersja: "v1beta", nazwa: "gemini-2.0-flash" },
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite" },
+  { wersja: "v1beta", nazwa: "gemini-flash-latest",   mysli: true  },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash",      mysli: true  },
+  { wersja: "v1",     nazwa: "gemini-2.5-flash",      mysli: true  },
+  { wersja: "v1beta", nazwa: "gemini-2.0-flash",      mysli: false },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite", mysli: true  },
 ];
 
 function modeleDoProby() {
@@ -39,8 +47,10 @@ function modeleDoProby() {
   if (!zUstawien) return MODELE_ZAPASOWE;
   const [wersja, nazwa] = zUstawien.split(":");
   if (!wersja || !nazwa) return MODELE_ZAPASOWE;   // źle wpisana wartość nie może zabić apki
-  // Ustawiony model idzie pierwszy, reszta zostaje jako siatka bezpieczeństwa.
-  return [{ wersja, nazwa }, ...MODELE_ZAPASOWE];
+  /* Model z panelu Netlify traktujemy jak myślący, bo wpisuje się tam nowy model,
+     a nie stary. Gdyby trafił się taki, który tego nie przyjmuje, odpowie 400
+     i pętla przejdzie do następnego — koszt jednej nieudanej próby, nie awarii. */
+  return [{ wersja, nazwa, mysli: true }, ...MODELE_ZAPASOWE];
 }
 
 const MAKS_ZDJEC = 4;   // patrz komentarz w dodaj-z-ai.html: limit 10 s na odpowiedź
@@ -51,6 +61,17 @@ const MAKS_ZDJEC = 4;   // patrz komentarz w dodaj-z-ai.html: limit 10 s na odpo
 const LIMIT_NA_DOM_NA_DOBE = 30;
 
 const BAZA = "https://forkast-37ffd-default-rtdb.europe-west1.firebasedatabase.app";
+
+/* WŁASNY BUDŻET CZASU, KRÓTSZY NIŻ LIMIT NETLIFY.
+
+   Netlify ubija funkcję synchroniczną po dziesięciu sekundach i odsyła własną
+   stronę błędu w HTML-u. Przeglądarka dostaje wtedy coś, co nie jest JSON-em,
+   a apka nie wie ani ile to trwało, ani na czym stanęło — dokładnie ten rodzaj
+   komunikatu bez powodu, który 8 sierpnia kosztował wieczór zgadywania.
+
+   Dlatego pilnujemy czasu sami i kończymy o półtorej sekundy wcześniej. Wtedy
+   odpowiedź jest nasza, jest JSON-em i niesie liczby. */
+const BUDZET_MS = 8500;
 
 const adresModelu = (m) =>
   `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;
@@ -74,14 +95,22 @@ async function sprawdzDom(kodDomu) {
     return { status: 403, blad: "Brak poprawnego kodu stołu." };
   }
 
-  const istnieje = await fetch(`${BAZA}/domy/${kod}/utworzono.json`);
+  const sciezka = `${BAZA}/domy/${kod}/limity/${dzisiaj()}.json`;
+
+  /* Dwa odczyty naraz, nie po kolei. Baza stoi we Frankfurcie, funkcja niekoniecznie,
+     więc każda podróż tam i z powrotem to realne dziesiątki albo setki milisekund
+     odjęte od tych samych dziesięciu sekund, w których musi się zmieścić także AI.
+     Te dwa odczyty nic o sobie nie wiedzą, więc nie ma powodu, żeby na siebie czekały. */
+  const [istnieje, licznikOdp] = await Promise.all([
+    fetch(`${BAZA}/domy/${kod}/utworzono.json`),
+    fetch(sciezka),
+  ]);
+
   if (!istnieje.ok) return { status: 403, blad: "Nie mogę zweryfikować stołu." };
   if ((await istnieje.json()) == null) {
     return { status: 403, blad: "Nie ma takiego stołu." };
   }
 
-  const sciezka = `${BAZA}/domy/${kod}/limity/${dzisiaj()}.json`;
-  const licznikOdp = await fetch(sciezka);
   const uzyte = licznikOdp.ok ? ((await licznikOdp.json()) || 0) : 0;
 
   if (uzyte >= LIMIT_NA_DOM_NA_DOBE) {
@@ -90,13 +119,18 @@ async function sprawdzDom(kodDomu) {
       `do tego czasu możesz dodać danie ręcznie przez formularz.` };
   }
 
-  // Podnosimy licznik PRZED wywołaniem AI: lepiej policzyć zapytanie, które padło,
-  // niż nie policzyć takiego, które przeszło.
-  await fetch(sciezka, { method: "PUT", body: JSON.stringify(uzyte + 1) });
-  return null;
+  /* Podnosimy licznik PRZED wywołaniem AI: lepiej policzyć zapytanie, które padło,
+     niż nie policzyć takiego, które przeszło. Ale NIE czekamy tu na potwierdzenie —
+     zapis rusza teraz, a doczekamy go tuż przed zwróceniem odpowiedzi. Trzecia
+     podróż do bazy przestaje przez to blokować start zapytania do AI. */
+  return { zapisLicznika: fetch(sciezka, { method: "PUT", body: JSON.stringify(uzyte + 1) }) };
 }
 
 exports.handler = async (event) => {
+  const START = Date.now();
+  const minelo = () => Date.now() - START;
+  const zostalo = () => BUDZET_MS - minelo();
+
   const naglowki = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -161,10 +195,19 @@ exports.handler = async (event) => {
 
   // FN-1: dom musi istnieć i mieścić się w dziennym limicie. Sprawdzane po stronie
   // serwera, bo klientowi nie można wierzyć — to on jest tym, kogo ograniczamy.
-  const problem = await sprawdzDom(kodDomu);
-  if (problem) {
-    return { statusCode: problem.status, headers: naglowki, body: JSON.stringify({ blad: problem.blad }) };
+  const wynikDomu = await sprawdzDom(kodDomu);
+  const czasBazy = minelo();
+  if (wynikDomu.blad) {
+    return { statusCode: wynikDomu.status, headers: naglowki, body: JSON.stringify({ blad: wynikDomu.blad }) };
   }
+
+  /* Zapis licznika ruszył w sprawdzDom i leci w tle. Doczekać go trzeba przed
+     zwróceniem odpowiedzi, bo funkcja bezserwerowa po zwróceniu wyniku może zostać
+     uśpiona w połowie niedokończonego żądania — i wtedy zapytanie nie policzyłoby się
+     wcale. Wyjątek połykamy: nieudany zapis licznika nie może zabrać człowiekowi dania. */
+  const dopiscLicznik = async () => {
+    try { await wynikDomu.zapisLicznika; } catch { /* licznik jest ważny, ale nie ważniejszy niż odpowiedź */ }
+  };
   if (obrazy != null && !Array.isArray(obrazy)) {
     return { statusCode: 400, headers: naglowki, body: JSON.stringify({ blad: "Zdjęcia muszą być listą." }) };
   }
@@ -182,23 +225,55 @@ exports.handler = async (event) => {
   }
   parts.push({ text: prompt });
 
+  /* Sekundy z przecinkiem — te liczby czyta człowiek na telefonie, nie maszyna. */
+  const sek = (ms) => (ms / 1000).toFixed(1).replace(".", ",");
+
   let ostatniStatus = null;
+  let ostatniModel = null;
   for (const model of modeleDoProby()) {
+    /* Zanim spróbujemy kolejnego modelu, sprawdzamy, czy jest jeszcze na to czas.
+       Bez tego jedna nieudana próba potrafiła zjeść budżet następnej i cała funkcja
+       kończyła się stroną błędu Netlify zamiast informacją, co się stało. */
+    if (zostalo() < 1500) break;
+
+    const stopZegar = new AbortController();
+    const budzik = setTimeout(() => stopZegar.abort(), zostalo() - 500);
+
+    const cialo = { contents: [{ parts }] };
+    if (model.mysli) cialo.generationConfig = { thinkingConfig: { thinkingBudget: 0 } };
+
+    const startModelu = Date.now();
     let odpowiedz;
     try {
       odpowiedz = await fetch(adresModelu(model), {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": klucz },
-        body: JSON.stringify({ contents: [{ parts }] }),
+        body: JSON.stringify(cialo),
+        signal: stopZegar.signal,
       });
     } catch (e) {
+      clearTimeout(budzik);
+      ostatniModel = model.nazwa;
+      /* Przerwanie z własnego zegara wygląda w kodzie tak samo jak zerwana sieć,
+         a dla człowieka to dwie zupełnie różne wiadomości. Rozdzielamy. */
+      if (stopZegar.signal.aborted) {
+        await dopiscLicznik();
+        return { statusCode: 504, headers: naglowki, body: JSON.stringify({
+          blad: `AI nie zdążyło odpowiedzieć w ${sek(minelo())} s (model ${model.nazwa}, ` +
+                `z czego ${sek(czasBazy)} s zajęło sprawdzenie stołu).`,
+          czasy: { baza: czasBazy, gemini: Date.now() - startModelu, razem: minelo(), model: model.nazwa },
+        }) };
+      }
       ostatniStatus = "brak połączenia";
       continue;
     }
+    clearTimeout(budzik);
+    ostatniModel = model.nazwa;
 
     // 429 to limit, nie zła nazwa modelu — próbowanie kolejnych nic nie da i tylko
     // pali kolejne zapytania z tej samej puli. Kończymy od razu.
     if (odpowiedz.status === 429) {
+      await dopiscLicznik();
       return { statusCode: 502, headers: naglowki, body: JSON.stringify({
         blad: "Gemini ma dziś za dużo zapytań od nas — spróbuj ponownie za chwilę, albo jutro." }) };
     }
@@ -206,14 +281,26 @@ exports.handler = async (event) => {
     if (!odpowiedz.ok) { ostatniStatus = odpowiedz.status; continue; }
 
     const wynik = await odpowiedz.json();
+    const czasGemini = Date.now() - startModelu;
     const tekst = (wynik?.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
     if (!tekst.trim()) {
+      await dopiscLicznik();
       return { statusCode: 502, headers: naglowki, body: JSON.stringify({
         blad: "Gemini nie zwróciło żadnego tekstu — spróbuj jeszcze raz." }) };
     }
-    return { statusCode: 200, headers: naglowki, body: JSON.stringify({ tekst, model: model.nazwa }) };
+
+    await dopiscLicznik();
+    /* `czasy` jedzie w każdej udanej odpowiedzi, nie tylko w błędzie. Pomiar, który
+       widać wyłącznie wtedy, gdy coś padło, nie powie nigdy, ile zostało zapasu. */
+    return { statusCode: 200, headers: naglowki, body: JSON.stringify({
+      tekst,
+      model: model.nazwa,
+      czasy: { baza: czasBazy, gemini: czasGemini, razem: minelo(), model: model.nazwa },
+    }) };
   }
 
+  await dopiscLicznik();
   return { statusCode: 502, headers: naglowki, body: JSON.stringify({
-    blad: `Żaden z modeli nie odpowiedział (ostatni błąd: ${ostatniStatus}).` }) };
+    blad: `Żaden z modeli nie odpowiedział po ${sek(minelo())} s ` +
+          `(ostatni: ${ostatniModel || "brak"}, błąd: ${ostatniStatus}).` }) };
 };
