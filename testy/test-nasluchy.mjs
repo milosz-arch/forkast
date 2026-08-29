@@ -92,9 +92,20 @@ console.log("\n— funkcje bazy są wypakowane przed użyciem —");
 
 const FUNKCJE_BAZY = ["get", "set", "remove", "update", "push", "onValue"];
 
+/* Wygasza komentarze, ZACHOWUJĄC podział na linie — numer w komunikacie musi
+   dalej wskazywać prawdziwą linię pliku.
+
+   Bez tego test czytał nazwy funkcji z opisów: komentarz tłumaczący, DLACZEGO
+   nie wolno użyć `set(push(ref(…)))`, sam wyglądał jak użycie set i push.
+   Test odrzucał wtedy poprawny kod z powodu zdania o tym kodzie — trzeci raz
+   tego samego dnia, po teście klas z 8 sierpnia i teście parametru myślenia. */
+const bezKomentarzy = (kod) => kod
+  .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+  .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + " ".repeat(m.length - p1.length));
+
 for (const plik of EKRANY) {
   test(`${plik}: każda użyta funkcja bazy jest wypakowana z połączenia`, () => {
-    const linie = readFileSync(new URL(plik, KORZEN), "utf8").split("\n");
+    const linie = bezKomentarzy(readFileSync(new URL(plik, KORZEN), "utf8")).split("\n");
     /* Dwa wzorce w tym projekcie: `const { … } = this.fb` wewnątrz metody
        (znika przy następnej metodzie) oraz `({ … } = fb)` na poziomie modułu,
        do zmiennych zadeklarowanych wyżej (zostaje do końca pliku). */

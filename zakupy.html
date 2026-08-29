@@ -870,20 +870,45 @@ Alpine.data("ekranZakupy", () => ({
       .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
   },
 
-  /* Dopisanie rzeczy do listy. Zapisujemy OBIEKT pod NOWYM kluczem, nie wartość
-     prostą pod istniejącą gałęzią — wartość prosta zapisana pod gałąź z nasłuchem
-     nie dociera do bazy i kończy się wyjątkiem ze środka Firebase (decyzja 76). */
+  /* ZAPISUJEMY CAŁĄ GAŁĄŹ, NIE POJEDYNCZE DZIECKO — dokładnie jak spiżarnia.
+
+     Pierwsza wersja robiła `set(push(ref(…dopisane)), {…})`, czyli obiekt pod
+     NOWYM kluczem. Wyglądało to na kształt dozwolony przez pułapkę 2 („obiekt
+     pod gałęzią działa”) i nie jest: na gałęzi `dopisane` wisi nasłuch, więc
+     zapis skończył się tym samym wyjątkiem ze środka Firebase, co 8 sierpnia —
+     „i.insert is not a function”. Pułapka była przeczytana i zacytowana w tym
+     samym pliku, a mimo to ominięta; `push()` po prostu nie mieści się w tym,
+     co wtedy sprawdziliśmy.
+
+     Klucz robimy sami, bo `push()` był potrzebny wyłącznie po to, żeby zapisać
+     dziecko osobno. Znacznik czasu z przyrostkiem wystarcza i nie zawiera znaków
+     zakazanych w kluczach Firebase (`. # $ [ ] /`).
+
+     Koszt, świadomy i ten sam co przy spiżarni: dwie osoby dopisujące coś w tej
+     samej sekundzie nadpiszą sobie nawzajem. Przy liście zakupów to zdarzenie
+     teoretyczne, a alternatywą jest zapis, który nie dochodzi wcale. */
+  kluczDopisku() {
+    return `d${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  },
+
   async dopisz() {
     const tekst = normalizujDopisek(this.nowyDopisek);
     if (!tekst) return;
     this.nowyDopisek = "";
+
+    const poprzednie = this.dopisane;
+    const zNowym = { ...this.dopisane, [this.kluczDopisku()]: { tekst, kiedy: Date.now() } };
+    this.dopisane = zNowym;
+    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+
     try {
-      const { db, ref, push, set } = this.fb;
-      const nowy = push(ref(db, `domy/${kodDomu}/dopisane`));
-      await set(nowy, { tekst, kiedy: Date.now() });
+      const { db, ref, set } = this.fb;
+      await set(ref(db, `domy/${kodDomu}/dopisane`), zNowym);
       this.mrugnij?.(`Dopisano „${tekst}”`);
     } catch (e) {
       console.error("Nie udało się dopisać:", e);
+      this.dopisane = poprzednie;
+      this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
       this.nowyDopisek = tekst;
       this.mrugnij?.(`Nie udało się dopisać: ${e?.code || e?.message || e}`);
     }
@@ -892,18 +917,20 @@ Alpine.data("ekranZakupy", () => ({
   async skreslDopisek(p) {
     /* Optymistycznie, jak przy odhaczaniu: człowiek przy kasie nie czeka na sieć.
        Gdy zapis padnie, pozycja wraca na listę i mówimy dlaczego. */
-    const kopia = this.dopisane[p.dopisek];
+    const poprzednie = this.dopisane;
     const bez = { ...this.dopisane };
     delete bez[p.dopisek];
     this.dopisane = bez;
     this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
     try {
-      const { db, ref, remove } = this.fb;
-      await remove(ref(db, `domy/${kodDomu}/dopisane/${p.dopisek}`));
+      const { db, ref, set } = this.fb;
+      /* Pusty obiekt kasuje gałąź (pułapka 15) — i dokładnie o to chodzi,
+         gdy skreślono ostatnią dopisaną rzecz. */
+      await set(ref(db, `domy/${kodDomu}/dopisane`), bez);
       this.mrugnij?.(`Skreślono „${p.produkt}”`);
     } catch (e) {
       console.error("Nie udało się skreślić:", e);
-      this.dopisane = { ...this.dopisane, [p.dopisek]: kopia };
+      this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
       this.mrugnij?.(`Nie udało się skreślić: ${e?.code || e?.message || e}`);
     }
