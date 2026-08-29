@@ -447,6 +447,11 @@ import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
 import { nalozSpizarnie, opisZapasu, kluczProduktu } from "./spizarnia.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { PRODUKTY } from "./produkty.js";
+/* Numer wydania w komunikacie o awarii. 29 sierpnia dwa razy diagnozowaliśmy
+   nie tę wersję, którą trzymał telefon: zrzut ekranu z błędem przychodził
+   minutę po commicie, czyli zanim Netlify zdążył zbudować. Bez numeru nie da się
+   tego odróżnić od „poprawka nie działa”, a to są dwie zupełnie różne sytuacje. */
+import { WYDANIE } from "./wersja.js";
 
 /* Firebase ładowany dynamicznie, nie importem na górze modułu.
 
@@ -700,8 +705,16 @@ Alpine.data("ekranZakupy", () => ({
          Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
          o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
       const powod = (e && (e.message || e.name)) || String(e);
-      this.stanSieci = `Coś nie zadziałało przy wczytywaniu: ${powod}`;
-      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+      this.stanSieci = `[${WYDANIE}] Coś nie zadziałało przy wczytywaniu: ${powod}`;
+      /* DYMEK MUSI WIEDZIEĆ TYLE, CO EKRAN. Powód siedział dotąd wyłącznie
+         w linijce pod listą, a dymek mówił „Coś nie zadziałało. Spróbuj odświeżyć.” —
+         czyli dokładnie to zdanie, o którym sami zapisaliśmy 8 sierpnia, że nie da
+         się z nim nic zrobić. 29 sierpnia kosztowało to kolejną rundę: zrzut ekranu
+         pokazywał dymek, a nie linijkę na dole, więc treść wyjątku znów nie dotarła.
+
+         Numer wydania obok powodu, bo dwa razy tego samego dnia diagnozowaliśmy
+         nie tę wersję, którą trzymał telefon. */
+      this.mrugnij?.(`[${WYDANIE}] ${powod}`);
     }
   },
 
@@ -910,7 +923,7 @@ Alpine.data("ekranZakupy", () => ({
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
       this.nowyDopisek = tekst;
-      this.mrugnij?.(`Nie udało się dopisać: ${e?.code || e?.message || e}`);
+      this.mrugnij?.(`[${WYDANIE}] Nie udało się dopisać: ${e?.code || e?.message || e}`);
     }
   },
 
@@ -932,7 +945,7 @@ Alpine.data("ekranZakupy", () => ({
       console.error("Nie udało się skreślić:", e);
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-      this.mrugnij?.(`Nie udało się skreślić: ${e?.code || e?.message || e}`);
+      this.mrugnij?.(`[${WYDANIE}] Nie udało się skreślić: ${e?.code || e?.message || e}`);
     }
   },
 
