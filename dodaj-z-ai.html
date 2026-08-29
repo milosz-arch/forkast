@@ -460,7 +460,12 @@ Alpine.data("ekranAI", () => ({
     this.krok = "czekam";
     this.ustawEtapy();
     try {
-      const odp = await fetch("/.netlify/functions/zapytaj-ai", {
+      /* Adres funkcji BRZEGOWEJ, nie synchronicznej. Ta pierwsza nie ma sufitu
+         dziesięciu sekund, o który rozbijały się wszystkie trzy tryby — patrz
+         komentarz na górze netlify/edge-functions/zapytaj-ai.js. Stary adres
+         `/.netlify/functions/zapytaj-ai` jeszcze przez jedno wdrożenie działa,
+         żeby telefon ze starą kopią plików nie został z niczym. */
+      const odp = await fetch("/api/zapytaj-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

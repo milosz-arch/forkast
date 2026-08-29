@@ -71,7 +71,7 @@ const BAZA = "https://forkast-37ffd-default-rtdb.europe-west1.firebasedatabase.a
 
    Dlatego pilnujemy czasu sami i kończymy o półtorej sekundy wcześniej. Wtedy
    odpowiedź jest nasza, jest JSON-em i niesie liczby. */
-const BUDZET_MS = 8500;
+const BUDZET_MS = 9000;
 
 const adresModelu = (m) =>
   `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;

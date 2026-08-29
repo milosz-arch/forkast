@@ -1,0 +1,269 @@
+/* =====================================================================
+   ZAPYTAJ-AI NA BRZEGU SIECI — jedyne miejsce, gdzie GEMINI_API_KEY istnieje.
+
+   DLACZEGO TA FUNKCJA W OGÓLE POWSTAŁA.
+   Poprzednia wersja była funkcją synchroniczną i mieściła się w dziesięciu
+   sekundach albo ginęła. 29 sierpnia zmierzyliśmy, na co ten czas idzie, i wyszło
+   coś, czego nie dało się obejść optymalizacją: sprawdzenie stołu to 0,3 s,
+   a całą resztę zjada samo PISANIE odpowiedzi przez model. Prompt żąda sześciu
+   kroków z temperaturami, czasami i uzasadnieniami — model wypisuje to słowo
+   po słowie i trwa to około ośmiu sekund. Nie było tu nic zepsutego do naprawienia.
+   Sprawdzone i odrzucone: wyłączenie myślenia modelu (nic nie dało — czas ten sam),
+   zrównoleglenie zapytań do bazy (dało 0,3 s z ośmiu), skrócenie promptu (trzy tryby
+   różnią się o mniej niż 800 znaków, więc nie o to chodziło). Odrzucone świadomie:
+   proszenie AI o krótszy przepis — to płacenie jakością dania za limit platformy.
+
+   CO TU JEST INACZEJ NIŻ W FUNKCJI SYNCHRONICZNEJ.
+   Funkcja na brzegu sieci ma limit 50 ms CZASU PROCESORA, ale czekanie na
+   odpowiedź z sieci się do niego NIE liczy. Możemy więc czekać na Gemini tak długo,
+   jak trzeba, o ile odeślemy odpowiedź w ciągu czterdziestu sekund. Cena: to jest
+   Deno, nie Node — inny sposób sięgania po zmienne środowiskowe i zwykłe Request
+   i Response zamiast obiektu zdarzenia z Lambdy.
+
+   Z tego limitu procesora wynika jedna praktyczna zasada: NIE PRZETWARZAMY tu
+   zdjęć. Przychodzą zakodowane tekstem i tak samo, bez tykania, jadą dalej.
+   Każda pętla po bajtach obrazu byłaby liczona do tych pięćdziesięciu milisekund.
+   ===================================================================== */
+
+/* Modele próbujemy po kolei — nazwy modeli Gemini zmieniają się między wersjami API
+   i ta sama nazwa potrafi działać pod jedną, a zwracać 404 pod inną.
+
+   Pole `mysli` mówi, czy model przyjmuje ustawienie budżetu myślenia. Zostaje ono
+   wyłączone mimo że pomiar nie wykazał zysku: myślenie i tak nie poprawia przepisu,
+   a jest liczone jak tekst wyjściowy, więc pali darmowy limit bez powodu.
+   Modelom starszym (2.0) tego pola wysłać NIE WOLNO — odpowiadają błędem 400. */
+const MODELE_ZAPASOWE = [
+  { wersja: "v1beta", nazwa: "gemini-flash-latest",   mysli: true  },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash",      mysli: true  },
+  { wersja: "v1",     nazwa: "gemini-2.5-flash",      mysli: true  },
+  { wersja: "v1beta", nazwa: "gemini-2.0-flash",      mysli: false },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite", mysli: true  },
+];
+
+const srodowisko = (nazwa) => {
+  /* Netlify.env to droga zalecana, Deno.env działa też lokalnie. Bierzemy pierwszą,
+     która w ogóle istnieje, żeby brak jednej z nich nie wywalał całej funkcji. */
+  try { if (typeof Netlify !== "undefined") return Netlify.env.get(nazwa); } catch { /* pusto */ }
+  try { if (typeof Deno !== "undefined") return Deno.env.get(nazwa); } catch { /* pusto */ }
+  return undefined;
+};
+
+function modeleDoProby() {
+  const zUstawien = (srodowisko("GEMINI_MODEL") || "").trim();
+  if (!zUstawien) return MODELE_ZAPASOWE;
+  const [wersja, nazwa] = zUstawien.split(":");
+  if (!wersja || !nazwa) return MODELE_ZAPASOWE;   // źle wpisana wartość nie może zabić apki
+  return [{ wersja, nazwa, mysli: true }, ...MODELE_ZAPASOWE];
+}
+
+const MAKS_ZDJEC = 4;
+const LIMIT_NA_DOM_NA_DOBE = 30;
+const BAZA = "https://forkast-37ffd-default-rtdb.europe-west1.firebasedatabase.app";
+
+/* BUDŻET CZASU — już nie limit platformy, tylko cierpliwość człowieka.
+
+   Sufit techniczny to czterdzieści sekund (tyle mamy na odesłanie nagłówków).
+   Dwadzieścia pięć bierzemy dlatego, że po tym czasie i tak nikt nie patrzy
+   już w telefon, a nieskończone kręcenie się jest gorsze niż uczciwe „nie wyszło”.
+   Zmiana tej liczby to decyzja o czekaniu, nie o platformie. */
+const BUDZET_MS = 25000;
+
+const adresModelu = (m) =>
+  `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;
+
+const dzisiaj = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Sprawdza, czy dom istnieje i czy nie przekroczył dziennego limitu; podnosi licznik.
+ *
+ * Ograniczenie, świadome: funkcja nie ma uprawnień administratora do bazy (to wymagałoby
+ * klucza serwisowego), więc licznik leży pod ścieżką domu i osoba znająca własny kod
+ * może go teoretycznie wyzerować z konsoli przeglądarki. Przed kimś z zewnątrz chroni
+ * w pełni — bo bez znajomości kodu nie przejdzie nawet pierwszego sprawdzenia.
+ */
+async function sprawdzDom(kodDomu) {
+  const kod = String(kodDomu ?? "").trim().toUpperCase();
+  if (!/^[0-9A-Z]{6}$/.test(kod)) {
+    return { status: 403, blad: "Brak poprawnego kodu stołu." };
+  }
+
+  const sciezka = `${BAZA}/domy/${kod}/limity/${dzisiaj()}.json`;
+
+  /* Dwa odczyty naraz, nie po kolei — nic o sobie nie wiedzą, więc nie ma powodu,
+     żeby na siebie czekały. Zmierzone: skróciło sprawdzenie stołu z 0,6 s do 0,3 s. */
+  const [istnieje, licznikOdp] = await Promise.all([
+    fetch(`${BAZA}/domy/${kod}/utworzono.json`),
+    fetch(sciezka),
+  ]);
+
+  if (!istnieje.ok) return { status: 403, blad: "Nie mogę zweryfikować stołu." };
+  if ((await istnieje.json()) == null) {
+    return { status: 403, blad: "Nie ma takiego stołu." };
+  }
+
+  const uzyte = licznikOdp.ok ? ((await licznikOdp.json()) || 0) : 0;
+
+  if (uzyte >= LIMIT_NA_DOM_NA_DOBE) {
+    return { status: 429, blad:
+      `Ten stół wykorzystał dziś ${LIMIT_NA_DOM_NA_DOBE} zapytań do AI. Licznik zeruje się o północy — ` +
+      `do tego czasu możesz dodać danie ręcznie przez formularz.` };
+  }
+
+  /* Licznik podnosimy PRZED wywołaniem AI: lepiej policzyć zapytanie, które padło,
+     niż nie policzyć takiego, które przeszło. Ale nie czekamy tu na potwierdzenie —
+     zapis rusza teraz, a doczekamy go tuż przed zwróceniem odpowiedzi. */
+  return { zapisLicznika: fetch(sciezka, { method: "PUT", body: JSON.stringify(uzyte + 1) }) };
+}
+
+export default async (request) => {
+  const START = Date.now();
+  const minelo = () => Date.now() - START;
+  const zostalo = () => BUDZET_MS - minelo();
+  const sek = (ms) => (ms / 1000).toFixed(1).replace(".", ",");
+
+  const naglowki = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+  const odpowiedz = (status, obiekt) =>
+    new Response(JSON.stringify(obiekt), { status, headers: naglowki });
+
+  if (request.method === "OPTIONS") return new Response("", { status: 204, headers: naglowki });
+  if (request.method !== "POST") return odpowiedz(405, { blad: "Tylko POST." });
+
+  const klucz = srodowisko("GEMINI_API_KEY");
+  if (!klucz) return odpowiedz(500, { blad: "Serwer nie ma skonfigurowanego klucza API." });
+
+  /* Adres tej funkcji jest publiczny, a za nią stoi klucz Miłosza — bez żadnej kontroli
+     ktokolwiek, kto pozna adres (a link idzie WhatsAppem i może być przesłany dalej),
+     mógłby jej używać jako darmowego dostępu do Gemini.
+
+     Sprawdzamy więc, czy zapytanie przyszło z naszej własnej strony. To NIE jest mocne
+     zabezpieczenie — nagłówek Origin da się podrobić narzędziem spoza przeglądarki —
+     ale odcina przypadkowe i leniwe użycie, czyli realny scenariusz przy pięciu domach.
+
+     Nie odrzucamy po samym braku Origin, bo wbudowana przeglądarka WhatsAppa nie jest
+     zwykłą przeglądarką i nie ma pewności, co wysyła. Przepuszczamy też pasujący
+     Referer — curl bez argumentów nie wysyła ŻADNEGO z tych dwóch, więc odpada,
+     a prawdziwa przeglądarka wysyła przynajmniej jeden. */
+  const host = new URL(request.url).host;
+  const zrodlo = request.headers.get("origin") || "";
+  const skad = request.headers.get("referer") || "";
+  const zZewnatrz = (naglowek) => naglowek && !naglowek.includes(host);
+  if (host && ((!zrodlo && !skad) || zZewnatrz(zrodlo) || (!zrodlo && zZewnatrz(skad)))) {
+    return odpowiedz(403, { blad: "Zapytanie spoza aplikacji." });
+  }
+
+  let dane;
+  try { dane = await request.json(); }
+  catch { return odpowiedz(400, { blad: "Nieprawidłowe zapytanie." }); }
+
+  const { prompt, obrazy, kodDomu } = dane;
+  if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+    return odpowiedz(400, { blad: "Brak treści promptu." });
+  }
+  if (obrazy != null && !Array.isArray(obrazy)) {
+    return odpowiedz(400, { blad: "Zdjęcia muszą być listą." });
+  }
+  if (Array.isArray(obrazy) && obrazy.length > MAKS_ZDJEC) {
+    return odpowiedz(400, { blad: `Najwyżej ${MAKS_ZDJEC} zdjęć naraz.` });
+  }
+
+  const wynikDomu = await sprawdzDom(kodDomu);
+  const czasBazy = minelo();
+  if (wynikDomu.blad) return odpowiedz(wynikDomu.status, { blad: wynikDomu.blad });
+
+  /* Zapis licznika leci w tle od sprawdzDom. Doczekać go trzeba przed zwróceniem
+     odpowiedzi, bo po jej zwróceniu funkcja może zostać uśpiona w połowie
+     niedokończonego żądania. Wyjątek połykamy: nieudany licznik nie może zabrać
+     człowiekowi dania. */
+  const dopiscLicznik = async () => {
+    try { await wynikDomu.zapisLicznika; } catch { /* licznik nie jest ważniejszy niż odpowiedź */ }
+  };
+
+  const parts = [];
+  if (Array.isArray(obrazy)) {
+    for (const o of obrazy) {
+      if (!o?.data || !o?.mimeType) continue;
+      if (!/^image\//.test(o.mimeType)) continue;   // tylko obrazy, nie cokolwiek pod tą nazwą
+      parts.push({ inline_data: { mime_type: o.mimeType, data: o.data } });
+    }
+  }
+  parts.push({ text: prompt });
+
+  let ostatniStatus = null;
+  let ostatniModel = null;
+  for (const model of modeleDoProby()) {
+    /* Zanim spróbujemy kolejnego modelu — czy jest jeszcze na to czas. Bez tego
+       jedna nieudana próba zjada budżet następnej. */
+    if (zostalo() < 3000) break;
+
+    const stopZegar = new AbortController();
+    const budzik = setTimeout(() => stopZegar.abort(), zostalo() - 1000);
+
+    const cialo = { contents: [{ parts }] };
+    if (model.mysli) cialo.generationConfig = { thinkingConfig: { thinkingBudget: 0 } };
+
+    const startModelu = Date.now();
+    let odp;
+    try {
+      odp = await fetch(adresModelu(model), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": klucz },
+        body: JSON.stringify(cialo),
+        signal: stopZegar.signal,
+      });
+    } catch {
+      clearTimeout(budzik);
+      ostatniModel = model.nazwa;
+      /* Przerwanie własnym zegarem wygląda w kodzie tak samo jak zerwana sieć,
+         a dla człowieka to dwie różne wiadomości. Rozdzielamy. */
+      if (stopZegar.signal.aborted) {
+        await dopiscLicznik();
+        return odpowiedz(504, {
+          blad: `AI nie zdążyło odpowiedzieć w ${sek(minelo())} s (model ${model.nazwa}).`,
+          czasy: { baza: czasBazy, gemini: Date.now() - startModelu, razem: minelo(), model: model.nazwa },
+        });
+      }
+      ostatniStatus = "brak połączenia";
+      continue;
+    }
+    clearTimeout(budzik);
+    ostatniModel = model.nazwa;
+
+    // 429 to limit, nie zła nazwa modelu — próbowanie kolejnych tylko pali pulę.
+    if (odp.status === 429) {
+      await dopiscLicznik();
+      return odpowiedz(502, {
+        blad: "Gemini ma dziś za dużo zapytań od nas — spróbuj ponownie za chwilę, albo jutro." });
+    }
+
+    if (!odp.ok) { ostatniStatus = odp.status; continue; }
+
+    const wynik = await odp.json();
+    const czasGemini = Date.now() - startModelu;
+    const tekst = (wynik?.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+    if (!tekst.trim()) {
+      await dopiscLicznik();
+      return odpowiedz(502, { blad: "Gemini nie zwróciło żadnego tekstu — spróbuj jeszcze raz." });
+    }
+
+    await dopiscLicznik();
+    /* `czasy` jedzie także przy powodzeniu, nie tylko w błędzie. Pomiar widoczny
+       wyłącznie po awarii nigdy nie powie, ile zostało zapasu. */
+    return odpowiedz(200, {
+      tekst,
+      model: model.nazwa,
+      czasy: { baza: czasBazy, gemini: czasGemini, razem: minelo(), model: model.nazwa },
+    });
+  }
+
+  await dopiscLicznik();
+  return odpowiedz(502, {
+    blad: `Żaden z modeli nie odpowiedział po ${sek(minelo())} s ` +
+          `(ostatni: ${ostatniModel || "brak"}, błąd: ${ostatniStatus}).` });
+};
+
+export const config = { path: "/api/zapytaj-ai" };
