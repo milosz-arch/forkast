@@ -1,5 +1,5 @@
 import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
-         normalizujDopisek, dzialDopisku } from "../zakupy.js";
+         normalizujDopisek, dzialDopisku, normalizujIlosc } from "../zakupy.js";
 import { PRODUKTY } from "../produkty.js";
 import { nowyOkres, domyslnyRytm, pustaSiatka, przypiszDanie, zmienKtoJe, oznaczBezSkladnikow } from "../rytm.js";
 
@@ -282,6 +282,51 @@ test("wpis pasujący do dwóch produktów z TEGO SAMEGO działu dostaje ten dzia
 test("pusty słownik nie wywala funkcji", () => {
   rowne(dzialDopisku("chleb", []), null);
   rowne(dzialDopisku("chleb"), null);
+});
+
+console.log("\n— ilość sztuk przy dopisanej pozycji —");
+
+test("brak ilości daje null, nie jedynkę", () => {
+  /* `null`, nie `1`, bo „×1” przy każdej pozycji jest szumem i zabiera uwagę tym,
+     które naprawdę mają liczbę. */
+  rowne(normalizujIlosc(""), null);
+  rowne(normalizujIlosc(null), null);
+  rowne(normalizujIlosc(undefined), null);
+});
+
+test("liczba przechodzi, tekstem czy liczbą", () => {
+  rowne(normalizujIlosc("3"), 3);
+  rowne(normalizujIlosc(3), 3);
+});
+
+test("ułamek jest ucinany, nie zaokrąglany w górę", () => {
+  /* Dwie i siedem dziesiątych pasty do zębów nie istnieje; dwie owszem. */
+  rowne(normalizujIlosc("2.7"), 2);
+});
+
+test("zero i liczby ujemne odpadają", () => {
+  rowne(normalizujIlosc(0), null);
+  rowne(normalizujIlosc(-5), null);
+});
+
+test("bzdura odpada zamiast dać NaN", () => {
+  /* NaN nie jest błędem — jest liczbą, i przeszedłby przez cały ekran (decyzja 70).
+
+     Sprawdzamy go OSOBNO, nie przez `rowne`: ta porównuje przez JSON.stringify,
+     a ta zamienia NaN na „null”. Test napisany przez `rowne(…, null)` przechodził
+     więc także wtedy, gdy funkcja zwracała NaN — czyli pilnował dokładnie tego
+     jednego przypadku, którego miał pilnować, i akurat jego nie widział.
+     Wyszło to przy sabotażu 29 sierpnia. */
+  for (const bzdura of ["abc", {}, [], "3 sztuki"]) {
+    const wynik = normalizujIlosc(bzdura);
+    if (typeof wynik === "number" && Number.isNaN(wynik))
+      throw new Error(`normalizujIlosc(${JSON.stringify(bzdura)}) zwróciło NaN`);
+    rowne(wynik, null, `dla ${JSON.stringify(bzdura)}`);
+  }
+});
+
+test("liczba absurdalnie duża jest przycinana", () => {
+  rowne(normalizujIlosc("10000"), 999);
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

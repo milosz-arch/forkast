@@ -238,7 +238,7 @@
                       <!-- Dopisana ręcznie pozycja nie ma gramatury i nie udaje, że ma.
                            Wpisanie tu zera albo kreski wyglądałoby jak brak danych,
                            a to jest brak POJĘCIA: pasta do zębów nie ma ilu gramów. -->
-                      <span x-show="!p.dopisek"
+                      <span x-show="!p.dopisek || p.ileDoKupienia"
                             class="block font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
                             x-text="p.wDomu ? 'mamy' : p.ileDoKupienia"></span>
                       <span x-show="p.masz > 0"
@@ -278,10 +278,19 @@
                         bg-white px-4 text-[17px] outline-none transition focus:border-emerald-600
                         focus:ring-4 focus:ring-emerald-500/15 dark:border-stone-700
                         dark:bg-stone-900 dark:text-stone-100">
+          <!-- Ilość sztuk: wąska i opcjonalna. `inputmode="numeric"` wywołuje
+               na telefonie klawiaturę cyfrową zamiast pełnej. -->
+          <input type="number" x-model="nowaIlosc" min="1" max="999" step="1"
+                 inputmode="numeric" placeholder="szt."
+                 aria-label="Ile sztuk"
+                 class="min-h-[2.9rem] w-16 shrink-0 rounded-xl border-2 border-stone-200
+                        bg-white px-2 text-center text-[17px] outline-none transition
+                        focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15
+                        dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
           <button type="submit" :disabled="!nowyDopisek.trim()"
                   aria-label="Dopisz do listy"
                   class="flex min-h-[2.9rem] shrink-0 items-center justify-center rounded-xl
-                         bg-emerald-700 px-5 font-bold text-white transition active:scale-[0.98]
+                         bg-emerald-700 px-4 font-bold text-white transition active:scale-[0.98]
                          disabled:opacity-40 dark:bg-emerald-600">
             Dopisz
           </button>
@@ -443,7 +452,7 @@ import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
 import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
-         normalizujDopisek, dzialDopisku } from "./zakupy.js";
+         normalizujDopisek, dzialDopisku, normalizujIlosc } from "./zakupy.js";
 import { nalozSpizarnie, opisZapasu, kluczProduktu } from "./spizarnia.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { PRODUKTY } from "./produkty.js";
@@ -536,6 +545,7 @@ Alpine.data("ekranZakupy", () => ({
   dopisane: {},
   odsubDopisanych: null,
   nowyDopisek: "",
+  nowaIlosc: "",
   /* Słownik produktów na komponencie, bo rozpoznawanie działu dla dopisanej
      pozycji dzieje się przy każdym przerysowaniu listy. Bez tego przypisania
      `dzialDopisku` dostawał `undefined`, wpadał w wartość domyślną (pustą listę)
@@ -952,10 +962,15 @@ Alpine.data("ekranZakupy", () => ({
     const tekst = normalizujDopisek(this.nowyDopisek);
     if (!tekst) return;
     if (!this.fb) { this.mrugnij?.("Brak połączenia — dopiszę, gdy wróci internet."); return; }
+    const ile = normalizujIlosc(this.nowaIlosc);
     this.nowyDopisek = "";
+    this.nowaIlosc = "";
 
     const poprzednie = this.dopisane;
-    const zNowym = { ...this.dopisane, [this.kluczDopisku()]: { tekst, kiedy: Date.now() } };
+    /* Pola `ile` nie wpisujemy, gdy go nie ma. Firebase i tak nie zapisuje wartości
+       pustych, a jawny `null` w obiekcie robi w bazie śmieć bez znaczenia. */
+    const wpis = { tekst, kiedy: Date.now(), ...(ile ? { ile } : {}) };
+    const zNowym = { ...this.dopisane, [this.kluczDopisku()]: wpis };
     this.dopisane = zNowym;
     this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
 
@@ -968,6 +983,7 @@ Alpine.data("ekranZakupy", () => ({
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
       this.nowyDopisek = tekst;
+      this.nowaIlosc = ile || "";
       this.mrugnij?.(`[${WYDANIE}] Nie udało się dopisać: ${e?.code || e?.message || e}`);
     }
   },
@@ -1100,7 +1116,7 @@ Alpine.data("ekranZakupy", () => ({
      wpisuje w treść: „2 pasty do zębów”. */
   get pozycjeDopisane() {
     return Object.entries(this.dopisane)
-      .map(([id, w]) => ({ id, tekst: normalizujDopisek(w?.tekst) }))
+      .map(([id, w]) => ({ id, tekst: normalizujDopisek(w?.tekst), ile: normalizujIlosc(w?.ile) }))
       .filter(w => w.tekst)
       .sort((a, b) => a.tekst.localeCompare(b.tekst, "pl"))
       .map(w => ({
@@ -1109,7 +1125,11 @@ Alpine.data("ekranZakupy", () => ({
         zDan: "dopisane ręcznie",
         dopisek: w.id,
         gramy: 0, masz: 0, doKupienia: 0, wDomu: false,
-        ileDoKupienia: "", ileWDomu: "",
+        /* „×3”, nie „3 g”. Ta liczba to sztuki z półki, nie gramatura — nie wchodzi
+           do przeliczania porcji ani do odejmowania spiżarni. Przy jednej sztuce
+           nie pokazujemy nic, bo „×1” przy każdej pozycji jest szumem. */
+        ileDoKupienia: w.ile && w.ile > 1 ? `×${w.ile}` : "",
+        ileWDomu: "",
         wKoszyku: false,
       }));
   },

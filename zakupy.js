@@ -223,3 +223,23 @@ export function dzialDopisku(tekst, slownik = []) {
   const dzialy = [...new Set(najblizsze.map(p => p.dzial).filter(Boolean))];
   return dzialy.length === 1 ? dzialy[0] : null;
 }
+
+/** Ilość sztuk przy dopisanej pozycji. Zwraca liczbę całkowitą ≥ 1 albo null.
+ *
+ *  `null`, a nie `1`, gdy nic nie podano — bo „1” na ekranie to szum. Sztuka
+ *  chleba i tak jest jedna, a „×1” przy każdej pozycji zabiera uwagę tym,
+ *  które naprawdę mają liczbę.
+ *
+ *  To NIE jest gramatura. Dopisane pozycje nie wchodzą do przeliczania porcji
+ *  ani do odejmowania spiżarni — „3” przy paście do zębów znaczy trzy sztuki
+ *  do wzięcia z półki, nic więcej. */
+export function normalizujIlosc(wartosc) {
+  if (wartosc === "" || wartosc == null) return null;
+  const n = Number(wartosc);
+  if (!Number.isFinite(n)) return null;
+  const calkowita = Math.floor(n);
+  if (calkowita < 1) return null;
+  /* Dziewięćset dziewięćdziesiąt dziewięć to o dwa rzędy więcej, niż ktokolwiek
+     kupi jednej rzeczy — a chroni listę przed palcem, który zsunął się z klawiatury. */
+  return Math.min(calkowita, 999);
+}
