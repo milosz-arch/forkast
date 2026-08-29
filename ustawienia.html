@@ -209,6 +209,41 @@
              Plan i lista są wspólne; kalorie są czyjeś. Bez wskazania licznik
              w jadłospisie po prostu się nie pokazuje — nie blokuje niczego
              innego (decyzja 78). -->
+        <!-- ============ IMIONA ============
+             Do 29 sierpnia imienia nie dało się zmienić nigdzie: `zmienImie()`
+             istniała w `dom.js` od pierwszego dnia i żaden ekran jej nie wołał.
+             Kto wpisał literówkę przy zakładaniu stołu, zostawał z nią albo musiał
+             usunąć osobę i dodać od nowa, tracąc jej przypisania w rytmie.
+
+             Stoi TU, nad wyborem siebie, bo najpierw jest pytanie kto siedzi przy
+             stole, a dopiero potem który z nich to ja. Wersja na ekranie startowym
+             (v68) była poza zasięgiem: z apki nikt tam nie wraca. -->
+        <section x-show="domownicy.length"
+                 class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <h2 class="text-[1rem] font-bold">Imiona przy stole</h2>
+          <p class="mt-1 text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Dotknij imienia, żeby je poprawić. Zmiana widoczna dla całego stołu —
+            plan, zakupy i odhaczenia zostają przy tej samej osobie.
+          </p>
+          <ul class="mt-3 space-y-2">
+            <template x-for="d in domownicy" :key="d.id">
+              <li class="flex min-h-[3.15rem] items-center gap-3 rounded-xl border
+                         border-stone-100 px-4 dark:border-stone-800">
+                <input type="text" :value="d.imie" maxlength="30"
+                       @change="zmienImieOsoby(d, $event.target.value)"
+                       @keydown.enter="$event.target.blur()"
+                       :aria-label="`Imię: ${d.imie}. Dotknij, żeby poprawić.`"
+                       class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[1rem] font-medium
+                              outline-none focus:underline focus:decoration-emerald-600
+                              focus:decoration-2 focus:underline-offset-4 dark:text-stone-100">
+              </li>
+            </template>
+          </ul>
+          <p x-show="bladImienia" class="mt-3 text-[0.82rem] text-red-700 dark:text-red-400"
+             x-text="bladImienia"></p>
+        </section>
+
         <section x-show="domownicy.length > 1"
                  class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                         dark:border-stone-800 dark:bg-stone-900">
@@ -459,7 +494,7 @@ import { WYDANIE } from "./wersja.js";
 import { danePowloki } from "./powloka.js";
 import { PLYTY, PIEKARNIKI, NACZYNIA, DOMYSLNA } from "./kuchnia.js";
 import { TYPY_POSILKOW } from "./prompt.js";
-import { ktoJestemWsrod, ustawKimJestem } from "./dom.js";
+import { ktoJestemWsrod, ustawKimJestem, zmienImie } from "./dom.js";
 
 
 const kodDomu = kodStolu();
@@ -482,6 +517,7 @@ Alpine.data("ekranUstawienia", () => ({
   WYDANIE,
   kod: kodDomu,
   domownicy: [],
+  bladImienia: "",
   /* Kim jest ten telefon — pamiętane lokalnie, nie w bazie (decyzja 78). */
   ja: null,
   dlugoscOkresu: 7,
@@ -541,6 +577,44 @@ Alpine.data("ekranUstawienia", () => ({
     for (const typ of TYPY_POSILKOW) {
       if (!this.rytm[typ]) this.rytm[typ] = { wlaczony: true, kto: this.domownicy.map(d => d.id) };
       this.rytm[typ].kto = (this.rytm[typ].kto || []).filter(id => this.domownicy.some(d => d.id === id));
+    }
+  },
+
+  /* Zmiana imienia. Reguła „imię nie może być puste” mieszka w `zmienImie()`
+     w `dom.js`, razem ze swoimi testami — tutaj jej nie powtarzamy.
+
+     Zapis przy WYJŚCIU z pola, nie przy każdej literze: zapis na każde naciśnięcie
+     klawisza to kilkanaście zapisów na jedno imię, a przy dwóch telefonach przy
+     jednym stole każdy z nich wraca nasłuchem i przestawia kursor pod palcem. */
+  async zmienImieOsoby(d, wpisane) {
+    this.bladImienia = "";
+    const imie = String(wpisane ?? "").replace(/\s+/g, " ").trim();
+
+    /* Puste pole to omsknięcie, nie polecenie „skasuj imię”. */
+    if (!imie || imie === d.imie) { this.domownicy = [...this.domownicy]; return; }
+    if (this.domownicy.some(x => x.id !== d.id && x.imie.toLowerCase() === imie.toLowerCase())) {
+      this.bladImienia = "Ktoś taki już siedzi przy stole.";
+      this.domownicy = [...this.domownicy]; return;
+    }
+
+    const stare = d.imie;
+    try {
+      this.domownicy = zmienImie(this.domownicy, d.id, imie);
+    } catch (e) {
+      this.bladImienia = e?.message || "Nie da się zapisać tego imienia.";
+      this.domownicy = [...this.domownicy]; return;
+    }
+
+    try {
+      /* Obiekt pod gałęzią osoby, nie wartość prosta pod `imie` — wartość prosta
+         zapisana pod gałąź z nasłuchem nie dociera do bazy (decyzja 76, pułapka 2). */
+      await set(ref(db, `domy/${kodDomu}/domownicy/${d.id}`), { imie });
+      this.komunikat = `${stare} to teraz ${imie}`;
+      this.mrugnij?.(`Zapisane: ${imie}`);
+    } catch (e) {
+      console.error("Nie udało się zmienić imienia:", e);
+      this.bladImienia = `[${WYDANIE}] Nie udało się zapisać: ${e?.code || e?.message || e}`;
+      this.domownicy = zmienImie(this.domownicy, d.id, stare);
     }
   },
 
