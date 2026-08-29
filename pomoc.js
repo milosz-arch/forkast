@@ -29,8 +29,8 @@ export const POMOC = {
       "i macie miesiąc bez powtórki.",
 
       "Nie pasuje Wam nic z tej listy? To też jest w porządku. Możecie zbudować własną " +
-      "od zera — zakładka Dodaj przyjmuje zdjęcie przepisu z książki, link z internetu " +
-      "albo samą nazwę dania. Aplikacja będzie wtedy losować wyłącznie z Waszych.",
+      "od zera — zakładka Dodaj przyjmuje zdjęcie przepisu z książki albo samą nazwę " +
+      "dania. Aplikacja będzie wtedy losować wyłącznie z Waszych.",
     ],
   },
 
@@ -70,8 +70,8 @@ export const POMOC = {
       "z Instagrama. Możecie też sfotografować sam talerz z jedzeniem — AI rozpozna, " +
       "co na nim jest, i napisze przepis od zera.",
 
-      "Link: adres przepisu z internetu. AI otwiera stronę i wyciąga z niej składniki, " +
-      "gramaturę i kroki.",
+      "Przepis z internetu: otwórzcie stronę w przeglądarce i zróbcie zrzut ekranu — " +
+      "wtedy AI czyta to, co naprawdę tam napisano, zamiast zgadywać z adresu.",
 
       "Nazwa: wpisujecie „gołąbki” i tyle. Przepis powstaje z niczego. " +
       "Zanim cokolwiek się zapisze, zobaczycie, co wyszło, i decydujecie sami.",

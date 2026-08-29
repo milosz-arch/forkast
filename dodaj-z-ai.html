@@ -89,7 +89,7 @@
     </div>
       <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj przez AI</h1>
       <p class="mt-1 max-w-[38ch] text-[0.82rem] leading-snug text-white/85">
-        Nazwa, link, zdjęcie przepisu — albo zdjęcie samego talerza.
+        Nazwa dania, zdjęcie przepisu — albo zdjęcie samego talerza.
       </p>
 
     </header>
@@ -100,7 +100,7 @@
 
         <!-- ================= WEJŚCIE ================= -->
         <div x-show="krok === 'wejscie'" x-transition>
-          <div class="mb-4 grid grid-cols-3 gap-2" role="group" aria-label="Sposób dodania">
+          <div class="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="Sposób dodania">
             <template x-for="t in TRYBY" :key="t.id">
               <button type="button" @click="tryb = t.id" :aria-pressed="(tryb === t.id).toString()"
                       class="min-h-[2.7rem] rounded-xl border-2 px-2 text-[0.82rem] font-semibold transition"
@@ -113,11 +113,6 @@
           </div>
 
           <input x-show="tryb === 'nazwa'" type="text" x-model="nazwa" placeholder="np. Naleśniki z dżemem"
-                 class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
-                        outline-none transition focus:border-emerald-600 focus:ring-4
-                        focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
-
-          <input x-show="tryb === 'link'" type="url" x-model="url" placeholder="https://…"
                  class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                         outline-none transition focus:border-emerald-600 focus:ring-4
                         focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
@@ -202,8 +197,8 @@
         <!-- ================= PODGLĄD PRZED ZAPISEM =================
              Nic nie trafia do bazy, dopóki człowiek tego nie zobaczy i nie kliknie.
              To jedyny punkt kontroli nad treścią, której nie widzimy wcześniej:
-             w trybie „link” to AI otwiera obcą stronę, więc jej treść wpływa
-             na to, co wróci. Cała treść wstawiana przez x-text, nigdy jako HTML. -->
+             przy zdjęciu to AI czyta cudzą kartkę, więc jej treść wpływa na to,
+             co wróci. Cała treść wstawiana przez x-text, nigdy jako HTML. -->
         <div x-show="krok === 'podglad'" x-transition class="space-y-3">
           <h2 class="text-lg font-bold">Sprawdź, zanim zapiszę</h2>
 
@@ -298,7 +293,7 @@ import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
 import { parsujOdpowiedz } from "./parser.js";
-import { zbudujPrompt, zbudujPromptZLinku, zbudujPromptZeZdjec } from "./prompt.js";
+import { zbudujPrompt, zbudujPromptZeZdjec } from "./prompt.js";
 import { opisKuchni } from "./kuchnia.js";
 import { PRODUKTY } from "./produkty.js";
 
@@ -335,9 +330,23 @@ Alpine.data("ekranAI", () => ({
 
   ...danePowloki({ ekran: "dodaj", tytul: "Dodaj przez AI", opis: "" }),
 
+  /* TRYB „LINK” JEST ODSTAWIONY, NIE USUNIĘTY.
+
+     29 sierpnia okazało się, że produkował przepis wyglądający na odczytany
+     ze strony, a w rzeczywistości ZMYŚLONY: model nie dostaje żadnego narzędzia
+     do otwierania stron, więc widzi sam adres i zgaduje danie po jego nazwie.
+     Miłosz sprawdził na prawdziwym linku — wrócił kompletnie inny przepis.
+
+     To jest gorsze niż błąd, bo wygląda na sukces, a z tych składników liczy się
+     potem lista zakupów. „Jak ma zgadywać, to lepiej wcale.”
+
+     Powrót wymaga DWÓCH rzeczy naraz, nie jednej: narzędzia do czytania stron
+     w zapytaniu do Gemini ORAZ sprawdzenia w odpowiedzi, czy strona faktycznie
+     została pobrana. Samo narzędzie nie wystarczy — część stron z przepisami
+     blokuje pobieranie, a wtedy model wraca do zgadywania i jesteśmy w punkcie
+     wyjścia. Pilnuje tego test-zapytaj-ai. */
   TRYBY: [
     { id: "nazwa",   etykieta: "Nazwa dania" },
-    { id: "link",    etykieta: "Link" },
     { id: "zdjecia", etykieta: "Zdjęcia" },
   ],
   tryb: "nazwa",
@@ -346,7 +355,7 @@ Alpine.data("ekranAI", () => ({
   ETAPY: [],
   podpowiedzCzekania: "",
   _etapy: null,
-  nazwa: "", url: "",
+  nazwa: "",
   zdjecia: [],
   opisZdjec: "Dotknij, żeby wybrać zdjęcia",
   slownik: [],
@@ -358,7 +367,6 @@ Alpine.data("ekranAI", () => ({
 
   get gotoweDoWyslania() {
     if (this.tryb === "nazwa") return this.nazwa.trim().length > 0;
-    if (this.tryb === "link") return this.url.trim().length > 0;
     return this.zdjecia.length > 0;
   },
 
@@ -419,7 +427,6 @@ Alpine.data("ekranAI", () => ({
 
   budujPrompt() {
     if (this.tryb === "nazwa") return zbudujPrompt([this.nazwa.trim()], this.slownik, [], null, this.kuchniaTekst);
-    if (this.tryb === "link") return zbudujPromptZLinku(this.url.trim(), this.slownik, [], null, this.kuchniaTekst);
     return zbudujPromptZeZdjec(this.slownik, [], null, this.kuchniaTekst);
   },
 
@@ -430,10 +437,6 @@ Alpine.data("ekranAI", () => ({
       ? [{ tekst: "Wysyłam zdjęcia", ms: 1200 },
          { tekst: "AI odczytuje obraz", ms: 6000 },
          { tekst: "Zapisuje przepis", ms: 5000 },
-         { tekst: "Sprawdzam składniki", ms: 3000 }]
-      : this.tryb === "link"
-      ? [{ tekst: "Otwieram stronę", ms: 2500 },
-         { tekst: "AI czyta przepis", ms: 6000 },
          { tekst: "Sprawdzam składniki", ms: 3000 }]
       : [{ tekst: "Pytam AI", ms: 2000 },
          { tekst: "Powstaje przepis", ms: 6000 },
@@ -546,7 +549,7 @@ Alpine.data("ekranAI", () => ({
   },
 
   odNowa() {
-    this.nazwa = ""; this.url = ""; this.zdjecia = [];
+    this.nazwa = ""; this.zdjecia = [];
     this.opisZdjec = "Dotknij, żeby wybrać zdjęcia";
     this.odrzuc();
   },

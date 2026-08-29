@@ -180,4 +180,26 @@ test("funkcja nie przetwarza bajtów zdjęć", () => {
     "funkcja dotyka bajtów obrazu — to jedzie na limit 50 ms czasu procesora");
 });
 
+test("tryb „Link” nie wraca bez narzędzia do czytania stron", () => {
+  /* 29 sierpnia ten tryb produkował przepis wyglądający na odczytany ze strony,
+     a zmyślony — model nie dostaje narzędzia do jej otwarcia, więc zgaduje danie
+     po adresie. Miłosz sprawdził na prawdziwym linku: wrócił zupełnie inny przepis.
+
+     Sam tryb jest odstawiony, ale wrócić może łatwo, bo to jedna linijka w TRYBY.
+     Ten test pilnuje, żeby wrócił razem z dwiema rzeczami, nie samotnie:
+     narzędziem do czytania stron ORAZ sprawdzeniem, czy strona naprawdę została
+     pobrana. Bez tego drugiego część stron blokujących roboty odeśle nas dokładnie
+     tam, skąd wyszliśmy — do zgadywania wyglądającego na sukces. */
+  const tryby = ekran.match(/TRYBY:\s*\[([\s\S]*?)\]/);
+  prawda(tryby, "ekran dodawania nie deklaruje listy TRYBY");
+  if (!/id:\s*["']link["']/.test(tryby[1])) return;   // odstawiony — nie ma czego pilnować
+
+  prawda(/url_context|urlContext/.test(bezKomentarzy),
+    "tryb Link jest włączony, a zapytanie do Gemini nie niesie narzędzia do czytania stron — " +
+    "model będzie zgadywał przepis z adresu");
+  prawda(/urlRetrievalStatus|url_retrieval_status|urlMetadata|url_metadata/.test(bezKomentarzy),
+    "tryb Link jest włączony, a odpowiedź nie jest sprawdzana pod kątem tego, czy strona " +
+    "faktycznie została pobrana — przy zablokowanej stronie wróci zmyślony przepis");
+});
+
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
