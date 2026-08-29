@@ -158,7 +158,25 @@
           <template x-for="d in domownicy" :key="d.id">
             <li class="flex min-h-[3.15rem] items-center gap-3 rounded-xl border border-stone-100
                        bg-white px-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
-              <span class="flex-1 font-medium" x-text="d.imie"></span>
+              <!-- IMIĘ JEST POLEM, NIE NAPISEM.
+
+                   `zmienImie()` istniała w `dom.js` od pierwszego dnia i żaden ekran
+                   jej nie wołał — kto wpisał imię z literówką przy zakładaniu stołu,
+                   zostawał z nią albo musiał usunąć osobę i dodać od nowa, tracąc jej
+                   przypisania w rytmie. Trzecia „gotowa funkcja bez drzwi” w tej apce,
+                   po arkuszu spiżarni (decyzja 73) i wyłączonym posiłku (88).
+
+                   Zapisujemy przy wyjściu z pola, nie przy każdej literze: zapis na
+                   każde naciśnięcie klawisza to kilkanaście zapisów do bazy na jedno
+                   imię, a przy dwóch telefonach przy jednym stole każdy z nich wraca
+                   nasłuchem i przestawia kursor pod palcem. -->
+              <input type="text" :value="d.imie" maxlength="30"
+                     @change="zmien(d, $event.target.value)"
+                     @keydown.enter="$event.target.blur()"
+                     :aria-label="`Imię: ${d.imie}. Zmień, jeśli chcesz.`"
+                     class="min-w-0 flex-1 border-0 bg-transparent p-0 font-medium outline-none
+                            focus:underline focus:decoration-emerald-600 focus:decoration-2
+                            focus:underline-offset-4 dark:text-stone-100">
               <button type="button" @click="usun(d)" :aria-label="`Usuń ${d.imie} ze stołu`"
                       class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
                              transition active:bg-stone-100 dark:active:bg-stone-800">
@@ -250,7 +268,7 @@ let db, ref, get, set, remove, push, update, onValue;
 
 import { danePowloki } from "./powloka.js";
 import { generujKodDomu, znormalizujKod, kodPoprawny,
-         ktoJestemWsrod, ustawKimJestem } from "./dom.js";
+         ktoJestemWsrod, ustawKimJestem, zmienImie } from "./dom.js";
 
 
 /* Easter egg: kod stołu, który wylosował coś jadalnego. Przy 36^6 kombinacjach
@@ -446,6 +464,57 @@ Alpine.data("ekranWejscie", () => ({
       this.komunikat = `${imie} dołącza do stołu`;
     } catch {
       this.bladOsoby = "Nie udało się dodać — sprawdź internet.";
+    }
+  },
+
+  /* Zmiana imienia. Wartość, nie klucz — `id` domownika zostaje, więc rytm,
+     ptaszki i „kto je” trzymają się dalej tej samej osoby. To dlatego ta zmiana
+     jest bezpieczna, a zmiana kodu stołu czy klucza produktu nie byłaby. */
+  async zmien(d, wpisane) {
+    this.bladOsoby = "";
+    const imie = String(wpisane ?? "").trim();
+
+    /* Puste pole to nie jest polecenie „skasuj imię” — to jest omsknięcie.
+       Wracamy do poprzedniego zamiast zapisywać kogoś bez imienia. */
+    if (!imie || imie === d.imie) { this.domownicy = [...this.domownicy]; return; }
+
+    if (imie.length > 30) {
+      this.bladOsoby = "Za długie — maksymalnie 30 znaków.";
+      this.domownicy = [...this.domownicy]; return;
+    }
+    if (this.domownicy.some(x => x.id !== d.id && x.imie.toLowerCase() === imie.toLowerCase())) {
+      this.bladOsoby = "Ktoś taki już siedzi przy stole.";
+      this.domownicy = [...this.domownicy]; return;
+    }
+
+    const stare = d.imie;
+
+    /* Wołamy `zmienImie()` z `dom.js` zamiast powtarzać jej reguły tutaj.
+       Ona jedna wie, że imię nie może być puste, i ma na to testy — a przy okazji
+       przestaje być martwym kodem, czyli tym, co ten ekran naprawia. Wynik służy
+       też za natychmiastową podmianę na ekranie, zanim wróci nasłuch z bazy. */
+    let poZmianie;
+    try {
+      poZmianie = zmienImie(this.domownicy, d.id, imie);
+    } catch (e) {
+      this.bladOsoby = e?.message || "Nie da się zapisać tego imienia.";
+      this.domownicy = [...this.domownicy];
+      return;
+    }
+    this.domownicy = poZmianie;
+
+    try {
+      /* Obiekt pod gałęzią osoby, nie wartość prosta pod `imie` — na `domownicy`
+         wisi nasłuch, a wartość prosta zapisana pod taką gałąź nie dociera do bazy
+         i kończy się wyjątkiem ze środka Firebase (decyzja 76, pułapka 2). */
+      await set(ref(db, `domy/${this.kodDomu}/domownicy/${d.id}`), { imie });
+      this.komunikat = `${stare} to teraz ${imie}`;
+      this.mrugnij?.(`Zapisane: ${imie}`);
+    } catch (e) {
+      console.error("Nie udało się zmienić imienia:", e);
+      this.bladOsoby = `Nie udało się zmienić imienia: ${e?.code || e?.message || e}`;
+      /* Cofamy podmianę: na ekranie ma stać to, co naprawdę jest w bazie. */
+      this.domownicy = zmienImie(this.domownicy, d.id, stare);
     }
   },
 

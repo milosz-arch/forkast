@@ -144,5 +144,36 @@ test("gdy mnie usunięto ze stołu z drugiego telefonu, wybór przestaje obowią
   rowne(ktoJestemWsrod([{ id: "d9", imie: "Ola" }], p), "d9");
 });
 
+
+
+console.log("\n— martwe funkcje: czy ekran w ogóle je woła —");
+
+/* Trzy razy w tej apce ta sama historia: funkcja gotowa i przetestowana, a żaden
+   ekran jej nie wołał. Arkusz spiżarni bez przycisku otwierającego (decyzja 73),
+   wyłączony posiłek bez drogi powrotu (88) i `zmienImie()`, przez którą literówka
+   w imieniu była nie do naprawienia inaczej niż usunięciem osoby.
+
+   Testy jednostkowe tego nie łapią z definicji: sprawdzają, czy funkcja działa,
+   a nie czy ktokolwiek jej używa. Ten test czyta ekrany jako tekst i pyta o to
+   drugie — z konieczności grubo, ale grubo znaczy tu „w ogóle”. */
+import { readdirSync as czytajKatalog, readFileSync as czytajPlik } from "fs";
+
+const KORZEN_EKRANOW = new URL("../", import.meta.url);
+const bezKomentarzyHTML = (kod) => kod
+  .replace(/<!--[\s\S]*?-->/g, " ")
+  .replace(/\/\*[\s\S]*?\*\//g, " ");
+
+const ekranyHTML = czytajKatalog(KORZEN_EKRANOW)
+  .filter(f => f.endsWith(".html"))
+  .map(f => bezKomentarzyHTML(czytajPlik(new URL(f, KORZEN_EKRANOW), "utf8")))
+  .join("\n");
+
+for (const nazwa of ["zmienImie", "wlaczPosilek"]) {
+  test(`${nazwa}() jest wołana przez któryś ekran`, () => {
+    rowne(new RegExp(`\\b${nazwa}\\s*\\(`).test(ekranyHTML), true,
+      `${nazwa}() istnieje w kodzie i żaden ekran jej nie woła — gotowa funkcja bez drzwi`);
+  });
+}
+
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
 process.exit(oblane ? 1 : 0);
