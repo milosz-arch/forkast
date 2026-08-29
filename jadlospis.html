@@ -194,8 +194,27 @@
               </p>
 
               <ul class="divide-y divide-stone-100 dark:divide-stone-800">
-                <template x-for="typ in TYPY_POSILKOW.filter(t => d.posilki[t])" :key="typ">
+                <!-- Wyłączony posiłek ZOSTAJE widoczny, jeśli dom w ogóle taki jada.
+                     Bez tego wyłączenie było nieodwracalne: wiersz znikał razem
+                     z jedyną drogą powrotu, a `wlaczPosilek()` nie miał kto wołać.
+                     Rozróżnienie jest celowe — „ten dom nie jada śniadań” to rytm
+                     w Ustawieniach i takiego wiersza tu nie ma wcale; „wyłączyliśmy
+                     lunch w czwartek” to decyzja jednego dnia i musi dać się cofnąć. -->
+                <template x-for="typ in TYPY_POSILKOW.filter(t => d.posilki[t] || rytm()[t])" :key="typ">
                   <li class="relative py-2.5">
+
+                    <!-- WIERSZ WYŁĄCZONEGO POSIŁKU -->
+                    <button type="button" x-show="!d.posilki[typ]" @click="wlacz(d, typ)"
+                            :aria-label="`Włącz ${typ}, ${podpisDnia(d.data)}`"
+                            class="block min-h-[2.5rem] w-full text-left text-[0.82rem]
+                                   text-stone-300 dark:text-stone-600">
+                      <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]"
+                            x-text="typ"></span>
+                      <span class="italic"> — wyłączone, dotknij, żeby włączyć —</span>
+                    </button>
+
+                    <template x-if="d.posilki[typ]">
+                     <div>
                     <div class="flex items-baseline gap-2 pr-24">
                       <!-- Kropka w kolorze kubełka: z jakiego świata jest to danie,
                            widoczne bez otwierania. -->
@@ -262,13 +281,22 @@
                             x-text="ilePtaszkow(d, typ)"></span>
                     </button>
 
-                    <button type="button" @click="wylacz(d, typ)"
-                            :aria-label="`Wyłącz ${typ}, ${podpisDnia(d.data)}`"
+                    <!-- KRZYŻYK MA DWA ZNACZENIA, w kolejności od odwracalnego.
+                         Przy posiłku z daniem zdejmuje DANIE i zostawia posiłek —
+                         bo tak ten przycisk się czyta i tak go ludzie naciskają.
+                         Dopiero przy pustym posiłku wyłącza go z dnia, czyli wtedy,
+                         gdy nie ma już czego zepsuć. -->
+                    <button type="button" @click="krzyzyk(d, typ)"
+                            :aria-label="posilekPusty(d, typ)
+                              ? `Wyłącz ${typ}, ${podpisDnia(d.data)}`
+                              : `Zdejmij danie z ${typ}, ${podpisDnia(d.data)}`"
                             class="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center
                                    justify-center rounded-xl text-stone-300 transition
                                    active:bg-stone-100 dark:text-stone-600 dark:active:bg-stone-800">
                       <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
                     </button>
+                     </div>
+                    </template>
                   </li>
                 </template>
               </ul>
@@ -444,7 +472,8 @@ import { POMOC } from "./pomoc.js";
 import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
 import { WERSJA_DANYCH, sprawdzWersje } from "./wersja.js";
 import { nowyOkres, dniOkresu, domyslnyRytm, pustaSiatka, wylaczPosilek,
-         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny } from "./rytm.js";
+         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny,
+         wlaczPosilek, wyczyscDanie, posilekPusty } from "./rytm.js";
 import { ulozPlan as ulozAutomatem } from "./automat.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
@@ -946,10 +975,30 @@ Alpine.data("ekranJadlospis", () => ({
     this.mrugnij(p.reakcja);
   },
 
-  async wylacz(dzien, typ) {
-    this.siatka = wylaczPosilek(this.siatka, dzien.data, typ);
+  /* Udostępnione szablonowi, żeby podpis przycisku mówił to samo, co on zrobi. */
+  posilekPusty(dzien, typ) { return posilekPusty(dzien, typ); },
+
+  async krzyzyk(dzien, typ) {
+    if (!posilekPusty(dzien, typ)) {
+      this.siatka = wyczyscDanie(this.siatka, dzien.data, typ);
+      this.komunikat = `Zdjęto danie z ${typ}`;
+    } else {
+      this.siatka = wylaczPosilek(this.siatka, dzien.data, typ);
+      this.komunikat = `Wyłączono ${typ} — dotknij wiersza, żeby wrócić`;
+    }
     await this.zapiszPosilek(dzien.data, typ);
-    this.komunikat = `Wyłączono ${typ}`;
+  },
+
+  async wlacz(dzien, typ) {
+    /* Kogo wpisać: to, co dom ma w rytmie. Gdyby rytm tego posiłku nie znał —
+       wszystkich domowników, bo posiłek bez ani jednej osoby jest błędem. */
+    const kto = this.rytm()[typ]?.kto?.length
+      ? this.rytm()[typ].kto
+      : this.domownicy.map(o => o.id);
+    if (!kto.length) { this.komunikat = "Najpierw dodaj kogoś do stołu"; return; }
+    this.siatka = wlaczPosilek(this.siatka, dzien.data, typ, kto);
+    await this.zapiszPosilek(dzien.data, typ);
+    this.komunikat = `Włączono ${typ}`;
   },
 }));
 

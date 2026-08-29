@@ -1,7 +1,8 @@
 import { sprawdzWersje, WERSJA_DANYCH } from "../wersja.js";
 import { dataISO, nowyOkres, kluczOkresu, dniOkresu, okresPrzesuniety,
          domyslnyRytm, pustaSiatka, wylaczPosilek, wlaczPosilek, zmienKtoJe,
-         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny } from "../rytm.js";
+         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny,
+         wyczyscDanie, posilekPusty } from "../rytm.js";
 
 let zdane = 0, oblane = 0;
 function test(nazwa, fn) {
@@ -254,6 +255,76 @@ test("plan jednodniowy jest poprawny, gdy okres NAPRAWDĘ ma jeden dzień", () =
      i jego plan nie może wyglądać jak awaria. */
   const jeden = nowyOkres("2026-08-03", 1);
   rowne(planKompletny({ okres: jeden, siatka: pustaSiatka(jeden, rytmTestowy) }), true);
+});
+
+console.log("\n— zdejmowanie dania kontra wyłączanie posiłku —");
+
+/* 29 sierpnia: krzyżyk przy posiłku czyta się jak „usuń to, co wpisane”, a wyłączał
+   cały posiłek z dnia — i to nieodwracalnie, bo `wlaczPosilek()` istniał od zawsze
+   i ŻADEN ekran go nie wołał. Te dwie operacje muszą zostać rozróżnialne w kodzie,
+   bo w interfejsie siedzą teraz pod jednym przyciskiem. */
+
+const okresK = nowyOkres("2026-09-03", 3);
+const rytmK = domyslnyRytm([{ id: "a" }, { id: "b" }], ["obiad"]);
+
+test("wyczyscDanie zdejmuje danie, a posiłek ZOSTAJE", () => {
+  let s = pustaSiatka(okresK, rytmK);
+  s = przypiszDanie(s, "2026-09-03", "obiad", 7);
+  s = wyczyscDanie(s, "2026-09-03", "obiad");
+  rowne(!!s[0].posilki.obiad, true, "posiłek musi zostać w planie");
+  rowne(s[0].posilki.obiad.danie, null);
+  rowne(s[0].posilki.obiad.kto, ["a", "b"], "kto je — bez zmian");
+});
+
+test("wyczyscDanie zdejmuje też etykietę „na mieście”", () => {
+  let s = pustaSiatka(okresK, rytmK);
+  s = oznaczBezSkladnikow(s, "2026-09-03", "obiad", "na mieście");
+  s = wyczyscDanie(s, "2026-09-03", "obiad");
+  rowne(s[0].posilki.obiad.bezSkladnikow, null);
+  rowne(!!s[0].posilki.obiad, true);
+});
+
+test("wyczyscDanie nie rusza pozostałych dni", () => {
+  let s = pustaSiatka(okresK, rytmK);
+  s = przypiszDanie(s, "2026-09-03", "obiad", 7);
+  s = przypiszDanie(s, "2026-09-04", "obiad", 9);
+  s = wyczyscDanie(s, "2026-09-03", "obiad");
+  rowne(s[1].posilki.obiad.danie, 9);
+});
+
+test("wyczyscDanie na wyłączonym posiłku rzuca wyjątkiem zamiast go wskrzeszać", () => {
+  let s = pustaSiatka(okresK, rytmK);
+  s = wylaczPosilek(s, "2026-09-03", "obiad");
+  let rzucilo = false;
+  try { wyczyscDanie(s, "2026-09-03", "obiad"); } catch { rzucilo = true; }
+  rowne(rzucilo, true);
+});
+
+test("wyłączony posiłek da się włączyć z powrotem", () => {
+  /* Sedno zgłoszenia: do 29 sierpnia tej drogi nie było w ogóle. */
+  let s = pustaSiatka(okresK, rytmK);
+  s = wylaczPosilek(s, "2026-09-03", "obiad");
+  rowne(!!s[0].posilki.obiad, false);
+  s = wlaczPosilek(s, "2026-09-03", "obiad", ["a"]);
+  rowne(s[0].posilki.obiad.kto, ["a"]);
+  rowne(s[0].posilki.obiad.danie, null);
+});
+
+test("posilekPusty rozróżnia trzy stany, na których stoi krzyżyk", () => {
+  let s = pustaSiatka(okresK, rytmK);
+  rowne(posilekPusty(s[0], "obiad"), true, "posiłek bez dania jest pusty");
+  s = przypiszDanie(s, "2026-09-03", "obiad", 7);
+  rowne(posilekPusty(s[0], "obiad"), false, "posiłek z daniem nie jest pusty");
+  s = oznaczBezSkladnikow(s, "2026-09-03", "obiad", "na mieście");
+  rowne(posilekPusty(s[0], "obiad"), false, "„na mieście” to też coś, co da się zdjąć");
+});
+
+test("posilekPusty na wyłączonym posiłku daje fałsz, nie wyjątek", () => {
+  /* Wołane z szablonu przy każdym przerysowaniu, więc wyjątek zabiłby cały ekran. */
+  let s = pustaSiatka(okresK, rytmK);
+  s = wylaczPosilek(s, "2026-09-03", "obiad");
+  rowne(posilekPusty(s[0], "obiad"), false);
+  rowne(posilekPusty(undefined, "obiad"), false);
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

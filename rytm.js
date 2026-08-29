@@ -176,3 +176,24 @@ export function planKompletny(zapisany) {
 
   return zapisany.siatka.every(d => d && typeof d.data === "string");
 }
+
+/** Zdejmuje danie z posiłku, ZOSTAWIAJĄC sam posiłek w planie.
+ *
+ *  Powstało 29 sierpnia z odruchu Miłosza: krzyżyk przy posiłku czyta się jak
+ *  „usuń to, co wpisane”, a wyłączał cały posiłek z dnia — i to nieodwracalnie,
+ *  bo `wlaczPosilek()` istniał od zawsze i żaden ekran go nie wołał.
+ *  Zmiana dania wymagała wejścia w wybór i podmiany, czyli drogi, której nikt
+ *  nie szuka, mając krzyżyk pod palcem. */
+export function wyczyscDanie(siatka, data, typ) {
+  const dzien = znajdzDzien(siatka, data);
+  if (!dzien.posilki[typ]) throw new Error(`„${typ}” jest wyłączony w dniu ${data} — nie ma czego czyścić.`);
+  return siatka.map(d => d.data !== data ? d : {
+    ...d, posilki: { ...d.posilki, [typ]: { ...d.posilki[typ], danie: null, bezSkladnikow: null } }
+  });
+}
+
+/** Czy w tym posiłku cokolwiek stoi — danie albo etykieta „na mieście”. */
+export function posilekPusty(dzien, typ) {
+  const w = dzien?.posilki?.[typ];
+  return !!w && !w.danie && !w.bezSkladnikow;
+}
