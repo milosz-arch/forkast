@@ -35,10 +35,17 @@
                  shadow-lg shadow-emerald-900/20"
           style="padding-top:calc(1.6rem + env(safe-area-inset-top,0px)); padding-bottom:1.75rem">
     <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
-    <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight">Cześć, tu Forkast</h1>
-    <p class="mx-auto mt-2 max-w-[34ch] text-[1rem] leading-snug text-white/85">
-      Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?
-    </p>
+    <!-- Nagłówek mówi co innego pierwszy raz, a co innego przy powrocie.
+         Do 29 sierpnia wracający widział zaproszenie do zakładania stołu i ekran
+         zatytułowany „Kto siada do stołu? Dodaj przynajmniej siebie” — czyli
+         konfigurację, mimo że nie miał już nic do konfigurowania. Miłosz: „musi być
+         po prostu coś typu siemanko Miłosz i przejdź do aplikacji”. -->
+    <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight"
+        x-text="wraca ? (ja ? `Cześć, ${imieMoje}` : 'Witaj z powrotem') : 'Cześć, tu Forkast'"></h1>
+    <p class="mx-auto mt-2 max-w-[34ch] text-[1rem] leading-snug text-white/85"
+       x-text="wraca
+         ? 'Wasz stół jest nakryty. Wchodzisz i planujecie dalej.'
+         : 'Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?'"></p>
   </header>
 
   <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-6"
@@ -93,6 +100,34 @@
 
       <!-- ================= OSOBY PRZY STOLE ================= -->
       <section x-show="krok === 'osoby'" x-transition class="space-y-4">
+
+        <!-- WEJŚCIE DO APKI NA SAMEJ GÓRZE, gdy stół już stoi.
+
+             Reszta tej sekcji to zakładanie: kod do rozdania, dopisywanie osób,
+             wybór siebie. Wracającemu to wszystko jest potrzebne rzadko, a przy
+             pierwszym wejściu — zawsze. Więc kolejność zależy od tego, kto patrzy:
+             wracający dostaje jeden duży przycisk i dopiero pod nim ustawienia. -->
+        <div x-show="wraca && domownicy.length" x-transition class="space-y-2">
+          <a href="talia.html"
+             class="flex min-h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl
+                    bg-emerald-700 text-[1.1rem] font-bold text-white no-underline
+                    transition active:scale-[0.98] dark:bg-emerald-600">
+            Przejdź do aplikacji
+          </a>
+          <button type="button" @click="pokazUstawieniaStolu = !pokazUstawieniaStolu"
+                  :aria-expanded="pokazUstawieniaStolu.toString()"
+                  class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
+                         font-semibold text-stone-500 dark:text-stone-400"
+                  x-text="pokazUstawieniaStolu
+                    ? 'Schowaj ustawienia stołu'
+                    : 'Kod stołu, osoby przy stole'"></button>
+        </div>
+
+        <!-- Konfiguracja: zawsze widoczna przy pierwszym wejściu, u wracającego
+             dopiero po dotknięciu. `x-show`, nie `x-if` — inaczej przy każdym
+             rozwinięciu ginąłby stan pól. -->
+        <div x-show="!wraca || !domownicy.length || pokazUstawieniaStolu" x-transition
+             class="space-y-4">
 
         <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5
                     dark:border-emerald-500/20 dark:bg-emerald-500/10">
@@ -174,7 +209,9 @@
           </div>
         </div>
 
-        <a href="talia.html" x-show="domownicy.length"
+        </div>
+
+        <a href="talia.html" x-show="domownicy.length && !wraca"
            class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
                   text-[1rem] font-bold text-white no-underline dark:bg-emerald-600">
           Dalej — wybierz dania
@@ -224,6 +261,10 @@ Alpine.data("ekranWejscie", () => ({
   ...danePowloki({ ekran: "wejscie", tytul: "Forkast", opis: "" }),
 
   krok: "start",
+  /* Czy ten telefon wchodzi do stołu, który JUŻ istniał — a nie zakłada go teraz.
+     Od tego zależy, czy ekran wita, czy prowadzi przez konfigurację. */
+  wraca: false,
+  pokazUstawieniaStolu: false,
   kodDomu: null,
   wpisanyKod: "",
   domownicy: [],
@@ -282,13 +323,16 @@ Alpine.data("ekranWejscie", () => ({
     if (zapamietany && kodPoprawny(zapamietany)) {
       /* W try: ekran wejścia to jedyne miejsce, z którego da się wyjść
          z każdego błędu — nie może sam być tym, co się psuje. */
-      try { this.wejdz(zapamietany); }
+      /* Drugi argument: to jest POWRÓT, nie zakładanie. Rozróżnienie robi się
+         wyłącznie tutaj — kod z pamięci telefonu znaczy, że ten stół już stał. */
+      try { this.wejdz(zapamietany, true); }
       catch (e) { console.error("Nie udało się wejść do zapamiętanego stołu:", e); }
     }
   },
 
-  wejdz(kod) {
+  wejdz(kod, wracam = false) {
     this.kodDomu = kod;
+    this.wraca = wracam;
     const trafione = SMACZNE.find(w => kod.includes(w));
     this.smacznyKod = trafione ? `Twój kod ma w środku „${trafione}”. Dobry znak.` : "";
     this.krok = "osoby";
@@ -415,7 +459,15 @@ Alpine.data("ekranWejscie", () => ({
     catch { this.mrugnij("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie."); }
   },
 
+  /* Moje imię ze stołu. Wybór osoby jest własnością telefonu (decyzja 78),
+     więc `ja` to identyfikator, a imię trzeba dobrać z listy domowników. */
+  get imieMoje() {
+    return this.domownicy.find(d => d.id === this.ja)?.imie || "";
+  },
+
   zapomnij() {
+    this.wraca = false;
+    this.pokazUstawieniaStolu = false;
     localStorage.removeItem("forkast-dom");
     this.kodDomu = null;
     this.domownicy = [];
