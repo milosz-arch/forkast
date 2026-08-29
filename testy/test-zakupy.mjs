@@ -1,5 +1,6 @@
 import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
-         normalizujDopisek, dzialDopisku, normalizujIlosc } from "../zakupy.js";
+         normalizujDopisek, dzialDopisku, normalizujIlosc,
+         normalizujMiare, opisMiary } from "../zakupy.js";
 import { PRODUKTY } from "../produkty.js";
 import { nowyOkres, domyslnyRytm, pustaSiatka, przypiszDanie, zmienKtoJe, oznaczBezSkladnikow } from "../rytm.js";
 
@@ -327,6 +328,54 @@ test("bzdura odpada zamiast dać NaN", () => {
 
 test("liczba absurdalnie duża jest przycinana", () => {
   rowne(normalizujIlosc("10000"), 999);
+});
+
+console.log("\n— ile czego: sztuki, gramy, opakowania —");
+
+/* Pierwsza wersja przyjmowała tylko liczbę całkowitą. Pytanie Miłosza: „a jeśli
+   dodawany ręcznie produkt ma gramaturę, a nie ilość?”. Pasta do zębów liczy się
+   na sztuki, kawa na wagę, mleko na litry — pole na samą liczbę wymuszało wpisywanie
+   jednostki w nazwę produktu albo pomijanie jej w ogóle. */
+
+test("sama liczba dostaje krzyżyk mnożenia", () => {
+  /* Bez „×” liczba „3” czyta się jak gramatura, czyli jak reszta tej listy. */
+  rowne(opisMiary("3"), "×3");
+});
+
+test("jedna sztuka nie pokazuje niczego", () => {
+  rowne(opisMiary("1"), "");
+  rowne(opisMiary("0"), "");
+});
+
+test("gramatura zostaje dokładnie taka, jak ją wpisano", () => {
+  rowne(opisMiary("500 g"), "500 g");
+  rowne(opisMiary("2 kg"), "2 kg");
+  rowne(opisMiary("1,5 l"), "1,5 l");
+});
+
+test("opis słowny też przechodzi bez tłumaczenia", () => {
+  /* „Duża paczka” to poprawna odpowiedź na pytanie ile — dla człowieka przed półką. */
+  rowne(opisMiary("duża paczka"), "duża paczka");
+  rowne(opisMiary(" 2  opakowania "), "2 opakowania");
+});
+
+test("brak miary nie pokazuje nic", () => {
+  rowne(opisMiary(""), "");
+  rowne(opisMiary(null), "");
+  rowne(opisMiary(undefined), "");
+});
+
+test("miara jest przycinana do rozsądnej długości", () => {
+  /* Dwadzieścia znaków mieści „2 opakowania”, a nie mieści drugiej nazwy produktu
+     wpisanej w złe pole. */
+  rowne(normalizujMiare("x".repeat(200)).length, 20);
+});
+
+test("stara liczbowa wartość z bazy nadal działa", () => {
+  /* Pozycje dopisane przed tą zmianą mają w bazie LICZBĘ, nie napis.
+     Nie migrujemy ich — mają się czytać same. */
+  rowne(opisMiary(3), "×3");
+  rowne(opisMiary(1), "");
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

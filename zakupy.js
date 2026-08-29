@@ -243,3 +243,43 @@ export function normalizujIlosc(wartosc) {
      kupi jednej rzeczy — a chroni listę przed palcem, który zsunął się z klawiatury. */
   return Math.min(calkowita, 999);
 }
+
+/* =====================================================================
+   ILE CZEGO — przy pozycji dopisanej ręcznie.
+
+   Pierwsza wersja miała pole „szt.” i przyjmowała wyłącznie liczbę całkowitą.
+   Miłosz: „a jeśli dodawany ręcznie produkt ma gramaturę, a nie ilość?”.
+   Ma rację: pasta do zębów liczy się na sztuki, kawa i karma dla kota na wagę,
+   a mleko na litry. Pole na samą liczbę wymuszało wpisywanie jednostki w nazwę
+   albo pomijanie jej w ogóle.
+
+   Dlatego to jest TEKST, nie liczba, i nie próbujemy go rozumieć. Ta wartość
+   nie wchodzi do przeliczania porcji ani do odejmowania spiżarni — jedynym jej
+   odbiorcą jest człowiek stojący przed półką. Parsowanie „500 g” na liczbę
+   i jednostkę dałoby nam dane, których nikt nie używa, i pytanie, co zrobić
+   z „dwie duże albo trzy małe”.
+   ===================================================================== */
+
+/** Przycina wpisaną miarę. Zwraca napis albo null, gdy nic nie wpisano. */
+export function normalizujMiare(wartosc) {
+  const czysty = String(wartosc ?? "").replace(/\s+/g, " ").trim();
+  if (!czysty) return null;
+  /* Dwadzieścia znaków mieści „500 g”, „2 opakowania” i „1,5 l”, a nie mieści
+     drugiej nazwy produktu wpisanej w złe pole. */
+  return czysty.slice(0, 20);
+}
+
+/** Co pokazać w prawej kolumnie listy. Pusty napis znaczy „nie pokazuj nic”. */
+export function opisMiary(wartosc) {
+  const miara = normalizujMiare(wartosc);
+  if (!miara) return "";
+
+  /* Sama liczba dostaje „×”, bo bez tego „3” przy paście do zębów czyta się
+     jak gramatura, czyli jak reszta listy. Z jednostką zostawiamy dokładnie to,
+     co człowiek wpisał — „500 g” ma wyglądać jak „500 g”. */
+  if (/^\d+$/.test(miara)) {
+    const n = normalizujIlosc(miara);
+    return n && n > 1 ? `×${n}` : "";
+  }
+  return miara;
+}
