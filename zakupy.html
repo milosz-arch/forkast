@@ -536,6 +536,12 @@ Alpine.data("ekranZakupy", () => ({
   dopisane: {},
   odsubDopisanych: null,
   nowyDopisek: "",
+  /* Słownik produktów na komponencie, bo rozpoznawanie działu dla dopisanej
+     pozycji dzieje się przy każdym przerysowaniu listy. Bez tego przypisania
+     `dzialDopisku` dostawał `undefined`, wpadał w wartość domyślną (pustą listę)
+     i KAŻDA dopisana rzecz lądowała w „Dopisanych” — także chleb. Nic by nie
+     krzyknęło: pusty słownik to poprawne wejście, tylko odpowiedź zawsze ta sama. */
+  slownik: [],
   kluczOdhaczen: null,
   kluczListy: null,
 
@@ -629,15 +635,42 @@ Alpine.data("ekranZakupy", () => ({
      8 sierpnia: nasłuch założony „przy okazji” innego potrafi nigdy nie powstać. */
   podepnijDopisane() {
     if (!this.fb || this.odsubDopisanych) return;
-    const { db, ref, onValue } = this.fb;
-    this.odsubDopisanych = onValue(ref(db, `domy/${kodDomu}/dopisane`), snap => {
-      this.dopisane = snap.val() || {};
-      /* BEZ TEJ LINIJKI NIE DZIEJE SIĘ NIC WIDOCZNEGO. `pozycje` nie jest getterem,
-         tylko polem przeliczanym ręcznie — sama zmiana `dopisane` nie przerysuje
-         listy. Kosztowało to jedno zgłoszenie „nic się nie dzieje jak naciskam
-         Dopisz”, przy poprawnym zapisie do bazy. */
-      this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-    }, blad => this.nasluchPadl("dopisanych pozycji", blad));
+
+    /* WŁASNY TRY/CATCH, ODDZIELNY OD STARTU EKRANU.
+
+       29 sierpnia ta jedna funkcja wywracała CAŁE Zakupy: wyjątek leciał w środku
+       `initEkranu()`, więc razem z dopisywaniem znikała lista, spiżarnia i wszystko
+       poniżej. Dodatek do ekranu nie ma prawa zabrać ze sobą ekranu — jeśli padnie,
+       ma paść sam i powiedzieć, na którym kroku.
+
+       `etap` jest tu po to, żeby zrzut ekranu z telefonu rozróżniał trzy rzeczy,
+       które dotąd dawały jeden i ten sam komunikat: budowanie ścieżki, zakładanie
+       nasłuchu i wykonanie się jego treści przy pierwszych danych. */
+    let etap = "wypakowanie funkcji bazy";
+    try {
+      const { db, ref, onValue } = this.fb;
+
+      etap = "budowanie ścieżki";
+      const sciezka = ref(db, `domy/${kodDomu}/dopisane`);
+
+      etap = "zakładanie nasłuchu";
+      this.odsubDopisanych = onValue(sciezka, snap => {
+        try {
+          this.dopisane = snap.val() || {};
+          /* BEZ TEJ LINIJKI NIE DZIEJE SIĘ NIC WIDOCZNEGO. `pozycje` nie jest
+             getterem, tylko polem przeliczanym ręcznie — sama zmiana `dopisane`
+             nie przerysuje listy. */
+          this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+        } catch (e) {
+          console.error("Dopisane — treść nasłuchu padła:", e);
+          this.stanSieci = `[${WYDANIE}] Dopisane, treść nasłuchu: ${e?.message || e}`;
+        }
+      }, blad => this.nasluchPadl("dopisanych pozycji", blad));
+    } catch (e) {
+      console.error(`Dopisane — padło na kroku „${etap}”:`, e);
+      this.stanSieci = `[${WYDANIE}] Dopisane padły na kroku „${etap}”: ${e?.message || e}`;
+      this.mrugnij?.(`[${WYDANIE}] Dopisane padły na kroku „${etap}”: ${e?.message || e}`);
+    }
   },
 
   podepnijNasluchy(startOkresu) {
@@ -798,6 +831,7 @@ Alpine.data("ekranZakupy", () => ({
          Trzeci raz dziś ta sama pułapka: const nie jest wynoszony na górę,
          więc kolejność linii jest częścią działania, nie tylko czytelności. */
       this.wszystkieNazwy = slownik.map(x => x.n);
+      this.slownik = slownik;
 
       /* onValue zamiast get: dwie osoby przy jednym stole widzą swoje zmiany
          bez odświeżania. */
@@ -907,6 +941,7 @@ Alpine.data("ekranZakupy", () => ({
   async dopisz() {
     const tekst = normalizujDopisek(this.nowyDopisek);
     if (!tekst) return;
+    if (!this.fb) { this.mrugnij?.("Brak połączenia — dopiszę, gdy wróci internet."); return; }
     this.nowyDopisek = "";
 
     const poprzednie = this.dopisane;
