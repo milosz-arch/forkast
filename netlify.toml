@@ -1,11 +1,15 @@
-# Wdrożenie Forkasta to przeciągnięcie paczki, bez żadnego budowania (Miłosz nie ma
-# gita ani terminala). Przy takim wdrożeniu Netlify publikuje pliki "jak są" i sam
-# z siebie nie wie, że folder netlify/functions/ ma być czymś więcej niż zwykłym
-# folderem. Ten plik mu to mówi.
+# Wdrożenie Forkasta to commit do repozytorium; Netlify buduje i publikuje sam
+# (decyzja 67). Publikuje pliki „jak są”, bez żadnego kroku budowania, i sam z siebie
+# nie wie, że folder netlify/edge-functions/ ma być czymś więcej niż zwykłym folderem
+# z plikami. Ten plik mu to mówi.
 #
-# publish = "." bo pliki strony leżą w korzeniu paczki, nie w podfolderze typu dist/.
+# publish = "." bo pliki strony leżą w korzeniu repozytorium, nie w podfolderze typu dist/.
+#
+# Katalogu `functions` tu nie ma celowo. Rozmowa z Gemini przeniosła się 29 sierpnia
+# na funkcję BRZEGOWĄ, bo funkcja synchroniczna ginie po dziesięciu sekundach,
+# a odpowiedź modelu tyle nie trwa. Stara wersja została skasowana, nie zakomentowana:
+# dwa publiczne adresy z tym samym kluczem API to dwie drogi, które cicho się rozjeżdżają.
 
 [build]
   publish = "."
-  functions = "netlify/functions"
   edge_functions = "netlify/edge-functions"

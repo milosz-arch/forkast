@@ -1,31 +1,35 @@
 /* =====================================================================
    Rozmowa z Gemini — założenia, które psują się po cichu.
 
-   Są tu DWIE funkcje robiące to samo, i to jest stan przejściowy, nie projekt:
-   brzegowa (`netlify/edge-functions/`) jest tą żywą, synchroniczna
-   (`netlify/functions/`) została jeszcze na jedno wdrożenie, żeby telefon
-   z niezaktualizowaną kopią plików nie został z niczym. Do skasowania,
-   gdy brzegowa się potwierdzi.
-
    Ten zestaw czyta pliki jako TEKST i wie o tym. Nie sprawdza, czy cokolwiek
    działa; sprawdza rzeczy, których złamanie nie daje ŻADNEGO objawu poza tym,
-   że coś trwa dłużej albo przestaje działać u jednej osoby. To jest cały powód,
-   dla którego on istnieje: awaria po stronie czasu nie rzuca wyjątkiem.
+   że coś trwa dłużej albo przestaje działać u jednej osoby.
 
-   Najważniejszy jest tu test adresu. Apka puka pod adres wpisany w HTML-u,
-   a funkcja brzegowa nasłuchuje pod adresem wpisanym w sobie. Gdy te dwa
-   napisy się rozjadą, nie zapali się nic — przyjdzie 404, a człowiek zobaczy
-   „nie udało się połączyć, sprawdź internet” przy działającym internecie.
+   DWA NAJDROŻSZE BŁĘDY 29 SIERPNIA, oba wyłapane dopiero przez człowieka
+   z telefonem w ręku, i oba mają tu teraz swój test:
+
+   1. Na pierwszym miejscu listy modeli stał ALIAS `gemini-flash-latest`. Google
+      podmienia go przy każdym nowym wydaniu, więc model zmienił się nam pod ręką
+      z szybkiego na eksperymentalny z rodziny 3.x. Nic tego nie zgłosiło.
+
+   2. Rozmyślanie modelu wyłączaliśmy parametrem `thinkingBudget`, którego rodzina
+      3.x nie zna — tam zastąpił go `thinkingLevel`. Zły parametr nie daje błędu.
+      Daje model myślący na pełnych obrotach i kółko kręcące się 24 sekundy.
+      To jest najgorsza klasa awarii w tym projekcie: wygląda jak wolna sieć.
+
+   Najważniejszy jest tu jednak test adresu. Apka puka pod adres wpisany w HTML-u,
+   a funkcja nasłuchuje pod adresem wpisanym w sobie. Gdy te dwa napisy się rozjadą,
+   nie zapali się nic — przyjdzie 404, a człowiek zobaczy „sprawdź internet”
+   przy działającym internecie.
    ===================================================================== */
 
 import { readFileSync } from "fs";
 
 const czytaj = (sciezka) => readFileSync(new URL(sciezka, import.meta.url), "utf8");
 
-const brzeg  = czytaj("../netlify/edge-functions/zapytaj-ai.js");
-const synchr = czytaj("../netlify/functions/zapytaj-ai.js");
-const ekran  = czytaj("../dodaj-z-ai.html");
-const toml   = czytaj("../netlify.toml");
+const funkcja = czytaj("../netlify/edge-functions/zapytaj-ai.js");
+const ekran   = czytaj("../dodaj-z-ai.html");
+const toml    = czytaj("../netlify.toml");
 
 let zdane = 0, oblane = 0;
 function test(n, fn) {
@@ -36,16 +40,32 @@ function prawda(warunek, opis) {
   if (!warunek) throw new Error(opis);
 }
 
-/* Limity platformy, nie nasze parametry. Funkcja synchroniczna ginie po dziesięciu
-   sekundach; brzegowa musi zdążyć odesłać nagłówki w czterdziestu. */
-const LIMIT_SYNCHRONICZNEJ_MS = 10000;
+/* Limity platformy, nie nasze parametry. Funkcja brzegowa musi zdążyć odesłać
+   nagłówki w czterdziestu sekundach; funkcja synchroniczna ginęła po dziesięciu
+   i dlatego jej tu już nie ma. */
 const LIMIT_BRZEGOWEJ_MS = 40000;
+const LIMIT_SYNCHRONICZNEJ_MS = 10000;
+
+/* Kod BEZ komentarzy. Konieczne, bo komentarze w tym pliku i w samej funkcji
+   wymieniają nazwy parametrów z nazwiska — a test szukający nazwy w całym pliku
+   znalazłby ją w zdaniu opisującym, że jej tam nie ma. Ta sama pułapka wyłożyła
+   pierwszą wersję testu klas: przechodził sabotaż, bo czytał własny komentarz. */
+const bezKomentarzy = funkcja
+  .replace(/\/\*[\s\S]*?\*\//g, " ")
+  .replace(/(^|[^:])\/\/.*$/gm, "$1");
+function wierszeModeli() {
+  const tabela = funkcja.match(/const MODELE_ZAPASOWE\s*=\s*\[([\s\S]*?)\];/);
+  prawda(tabela, "nie ma listy MODELE_ZAPASOWE");
+  const wpisy = tabela[1].split("\n").filter(l => l.includes("nazwa:"));
+  prawda(wpisy.length > 0, "lista modeli jest pusta");
+  return wpisy;
+}
 
 /* ---------- adres: jedyna rzecz łącząca ekran z funkcją ---------- */
 
-test("adres w apce zgadza się z adresem, pod którym nasłuchuje funkcja brzegowa", () => {
-  const wKodzie = brzeg.match(/export const config\s*=\s*\{[^}]*path:\s*["']([^"']+)["']/);
-  prawda(wKodzie, "funkcja brzegowa nie deklaruje ścieżki w export const config");
+test("adres w apce zgadza się z adresem, pod którym nasłuchuje funkcja", () => {
+  const wKodzie = funkcja.match(/export const config\s*=\s*\{[^}]*path:\s*["']([^"']+)["']/);
+  prawda(wKodzie, "funkcja nie deklaruje ścieżki w export const config");
   const wEkranie = ekran.match(/fetch\(\s*["'](\/[^"']*zapytaj-ai)["']/);
   prawda(wEkranie, "ekran dodawania nie woła żadnego adresu zapytaj-ai");
   prawda(wKodzie[1] === wEkranie[1],
@@ -57,72 +77,107 @@ test("netlify.toml wskazuje katalog funkcji brzegowych", () => {
     "bez wpisu edge_functions Netlify potraktuje ten katalog jak zwykły folder z plikami");
 });
 
-/* ---------- czas ---------- */
+/* ---------- modele ---------- */
 
-test("funkcja brzegowa ma budżet czasu", () => {
-  prawda(/const BUDZET_MS\s*=\s*\d+/.test(brzeg), "brak stałej BUDZET_MS w funkcji brzegowej");
+test("pierwszy model na liście jest nazwany z numerem, nie ruchomym aliasem", () => {
+  const pierwszy = wierszeModeli()[0];
+  prawda(!/latest/.test(pierwszy),
+    `pierwszy model to alias: ${pierwszy.trim()} — Google podmienia go przy każdym wydaniu, ` +
+    `więc apka zmieni zachowanie bez ani jednej zmiany w kodzie`);
 });
 
-test("budżet brzegowej mieści się w limicie na odesłanie nagłówków", () => {
-  const budzet = Number(brzeg.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
+test("każdy model deklaruje, którym parametrem wyłącza się jego myślenie", () => {
+  const bezPola = wierszeModeli().filter(l => !/\bmyslenie:\s*"(budzet|poziom)"/.test(l));
+  prawda(bezPola.length === 0,
+    `modele bez pola myslenie: ${bezPola.map(l => l.trim()).join(" | ")}`);
+});
+
+test("rodzina modelu zgadza się z nazwą parametru myślenia", () => {
+  /* To jest test tego jednego błędu, który kosztował dziś najwięcej: nazwa parametru
+     musi pasować do generacji modelu, a niepasująca jest przyjmowana bez słowa skargi. */
+  const zle = [];
+  for (const w of wierszeModeli()) {
+    const nazwa = w.match(/nazwa:\s*"([^"]+)"/)?.[1] || "";
+    const rodzaj = w.match(/myslenie:\s*"([^"]+)"/)?.[1] || "";
+    if (/gemini-2\.5/.test(nazwa) && rodzaj !== "budzet") zle.push(`${nazwa} → ${rodzaj}`);
+    if (/gemini-3/.test(nazwa) && rodzaj !== "poziom") zle.push(`${nazwa} → ${rodzaj}`);
+  }
+  prawda(zle.length === 0,
+    `zła nazwa parametru dla rodziny: ${zle.join("; ")} — rodzina 2.5 zna thinkingBudget, ` +
+    `rodzina 3.x zna thinkingLevel i wysłanie złego nie daje błędu, tylko wolną odpowiedź`);
+});
+
+test("obie rodziny parametrów są obsłużone w kodzie", () => {
+  prawda(/thinkingBudget/.test(bezKomentarzy), "kod nigdzie nie ustawia thinkingBudget (rodzina 2.5)");
+  prawda(/thinkingLevel/.test(bezKomentarzy), "kod nigdzie nie ustawia thinkingLevel (rodzina 3.x)");
+});
+
+test("nie ma na liście modeli wycofanych", () => {
+  /* Gemini 2.0 Flash i Flash-Lite zostały wycofane 1 czerwca 2026. Martwy wpis
+     na liście zapasowej nie boli od razu — kosztuje jedną nieudaną próbę
+     z budżetu, gdy jest najbardziej potrzebny. */
+  const martwe = wierszeModeli().filter(l => /gemini-2\.0/.test(l));
+  prawda(martwe.length === 0,
+    `na liście są modele wycofane: ${martwe.map(l => l.trim()).join(" | ")}`);
+});
+
+/* ---------- czas ---------- */
+
+test("funkcja ma budżet czasu", () => {
+  prawda(/const BUDZET_MS\s*=\s*\d+/.test(funkcja), "brak stałej BUDZET_MS");
+});
+
+test("budżet mieści się w limicie na odesłanie nagłówków", () => {
+  const budzet = Number(funkcja.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
   prawda(budzet <= LIMIT_BRZEGOWEJ_MS - 5000,
     `BUDZET_MS = ${budzet}; przy limicie ${LIMIT_BRZEGOWEJ_MS} ms zapas jest za mały`);
 });
 
-test("budżet brzegowej jest większy niż limit funkcji synchronicznej", () => {
-  const budzet = Number(brzeg.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
+test("budżet jest większy niż limit funkcji synchronicznej", () => {
+  const budzet = Number(funkcja.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
   prawda(budzet > LIMIT_SYNCHRONICZNEJ_MS,
     `BUDZET_MS = ${budzet} — przeniesienie na brzeg sieci nie dało nic, ` +
     `bo budżet nadal mieści się w starym suficie`);
 });
 
-test("budżet synchronicznej ma sekundę zapasu do limitu Netlify", () => {
-  const budzet = Number(synchr.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
-  prawda(budzet <= LIMIT_SYNCHRONICZNEJ_MS - 1000,
-    `BUDZET_MS = ${budzet}; zapas za mały, żeby zdążyć zwrócić odpowiedź`);
+test("jedna próba nie może zjeść całego budżetu", () => {
+  const proba = funkcja.match(/const LIMIT_PROBY_MS\s*=\s*(\d+)/);
+  prawda(proba, "brak stałej LIMIT_PROBY_MS — pierwszy wolny model zabierze czas wszystkim");
+  const budzet = Number(funkcja.match(/const BUDZET_MS\s*=\s*(\d+)/)[1]);
+  prawda(Number(proba[1]) * 2 <= budzet,
+    `LIMIT_PROBY_MS = ${proba[1]} przy budżecie ${budzet} — nie starczy nawet na dwie próby`);
 });
 
-/* ---------- myślenie modelu ---------- */
+/* ---------- co widać po awarii ---------- */
 
-for (const [nazwa, kod] of [["brzegowa", brzeg], ["synchroniczna", synchr]]) {
-  test(`${nazwa}: każdy model deklaruje, czy przyjmuje budżet myślenia`, () => {
-    const tabela = kod.match(/const MODELE_ZAPASOWE\s*=\s*\[([\s\S]*?)\];/);
-    prawda(tabela, "nie ma listy MODELE_ZAPASOWE");
-    const wpisy = tabela[1].split("\n").filter(l => l.includes("nazwa:"));
-    prawda(wpisy.length > 0, "lista modeli jest pusta");
-    const bezFlagi = wpisy.filter(l => !/\bmysli:\s*(true|false)\b/.test(l));
-    prawda(bezFlagi.length === 0,
-      `modele bez pola mysli: ${bezFlagi.map(l => l.trim()).join(" | ")}`);
-  });
+test("przekroczenie budżetu zwraca 504 z liczbą sekund", () => {
+  const blok = funkcja.match(/odpowiedz\(504[\s\S]{0,400}/);
+  prawda(blok, "nie ma odpowiedzi 504 — apka nie dowie się, że to był czas");
+  prawda(/sek\(/.test(blok[0]),
+    "komunikat 504 bez zmierzonego czasu — powód bez liczby jest wart tyle co brak powodu");
+});
 
-  test(`${nazwa}: budżet myślenia wysyłany warunkowo, nie wszystkim`, () => {
-    prawda(/if\s*\(\s*model\.mysli\s*\)/.test(kod),
-      "thinkingConfig bez warunku model.mysli — starsze modele odpowiedzą błędem 400");
-  });
+test("komunikat po awarii wymienia każdą próbę z osobna", () => {
+  const blok = funkcja.match(/odpowiedz\(504[\s\S]{0,400}/);
+  prawda(/proby\.map/.test(blok[0]),
+    "komunikat nie pokazuje przebiegu prób — jedna nieudana wygląda tak samo jak cztery");
+});
 
-  test(`${nazwa}: zmierzone czasy wracają przy udanej odpowiedzi`, () => {
-    const sukces = kod.match(/(statusCode:\s*200|odpowiedz\(200)[\s\S]{0,400}/);
-    prawda(sukces, "nie ma odpowiedzi ze statusem 200");
-    prawda(/czasy:/.test(sukces[0]),
-      "udana odpowiedź nie niesie pola czasy — pomiaru nie widać, gdy wszystko działa");
-  });
-
-  test(`${nazwa}: przekroczenie budżetu zwraca 504 z liczbą sekund`, () => {
-    const blok = kod.match(/(statusCode:\s*504|odpowiedz\(504)[\s\S]{0,300}/);
-    prawda(blok, "nie ma odpowiedzi 504 — apka nie dowie się, że to był czas");
-    prawda(/sek\(/.test(blok[0]),
-      "komunikat 504 nie zawiera zmierzonego czasu — powód bez liczby jest wart tyle co brak powodu");
-  });
-}
+test("zmierzone czasy wracają przy udanej odpowiedzi", () => {
+  const sukces = funkcja.match(/odpowiedz\(200[\s\S]{0,400}/);
+  prawda(sukces, "nie ma odpowiedzi ze statusem 200");
+  prawda(/czasy:/.test(sukces[0]),
+    "udana odpowiedź nie niesie pola czasy — pomiaru nie widać, gdy wszystko działa");
+});
 
 /* ---------- limit czasu procesora na brzegu ---------- */
 
-test("funkcja brzegowa nie przetwarza bajtów zdjęć", () => {
+test("funkcja nie przetwarza bajtów zdjęć", () => {
   /* Pięćdziesiąt milisekund CZASU PROCESORA to jedyny twardy limit na brzegu.
-     Czekanie na sieć się nie liczy, ale pętla po bajtach obrazu owszem —
-     i wywali funkcję przy większym zdjęciu, bez związku z jakością połączenia. */
-  prawda(!/atob\(|btoa\(|Uint8Array|fromCharCode/.test(brzeg),
-    "funkcja brzegowa dotyka bajtów obrazu — to jedzie na limit 50 ms czasu procesora");
+     Czekanie na sieć się nie liczy, ale pętla po bajtach obrazu owszem — i wywali
+     funkcję przy większym zdjęciu, bez związku z jakością połączenia. */
+  prawda(!/atob\(|btoa\(|Uint8Array|fromCharCode/.test(funkcja),
+    "funkcja dotyka bajtów obrazu — to jedzie na limit 50 ms czasu procesora");
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

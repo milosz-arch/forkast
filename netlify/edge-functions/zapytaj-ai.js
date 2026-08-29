@@ -32,13 +32,39 @@
    wyłączone mimo że pomiar nie wykazał zysku: myślenie i tak nie poprawia przepisu,
    a jest liczone jak tekst wyjściowy, więc pali darmowy limit bez powodu.
    Modelom starszym (2.0) tego pola wysłać NIE WOLNO — odpowiadają błędem 400. */
+/* MODELE — LISTA PRZYPIĘTA, NIE RUCHOMA.
+
+   29 sierpnia ta lista kosztowała nas pół dnia i warto wiedzieć dlaczego.
+   Na pierwszym miejscu stał `gemini-flash-latest`. To alias, o którym Google
+   pisze wprost, że jest podmieniany przy KAŻDYM nowym wydaniu i wskazuje na model
+   eksperymentalny, nieprzeznaczony do produkcji. Napisany, gdy oznaczał coś szybkiego,
+   dziś prowadzi do rodziny Gemini 3 — i odpowiedź przestała się mieścić najpierw
+   w dziesięciu sekundach, potem w dwudziestu czterech.
+
+   Stąd zasada: na pierwszym miejscu model NAZWANY Z NUMEREM. Alias zostaje na końcu,
+   jako ostatnia deska ratunku, gdy nazwane wersje znikną.
+
+   Pole `myslenie` mówi, KTÓRYM parametrem wyłącza się rozmyślanie przed odpowiedzią,
+   bo rodziny modeli mają na to różne nazwy i wysłanie złej jest bezobjawowe:
+     "budzet" — rodzina 2.5, parametr thinkingBudget
+     "poziom" — rodzina 3.x, gdzie thinkingLevel ZASTĄPIŁ thinkingBudget
+   Wysłanie „budżetu” modelowi z rodziny 3.x nie daje błędu. Daje model myślący
+   na pełnych obrotach i człowieka patrzącego na kręcące się kółko.
+
+   Gemini 2.0 Flash i Flash-Lite zostały wycofane 1 czerwca 2026 i dlatego ich tu nie ma. */
 const MODELE_ZAPASOWE = [
-  { wersja: "v1beta", nazwa: "gemini-flash-latest",   mysli: true  },
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash",      mysli: true  },
-  { wersja: "v1",     nazwa: "gemini-2.5-flash",      mysli: true  },
-  { wersja: "v1beta", nazwa: "gemini-2.0-flash",      mysli: false },
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite", mysli: true  },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash",       myslenie: "budzet" },
+  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite",  myslenie: "budzet" },
+  { wersja: "v1beta", nazwa: "gemini-3.1-flash-lite",  myslenie: "poziom" },
+  { wersja: "v1beta", nazwa: "gemini-flash-latest",    myslenie: "poziom" },
 ];
+
+/** Buduje ustawienie wyłączające rozmyślanie — albo nic, gdy model go nie zna. */
+function bezMyslenia(model) {
+  if (model.myslenie === "budzet") return { thinkingConfig: { thinkingBudget: 0 } };
+  if (model.myslenie === "poziom") return { thinkingConfig: { thinkingLevel: "minimal" } };
+  return null;
+}
 
 const srodowisko = (nazwa) => {
   /* Netlify.env to droga zalecana, Deno.env działa też lokalnie. Bierzemy pierwszą,
@@ -49,11 +75,15 @@ const srodowisko = (nazwa) => {
 };
 
 function modeleDoProby() {
+  /* Format: „wersja:nazwa” albo „wersja:nazwa:rodzaj-myślenia”, np.
+     „v1beta:gemini-3.1-flash-lite:poziom”. Bez trzeciego członu zakładamy rodzinę 3.x,
+     bo to ona jest dziś nowa — a błędne założenie kosztuje jedną wolną odpowiedź,
+     nie awarię. */
   const zUstawien = (srodowisko("GEMINI_MODEL") || "").trim();
   if (!zUstawien) return MODELE_ZAPASOWE;
-  const [wersja, nazwa] = zUstawien.split(":");
+  const [wersja, nazwa, myslenie] = zUstawien.split(":");
   if (!wersja || !nazwa) return MODELE_ZAPASOWE;   // źle wpisana wartość nie może zabić apki
-  return [{ wersja, nazwa, mysli: true }, ...MODELE_ZAPASOWE];
+  return [{ wersja, nazwa, myslenie: myslenie === "budzet" ? "budzet" : "poziom" }, ...MODELE_ZAPASOWE];
 }
 
 const MAKS_ZDJEC = 4;
@@ -67,6 +97,10 @@ const BAZA = "https://forkast-37ffd-default-rtdb.europe-west1.firebasedatabase.a
    już w telefon, a nieskończone kręcenie się jest gorsze niż uczciwe „nie wyszło”.
    Zmiana tej liczby to decyzja o czekaniu, nie o platformie. */
 const BUDZET_MS = 25000;
+
+/* Ile czasu dostaje JEDEN model, zanim przejdziemy do następnego. Bez tego pierwszy
+   wolny model wyczerpuje cały budżet i nigdy się nie dowiemy, czy drugi byłby szybszy. */
+const LIMIT_PROBY_MS = 11000;
 
 const adresModelu = (m) =>
   `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;
@@ -195,18 +229,25 @@ export default async (request) => {
 
   let ostatniStatus = null;
   let ostatniModel = null;
+  /* Przebieg każdej próby z osobna. Do 29 sierpnia pierwszy model, który się zawiesił,
+     kończył całą rundę i zabierał ze sobą informację o pozostałych — jedna nieudana
+     próba wyglądała dokładnie tak samo jak cztery. Teraz każda ma własny limit i każda
+     zostawia ślad, więc jedno podejście daje porównanie zamiast jednej liczby. */
+  const proby = [];
   for (const model of modeleDoProby()) {
-    /* Zanim spróbujemy kolejnego modelu — czy jest jeszcze na to czas. Bez tego
-       jedna nieudana próba zjada budżet następnej. */
     if (zostalo() < 3000) break;
 
     const stopZegar = new AbortController();
-    const budzik = setTimeout(() => stopZegar.abort(), zostalo() - 1000);
+    const naProbe = Math.min(LIMIT_PROBY_MS, zostalo() - 1000);
+    const budzik = setTimeout(() => stopZegar.abort(), naProbe);
 
     const cialo = { contents: [{ parts }] };
-    if (model.mysli) cialo.generationConfig = { thinkingConfig: { thinkingBudget: 0 } };
+    const ustawienia = bezMyslenia(model);
+    if (ustawienia) cialo.generationConfig = ustawienia;
 
     const startModelu = Date.now();
+    const zapisz = (jak) => proby.push({ model: model.nazwa, ms: Date.now() - startModelu, wynik: jak });
+
     let odp;
     try {
       odp = await fetch(adresModelu(model), {
@@ -219,14 +260,10 @@ export default async (request) => {
       clearTimeout(budzik);
       ostatniModel = model.nazwa;
       /* Przerwanie własnym zegarem wygląda w kodzie tak samo jak zerwana sieć,
-         a dla człowieka to dwie różne wiadomości. Rozdzielamy. */
-      if (stopZegar.signal.aborted) {
-        await dopiscLicznik();
-        return odpowiedz(504, {
-          blad: `AI nie zdążyło odpowiedzieć w ${sek(minelo())} s (model ${model.nazwa}).`,
-          czasy: { baza: czasBazy, gemini: Date.now() - startModelu, razem: minelo(), model: model.nazwa },
-        });
-      }
+         a to dwie różne wiadomości. Rozdzielamy — i idziemy do NASTĘPNEGO modelu
+         zamiast kończyć rundę, bo wolny model to nie to samo co brak modeli. */
+      if (stopZegar.signal.aborted) { zapisz("za wolno"); ostatniStatus = "za wolno"; continue; }
+      zapisz("brak połączenia");
       ostatniStatus = "brak połączenia";
       continue;
     }
@@ -235,35 +272,41 @@ export default async (request) => {
 
     // 429 to limit, nie zła nazwa modelu — próbowanie kolejnych tylko pali pulę.
     if (odp.status === 429) {
+      zapisz(429);
       await dopiscLicznik();
       return odpowiedz(502, {
         blad: "Gemini ma dziś za dużo zapytań od nas — spróbuj ponownie za chwilę, albo jutro." });
     }
 
-    if (!odp.ok) { ostatniStatus = odp.status; continue; }
+    if (!odp.ok) { zapisz(odp.status); ostatniStatus = odp.status; continue; }
 
     const wynik = await odp.json();
     const czasGemini = Date.now() - startModelu;
     const tekst = (wynik?.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
     if (!tekst.trim()) {
-      await dopiscLicznik();
-      return odpowiedz(502, { blad: "Gemini nie zwróciło żadnego tekstu — spróbuj jeszcze raz." });
+      zapisz("pusto");
+      ostatniStatus = "pusta odpowiedź";
+      continue;
     }
 
+    zapisz("ok");
     await dopiscLicznik();
     /* `czasy` jedzie także przy powodzeniu, nie tylko w błędzie. Pomiar widoczny
        wyłącznie po awarii nigdy nie powie, ile zostało zapasu. */
     return odpowiedz(200, {
       tekst,
       model: model.nazwa,
-      czasy: { baza: czasBazy, gemini: czasGemini, razem: minelo(), model: model.nazwa },
+      czasy: { baza: czasBazy, gemini: czasGemini, razem: minelo(), model: model.nazwa, proby },
     });
   }
 
   await dopiscLicznik();
-  return odpowiedz(502, {
-    blad: `Żaden z modeli nie odpowiedział po ${sek(minelo())} s ` +
-          `(ostatni: ${ostatniModel || "brak"}, błąd: ${ostatniStatus}).` });
+  return odpowiedz(504, {
+    blad: `Żaden model nie zdążył odpowiedzieć w ${sek(minelo())} s. ` +
+          `Próby: ${proby.map(p => `${p.model} ${sek(p.ms)} s → ${p.wynik}`).join("; ") || "żadna nie ruszyła"}` +
+          `${ostatniModel ? "." : ` (ostatni błąd: ${ostatniStatus}).`}`,
+    czasy: { baza: czasBazy, razem: minelo(), proby },
+  });
 };
 
 export const config = { path: "/api/zapytaj-ai" };
