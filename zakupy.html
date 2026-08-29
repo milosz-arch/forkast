@@ -529,6 +529,7 @@ Alpine.data("ekranZakupy", () => ({
      pasta do zębów nie kończy się dlatego, że skończył się tydzień planowania
      (rozstrzygnięcie Miłosza, 29 sierpnia). Znikają dopiero odhaczone. */
   dopisane: {},
+  odsubDopisanych: null,
   nowyDopisek: "",
   kluczOdhaczen: null,
   kluczListy: null,
@@ -614,6 +615,26 @@ Alpine.data("ekranZakupy", () => ({
 
      Dlatego ta funkcja jest osobna, wolno ją wołać wielokrotnie i wołamy ją
      ZAWSZE po ustaleniu połączenia. */
+  /* Dopisane ręcznie pozycje — nasłuch OSOBNY, nie w `podepnijNasluchy`.
+
+     Tamta funkcja wychodzi na wejściu, gdy nie ma okresu planowania (`if (!this.fb
+     || !startOkresu) return`) — a okresu nie ma dokładnie ten, kto nie układa
+     jadłospisu i chce od apki wyłącznie listy zakupów. Czyli nasłuch nie powstawał
+     u jedynej osoby, dla której ta funkcja w ogóle istnieje. Ta sama pułapka co
+     8 sierpnia: nasłuch założony „przy okazji” innego potrafi nigdy nie powstać. */
+  podepnijDopisane() {
+    if (!this.fb || this.odsubDopisanych) return;
+    const { db, ref, onValue } = this.fb;
+    this.odsubDopisanych = onValue(ref(db, `domy/${kodDomu}/dopisane`), snap => {
+      this.dopisane = snap.val() || {};
+      /* BEZ TEJ LINIJKI NIE DZIEJE SIĘ NIC WIDOCZNEGO. `pozycje` nie jest getterem,
+         tylko polem przeliczanym ręcznie — sama zmiana `dopisane` nie przerysuje
+         listy. Kosztowało to jedno zgłoszenie „nic się nie dzieje jak naciskam
+         Dopisz”, przy poprawnym zapisie do bazy. */
+      this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+    }, blad => this.nasluchPadl("dopisanych pozycji", blad));
+  },
+
   podepnijNasluchy(startOkresu) {
     if (!this.fb || !startOkresu) return;
     const { db, ref, onValue } = this.fb;
@@ -621,12 +642,6 @@ Alpine.data("ekranZakupy", () => ({
     /* Spiżarnia jest wspólna dla stołu i nie zależy od okresu — zapas leży w domu
        niezależnie od tego, jaki tydzień planujecie. */
     if (!this.odsubSpizarni) {
-      /* Dopisane, jak spiżarnia, są wspólne dla stołu i NIE zależą od okresu —
-         dlatego wiszą obok, nie pod kluczem okresu. */
-      onValue(ref(db, `domy/${kodDomu}/dopisane`), snap => {
-        this.dopisane = snap.val() || {};
-      }, blad => this.nasluchPadl("dopisanych pozycji", blad));
-
       this.odsubSpizarni = onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
         this.spizarnia = snap.val() || {};
         this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
@@ -735,6 +750,7 @@ Alpine.data("ekranZakupy", () => ({
       return;
     }
     this.fb = fb;
+    this.podepnijDopisane();
     /* Połączenie dopiero teraz istnieje, a `ustawOkres` mogło już przelecieć
        wcześniej na zapisanej liście i nic nie podpiąć. Podpinamy tutaj (decyzja 74).
 
@@ -775,7 +791,13 @@ Alpine.data("ekranZakupy", () => ({
       onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => {
         const zapisany = snap.val();
         if (!zapisany?.siatka?.length) {
-          this.pozycje = []; this.pominiete = []; this.laduje = false; this.stanSieci = "";
+          /* Brak jadłospisu NIE znaczy pusta lista. Dopisane ręcznie pozycje żyją
+             niezależnie od planu — i to one są całą listą u kogoś, kto planu nie
+             układa. Zerowanie `pozycje` na sztywno kasowało je z widoku przy każdej
+             odpowiedzi z bazy o jadłospisie, czyli natychmiast po dopisaniu. */
+          this.pozycjeSurowe = [];
+          this.pozycje = this.pozycjeDopisane;
+          this.pominiete = []; this.laduje = false; this.stanSieci = "";
           return;
         }
         // Okres znany dopiero tutaj — dopiero teraz wiadomo, które odhaczenia wczytać.
@@ -859,11 +881,11 @@ Alpine.data("ekranZakupy", () => ({
       const { db, ref, push, set } = this.fb;
       const nowy = push(ref(db, `domy/${kodDomu}/dopisane`));
       await set(nowy, { tekst, kiedy: Date.now() });
-      this.komunikat = `Dopisano „${tekst}”`;
+      this.mrugnij?.(`Dopisano „${tekst}”`);
     } catch (e) {
       console.error("Nie udało się dopisać:", e);
       this.nowyDopisek = tekst;
-      this.komunikat = `Nie udało się dopisać: ${e?.code || e?.message || e}`;
+      this.mrugnij?.(`Nie udało się dopisać: ${e?.code || e?.message || e}`);
     }
   },
 
@@ -874,14 +896,16 @@ Alpine.data("ekranZakupy", () => ({
     const bez = { ...this.dopisane };
     delete bez[p.dopisek];
     this.dopisane = bez;
+    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
     try {
       const { db, ref, remove } = this.fb;
       await remove(ref(db, `domy/${kodDomu}/dopisane/${p.dopisek}`));
-      this.komunikat = `Skreślono „${p.produkt}”`;
+      this.mrugnij?.(`Skreślono „${p.produkt}”`);
     } catch (e) {
       console.error("Nie udało się skreślić:", e);
       this.dopisane = { ...this.dopisane, [p.dopisek]: kopia };
-      this.komunikat = `Nie udało się skreślić: ${e?.code || e?.message || e}`;
+      this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+      this.mrugnij?.(`Nie udało się skreślić: ${e?.code || e?.message || e}`);
     }
   },
 
