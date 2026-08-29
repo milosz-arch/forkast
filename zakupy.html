@@ -633,8 +633,18 @@ Alpine.data("ekranZakupy", () => ({
      jadłospisu i chce od apki wyłącznie listy zakupów. Czyli nasłuch nie powstawał
      u jedynej osoby, dla której ta funkcja w ogóle istnieje. Ta sama pułapka co
      8 sierpnia: nasłuch założony „przy okazji” innego potrafi nigdy nie powstać. */
-  podepnijDopisane() {
-    if (!this.fb || this.odsubDopisanych) return;
+  /* POŁĄCZENIE PRZYJMUJEMY W ARGUMENCIE, NIE Z `this.fb`.
+
+     To jest cała przyczyna serii „i.insert is not a function” z 29 sierpnia.
+     `this` w Alpine jest opakowane warstwą reaktywną, więc `this.fb.db` to nie
+     jest obiekt bazy, tylko jego opakowanie — a Firebase sięga w środku do pól,
+     których przez to opakowanie nie widzi. Wyjątek leci wtedy z głębi biblioteki
+     i mówi o `insert`, czyli o czymś, co z naszym kodem nie ma nic wspólnego.
+
+     Kod, który w tym pliku działa od tygodnia, bierze `db` z LOKALNEJ zmiennej
+     `fb`, prosto z `polaczZBaza()`. Robimy tak samo. */
+  podepnijDopisane(fb) {
+    if (!fb || this.odsubDopisanych) return;
 
     /* WŁASNY TRY/CATCH, ODDZIELNY OD STARTU EKRANU.
 
@@ -648,7 +658,7 @@ Alpine.data("ekranZakupy", () => ({
        nasłuchu i wykonanie się jego treści przy pierwszych danych. */
     let etap = "wypakowanie funkcji bazy";
     try {
-      const { db, ref, onValue } = this.fb;
+      const { db, ref, onValue } = fb;
 
       etap = "budowanie ścieżki";
       const sciezka = ref(db, `domy/${kodDomu}/dopisane`);
@@ -796,7 +806,7 @@ Alpine.data("ekranZakupy", () => ({
       return;
     }
     this.fb = fb;
-    this.podepnijDopisane();
+    this.podepnijDopisane(fb);
     /* Połączenie dopiero teraz istnieje, a `ustawOkres` mogło już przelecieć
        wcześniej na zapisanej liście i nic nie podpiąć. Podpinamy tutaj (decyzja 74).
 
