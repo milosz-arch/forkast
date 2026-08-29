@@ -1,7 +1,7 @@
 import { sprawdzWersje, WERSJA_DANYCH } from "../wersja.js";
 import { dataISO, nowyOkres, kluczOkresu, dniOkresu, okresPrzesuniety,
          domyslnyRytm, pustaSiatka, wylaczPosilek, wlaczPosilek, zmienKtoJe,
-         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne } from "../rytm.js";
+         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny } from "../rytm.js";
 
 let zdane = 0, oblane = 0;
 function test(nazwa, fn) {
@@ -186,6 +186,74 @@ test("dane bez pola wersji traktujemy jak wersję 1", () => {
 test("dane z nowszej wersji dają ostrzeżenie zamiast cichego nadpisania", () => {
   const w = sprawdzWersje({ wersja: WERSJA_DANYCH + 1, siatka: [] });
   rowne(typeof w === "string" && w.length > 0, true, "spodziewam się komunikatu");
+});
+
+console.log("\n— czy plan z bazy jest kompletny —");
+
+/* Awaria z 29 sierpnia. Wybór dania w pustym jadłospisie zapisywał do bazy jeden
+   punkt, `siatka/0/posilki/obiad`. Powstawał tam plan z jednego dnia i bez okresu,
+   nasłuch odsyłał go z powrotem, a ekran zastępował nim cały tydzień. Najgorsze
+   było to, jak niewinnie ten ładunek wygląda: jednoelementowa tablica to przecież
+   poprawna tablica. */
+
+const okresTygodnia = nowyOkres("2026-08-03", 7);
+const rytmTestowy = domyslnyRytm(["a", "b"], ["obiad"]);
+const planPelny = { okres: okresTygodnia, siatka: pustaSiatka(okresTygodnia, rytmTestowy) };
+
+test("kompletny plan przechodzi", () => {
+  rowne(planKompletny(planPelny), true);
+});
+
+test("jednodniowa siatka przy siedmiodniowym okresie odpada", () => {
+  /* To jest DOKŁADNIE ten ładunek, który zjadł tydzień. */
+  rowne(planKompletny({ okres: okresTygodnia, siatka: [planPelny.siatka[0]] }), false);
+});
+
+test("plan bez zapisanego okresu odpada", () => {
+  rowne(planKompletny({ siatka: planPelny.siatka }), false);
+});
+
+test("siatka oddana przez Firebase jako obiekt odpada", () => {
+  /* Zapis pod sam indeks 3 wraca nie jako tablica z dziurami, tylko jako
+     obiekt { "3": … } — i bez tego sprawdzenia szedł dalej jak gdyby nigdy nic. */
+  rowne(planKompletny({ okres: okresTygodnia, siatka: { 3: planPelny.siatka[3] } }), false);
+});
+
+test("dzień bez daty odpada", () => {
+  const zepsuta = planPelny.siatka.map((d, i) => i === 2 ? { posilki: d.posilki } : d);
+  rowne(planKompletny({ okres: okresTygodnia, siatka: zepsuta }), false);
+});
+
+test("dziura w siatce odpada", () => {
+  /* Firebase zwraca null tam, gdzie w gęstej tablicy brakuje elementu. */
+  const zDziura = planPelny.siatka.map((d, i) => i === 4 ? null : d);
+  rowne(planKompletny({ okres: okresTygodnia, siatka: zDziura }), false);
+});
+
+test("siatka, która nie jest listą, odpada zamiast rzucić wyjątkiem", () => {
+  /* Napis o długości siedmiu znaków ma `length` równe siedem i przechodzi
+     sprawdzenie długości — a potem nie ma metody `every` i funkcja wybucha.
+     Wyjątek tutaj byłby gorszy niż fałsz: leci z nasłuchu bazy, więc zabiłby
+     cały ekran zamiast jednego niepoprawnego planu (decyzja 75). */
+  rowne(planKompletny({ okres: okresTygodnia, siatka: "poniedz" }), false);
+});
+
+test("brak danych w ogóle odpada, bez wyjątku", () => {
+  rowne(planKompletny(null), false);
+  rowne(planKompletny(undefined), false);
+  rowne(planKompletny({}), false);
+});
+
+test("okres z bzdurną liczbą dni odpada", () => {
+  rowne(planKompletny({ okres: { start: "2026-08-03", dni: 0 }, siatka: [] }), false);
+  rowne(planKompletny({ okres: { start: "2026-08-03", dni: "7" }, siatka: planPelny.siatka }), false);
+});
+
+test("plan jednodniowy jest poprawny, gdy okres NAPRAWDĘ ma jeden dzień", () => {
+  /* Bo długość okresu to ustawienie, nie stała — ktoś może planować z dnia na dzień
+     i jego plan nie może wyglądać jak awaria. */
+  const jeden = nowyOkres("2026-08-03", 1);
+  rowne(planKompletny({ okres: jeden, siatka: pustaSiatka(jeden, rytmTestowy) }), true);
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);

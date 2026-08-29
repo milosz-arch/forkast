@@ -444,7 +444,7 @@ import { POMOC } from "./pomoc.js";
 import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
 import { WERSJA_DANYCH, sprawdzWersje } from "./wersja.js";
 import { nowyOkres, dniOkresu, domyslnyRytm, pustaSiatka, wylaczPosilek,
-         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne } from "./rytm.js";
+         oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny } from "./rytm.js";
 import { ulozPlan as ulozAutomatem } from "./automat.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
@@ -486,6 +486,9 @@ Alpine.data("ekranJadlospis", () => ({
   TYPY_POSILKOW, BEZ_SKLADNIKOW,
   laduje: true,
   siatka: [],
+  /* Czy w bazie leży JUŻ kompletny plan, w który może celować zapis punktowy.
+     Ustawiane wyłącznie z nasłuchu, nigdy z domysłu. */
+  planWBazie: false,
   /* LICZNIK (decyzja 77). `zjedzone` to wspólny stan stołu: kto co odhaczył.
      `ja` jest lokalne — mówi, którym domownikiem jest ten telefon (decyzja 78).
      `spizarnia` trzymamy tu tylko po to, żeby ptaszek miał od czego odjąć. */
@@ -572,8 +575,13 @@ Alpine.data("ekranJadlospis", () => ({
       /* Przy otwartym arkuszu wyboru odkładamy zdalną zmianę na później.
          Bez tego siatka przestawiała się pod ręką, a wybór dania zapisywał
          stan sprzed podmiany — czyli cofał zmianę drugiej osoby. */
-      if (this.arkusz) { this._oczekujaca = snap.val(); return; }
-      this.zastosujZdalne(snap.val());
+      const zapisany = snap.val();
+      /* Flagę ustawiamy ZAWSZE, także gdy stosowanie zmiany odkładamy na później —
+         inaczej wybór dania zrobiony przy otwartym arkuszu znów trafiłby punktowo
+         w gałąź, której nie ma. */
+      this.planWBazie = planKompletny(zapisany);
+      if (this.arkusz) { this._oczekujaca = zapisany; return; }
+      this.zastosujZdalne(zapisany);
     }, blad => {
       /* Odmowa odczytu z bazy wygląda dokładnie tak samo jak pusty jadłospis —
          czyli jak coś, co człowiek uzna za swoją winę. Mówimy wprost (decyzja 76). */
@@ -780,11 +788,12 @@ Alpine.data("ekranJadlospis", () => ({
     return w.bezSkladnikow || (w.danie ? this.nazwaDania(w.danie) : "nie wybrano dania");
   },
 
-  /* Zapis całościowy — tylko dla operacji, które CELOWO nadpisują wszystko:
-     ułożenie automatem i wyczyszczenie. */
+  /* Zapis całościowy — dla operacji, które CELOWO nadpisują wszystko:
+     ułożenie automatem, wyczyszczenie i PIERWSZY zapis do pustej bazy. */
   async zapisz() {
     await set(ref(db, `domy/${kodDomu}/jadlospis`),
               { wersja: WERSJA_DANYCH, okres: this.okres, siatka: this.siatka });
+    this.planWBazie = true;
   },
 
   /* Zapis punktowy — dla zmiany jednego posiłku jednego dnia.
@@ -792,8 +801,15 @@ Alpine.data("ekranJadlospis", () => ({
      Wcześniej każda taka zmiana zapisywała CAŁE drzewo, więc gdy dwie osoby
      przy stole edytowały plan w tej samej chwili, wygrywał ten, kto zapisał
      później, a zmiana drugiej znikała bez śladu. Dotyczyło to funkcji, którą
-     sami wpisaliśmy jako największą zdobycz dnia. */
+     sami wpisaliśmy jako największą zdobycz dnia.
+
+     ALE zapis punktowy musi mieć w co celować. Gdy w bazie nie ma jeszcze planu —
+     bo ktoś wybrał danie ręcznie, nie klikając wcześniej „Ułóż automatycznie” —
+     zapis pod `siatka/0/posilki/obiad` TWORZY tam plan złożony z jednego dnia
+     i bez okresu. Nasłuch odsyła to z powrotem i ekran traci resztę okresu.
+     Dlatego pierwszy zapis idzie w całości, a punktowe dopiero po nim. */
   async zapiszPosilek(data, typ) {
+    if (!this.planWBazie) { await this.zapisz(); return; }
     const i = this.siatka.findIndex(d => d.data === data);
     if (i < 0) return;
     const wpis = this.siatka[i].posilki[typ];
@@ -833,6 +849,7 @@ Alpine.data("ekranJadlospis", () => ({
     this.siatka = pustaSiatka(this.okres, this.rytm());
     this.uwagi = [];
     await remove(ref(db, `domy/${kodDomu}/jadlospis`));
+    this.planWBazie = false;
     this.komunikat = "Jadłospis wyczyszczony";
   },
 
@@ -840,10 +857,20 @@ Alpine.data("ekranJadlospis", () => ({
     const ostrzezenie = sprawdzWersje(zapisany);
     if (ostrzezenie) { this.uwagi = [ostrzezenie]; return; }
 
-    if (zapisany?.siatka?.length) {
+    if (planKompletny(zapisany)) {
       this.okres = zapisany.okres;
-      this.siatka = zapisany.siatka;
+      /* Firebase nie zapisuje pustych obiektów, więc dzień, w którym wyłączono
+         wszystkie posiłki, wraca bez pola `posilki` w ogóle. Uzupełniamy, bo
+         szablon liczy na nim klucze i inaczej wywala cały ekran. */
+      this.siatka = zapisany.siatka.map(d => ({ ...d, posilki: d.posilki || {} }));
     } else {
+      /* Coś w bazie jest, ale nie jest planem. Nie nadpisujemy tym niczego po cichu —
+         mówimy wprost i zaczynamy okres od nowa, bo tamtego i tak nie da się użyć. */
+      if (zapisany?.siatka) {
+        console.warn("Niekompletny plan w bazie, pomijam:", zapisany);
+        this.uwagi = ["Plan zapisany przy stole był niekompletny i nie dało się go wczytać. " +
+                      "Ułóż go proszę na nowo — to zajmie chwilę i nic więcej nie zginęło."];
+      }
       this.okres = nowyOkres(new Date(), this.ustawienia.dlugoscOkresu || 7);
       this.siatka = pustaSiatka(this.okres, this.rytm());
     }

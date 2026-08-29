@@ -146,3 +146,33 @@ export function przypiszDanie(siatka, data, typ, idDania) {
 export function porcjePotrzebne(dzien, typ) {
   return dzien.posilki[typ]?.kto?.length ?? 0;
 }
+
+/* =====================================================================
+   CZY PLAN Z BAZY JEST KOMPLETNY.
+
+   Powstało po awarii z 29 sierpnia: wybór dania w pustym jadłospisie zapisywał
+   do bazy JEDEN punkt — `siatka/0/posilki/obiad` — więc w bazie powstawał plan
+   złożony z jednego dnia i bez okresu. Nasłuch na żywo odsyłał to z powrotem,
+   a ekran przyjmował za dobrą monetę i zastępował tym cały tydzień. Plan nie
+   został skasowany; został zastąpiony tym, co odesłała baza.
+
+   Stąd reguła, ta sama co przy starej kopii listy zakupów (decyzja 75): dane
+   z bazy sprawdzamy jak wejście z zewnątrz, także wtedy — a właściwie zwłaszcza
+   wtedy — gdy sami je tam zapisaliśmy. Zapis może być niekompletny, przerwany
+   w połowie albo pochodzić z wydania, którego już nie ma.
+
+   Tu, zamiast w ekranie, bo w HTML-u nie da się tego przetestować.
+   ===================================================================== */
+export function planKompletny(zapisany) {
+  const dni = zapisany?.okres?.dni;
+  if (!Number.isInteger(dni) || dni < 1) return false;
+
+  /* Firebase oddaje tablicę jako tablicę tylko wtedy, gdy indeksy są gęste
+     od zera. Zapis pod sam indeks 3 wraca jako obiekt `{ "3": … }`, a zapis
+     pod sam indeks 0 — jako jednoelementowa tablica, czyli coś, co wygląda
+     na poprawny plan jednodniowy. Oba przypadki muszą tu odpaść. */
+  if (!Array.isArray(zapisany.siatka)) return false;
+  if (zapisany.siatka.length !== dni) return false;
+
+  return zapisany.siatka.every(d => d && typeof d.data === "string");
+}
