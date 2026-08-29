@@ -129,3 +129,97 @@ export function kopiaNadajeSie(pozycje) {
     && pozycje.every(p => p && typeof p.produkt === "string"
                             && typeof p.gramy === "number" && !Number.isNaN(p.gramy));
 }
+
+/* =====================================================================
+   DOPISANE RĘCZNIE — rzeczy, które trzeba kupić, a nie są składnikiem.
+
+   Pasta do zębów, worki na śmieci, karma dla kota. Do 29 sierpnia lista zakupów
+   liczyła się WYŁĄCZNIE z jadłospisu, więc takich rzeczy nie dało się do niej
+   dopisać w ogóle — a ktoś, kto idzie do sklepu z listą w telefonie, i tak ma
+   przy sobie te pozycje, tylko w innej aplikacji albo w głowie.
+
+   Osobno od reszty listy trzymamy je z jednego powodu: **nie mają gramatury**.
+   Cała lista zakupów stoi na przeliczaniu gramów na porcje i odejmowaniu spiżarni,
+   a „pasta do zębów” nie ma się do czego przeliczyć. Wciśnięcie jej w ten sam
+   kształt danych oznaczałoby wpisanie tam liczby, która nic nie znaczy.
+   ===================================================================== */
+
+/** Przycina i sprawdza wpisany tekst. Zwraca null, gdy nie ma czego dopisywać. */
+export function normalizujDopisek(tekst) {
+  const czysty = String(tekst ?? "").replace(/\s+/g, " ").trim();
+  if (!czysty) return null;
+  /* Sto znaków to dużo więcej niż „2 pasty do zębów”, a chroni listę przed
+     wklejonym przypadkiem akapitem. */
+  return czysty.slice(0, 100);
+}
+
+/* Ilość z przodu wpisu — „2 pasty”, „3x worki”, „500 g kawy”. Odcinamy ją tylko
+   na potrzeby ROZPOZNANIA produktu; w treści pozycji zostaje, bo to informacja
+   dla człowieka w sklepie. */
+const BEZ_ILOSCI = /^\s*\d+\s*(x|szt\.?|sztuki?|g|kg|ml|l|dag)?\s*/i;
+
+/**
+ * Zgaduje dział dla dopisanej ręcznie pozycji, na podstawie słownika produktów.
+ *
+ * Powód, dla którego to w ogóle istnieje (zgłoszenie Miłosza z 29 sierpnia):
+ * chleb dopisany ręcznie lądował w sekcji „Dopisane”, choć apka doskonale wie,
+ * że chleb to pieczywo — a w sklepie chodzi się działami, nie źródłami danych.
+ *
+ * Reguła jest celowo ostrożna: dopasowujemy po początku nazwy, a gdy trafień jest
+ * wiele, przypisujemy dział TYLKO gdy wszystkie trafienia się co do niego zgadzają.
+ * „Chleb” pasuje do kilku chlebów i wszystkie są w tym samym dziale, więc dostaje
+ * ten dział. Coś, co pasuje do dwóch różnych działów, zostaje w „Dopisanych” —
+ * bo zły dział jest gorszy niż brak działu: wysyła człowieka w złą alejkę.
+ *
+ * @returns {string|null} nazwa działu albo null, gdy nie rozpoznano
+ */
+export function dzialDopisku(tekst, slownik = []) {
+  const czysty = normalizujDopisek(tekst);
+  if (!czysty) return null;
+
+  const szukane = czysty.toLowerCase()
+    .replace(BEZ_ILOSCI, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .trim();
+  if (szukane.length < 3) return null;   // „ser” tak, „ry” nie — dwie litery pasują do wszystkiego
+
+  const uprosc = (s) => s.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  /* Krok pierwszy: trafienie dokładne wygrywa ze wszystkim. Bez tego „masło”
+     przegrywało samo ze sobą — pasowało i do „Masło” (Nabiał), i do „Masło
+     orzechowe” (Spiżarnia), działy się nie zgadzały i wpis lądował w Dopisanych,
+     choć w słowniku stoi produkt o dokładnie tej nazwie. */
+  const dokladne = slownik.find(p => uprosc(p.n || "") === szukane);
+  if (dokladne?.dzial) return dokladne.dzial;
+
+  /* Krok drugi: początek nazwy — w obie strony, plus wspólny początek co najmniej
+     pięciu liter. To ostatnie jest po polską odmianę: „chleby” nie zaczyna się od
+     „chleb żytni razowy” ani odwrotnie, ale wspólne „chleb” wystarczy, żeby wiedzieć,
+     o co chodzi. Pięć, nie trzy — przy trzech „mak” trafiałby w „makaron”. */
+  const wspolnyPoczatek = (a, b) => {
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    return i;
+  };
+
+  const trafienia = slownik.filter(p => {
+    const nazwa = uprosc(p.n || "");
+    if (!nazwa) return false;
+    return nazwa.startsWith(szukane) || szukane.startsWith(nazwa)
+           || wspolnyPoczatek(nazwa, szukane) >= 5;
+  });
+  if (!trafienia.length) return null;
+
+  /* Z trafień zostawiamy te NAJBLIŻSZE — o najdłuższym wspólnym początku.
+     Bez tego „masło orzechowe” przegrywało z samym „masłem”: pasowało do obu,
+     działy się nie zgadzały i wpis lądował w Dopisanych, choć dokładniejsze
+     z dwóch trafień było jednoznaczne. */
+  const najlepszy = Math.max(...trafienia.map(p => wspolnyPoczatek(uprosc(p.n), szukane)));
+  const najblizsze = trafienia.filter(p => wspolnyPoczatek(uprosc(p.n), szukane) === najlepszy);
+
+  /* Gdy i tak zostaje wiele, dział przypisujemy TYLKO gdy wszystkie się zgadzają.
+     Zły dział jest gorszy niż brak działu: wysyła człowieka w złą alejkę. */
+  const dzialy = [...new Set(najblizsze.map(p => p.dzial).filter(Boolean))];
+  return dzialy.length === 1 ? dzialy[0] : null;
+}

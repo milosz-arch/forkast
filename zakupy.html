@@ -184,13 +184,14 @@
            class="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm
                   dark:border-stone-800 dark:bg-stone-900">
         <p class="text-stone-500 dark:text-stone-400">
-          Nic do kupienia. Ułóż jadłospis, a lista policzy się sama.
+          Nic do kupienia. Ułóż jadłospis, a lista policzy się sama —
+          albo dopisz coś ręcznie na dole.
         </p>
         <a href="jadlospis.html" class="btn-glowny mt-5 no-underline">Przejdź do jadłospisu</a>
       </div>
 
       <!-- Lista -->
-      <div x-show="!laduje && pozycje.length" class="space-y-5">
+      <div x-show="!laduje && pozycje.length" class="space-y-5 pb-5">
         <template x-for="g in wgDzialu" :key="g.dzial">
           <section>
             <!-- Licznik przy dziale: widać, ile zostało, bez liczenia wierszy. -->
@@ -206,9 +207,11 @@
               <template x-for="p in g.pozycje" :key="p.produkt">
                 <li class="border-b border-stone-100 last:border-0 dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
-                          :aria-label="p.wDomu
-                            ? `${p.produkt}. Macie w domu ${p.ileWDomu}, nie trzeba kupować.`
-                            : `${p.produkt}, do kupienia ${p.ileDoKupienia}${p.masz > 0 ? `, w domu ${p.ileWDomu}` : ''}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
+                          :aria-label="p.dopisek
+                            ? `${p.produkt}, dopisane ręcznie. Odhacz, żeby skreślić z listy.`
+                            : p.wDomu
+                              ? `${p.produkt}. Macie w domu ${p.ileWDomu}, nie trzeba kupować.`
+                              : `${p.produkt}, do kupienia ${p.ileDoKupienia}${p.masz > 0 ? `, w domu ${p.ileWDomu}` : ''}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
                           class="flex min-h-[3.25rem] w-full items-center gap-4 px-4 text-left transition
                                  active:bg-stone-50 dark:active:bg-stone-800/60"
                           :class="p.wKoszyku ? 'opacity-55' : ''">
@@ -232,7 +235,11 @@
                          ILE DOŁOŻYĆ, a w nawiasie stoi, ile już jest — żeby było widać,
                          że apka odjęła, a nie że przepis zmalał (decyzja 70). -->
                     <span class="shrink-0 text-right">
-                      <span class="block font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
+                      <!-- Dopisana ręcznie pozycja nie ma gramatury i nie udaje, że ma.
+                           Wpisanie tu zera albo kreski wyglądałoby jak brak danych,
+                           a to jest brak POJĘCIA: pasta do zębów nie ma ilu gramów. -->
+                      <span x-show="!p.dopisek"
+                            class="block font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
                             x-text="p.wDomu ? 'mamy' : p.ileDoKupienia"></span>
                       <span x-show="p.masz > 0"
                             class="block text-[0.68rem] tabular-nums text-stone-400 dark:text-stone-500"
@@ -244,6 +251,41 @@
             </ul>
           </section>
         </template>
+
+      </div>
+
+      <!-- DOPISYWANIE RĘCZNE.
+
+             Pasta do zębów, worki na śmieci, karma dla kota. Do 29 sierpnia lista
+             liczyła się WYŁĄCZNIE z jadłospisu, więc takich rzeczy nie dało się
+             do niej dopisać — a człowiek idący do sklepu i tak je ze sobą ma,
+             tylko w innej aplikacji albo w głowie.
+
+             Pole stoi POD listą, bo dopisuje się rzadko, a patrzy w listę ciągle.
+             Rozpoznane jedzenie trafia do swojego działu, reszta do „Dopisane”.
+
+             POZA blokiem listy, nie w środku: ten blok ma `x-show` na niepustej
+             liście, więc pole schowałoby się dokładnie wtedy, gdy jest najbardziej
+             potrzebne — przy pustej liście, czyli u kogoś, kto nie układa jadłospisu
+             i chce od apki tylko listy zakupów. Pierwszej pozycji nie dałoby się
+             dopisać nigdy. -->
+      <div x-show="!laduje">
+        <form @submit.prevent="dopisz()" class="flex gap-2">
+          <input type="text" x-model="nowyDopisek" maxlength="100"
+                 placeholder="Dopisz coś do listy — np. pasta do zębów"
+                 aria-label="Dopisz pozycję do listy zakupów"
+                 class="min-h-[2.9rem] w-full min-w-0 flex-1 rounded-xl border-2 border-stone-200
+                        bg-white px-4 text-[17px] outline-none transition focus:border-emerald-600
+                        focus:ring-4 focus:ring-emerald-500/15 dark:border-stone-700
+                        dark:bg-stone-900 dark:text-stone-100">
+          <button type="submit" :disabled="!nowyDopisek.trim()"
+                  aria-label="Dopisz do listy"
+                  class="flex min-h-[2.9rem] shrink-0 items-center justify-center rounded-xl
+                         bg-emerald-700 px-5 font-bold text-white transition active:scale-[0.98]
+                         disabled:opacity-40 dark:bg-emerald-600">
+            Dopisz
+          </button>
+        </form>
       </div>
 
       <!-- ============ ZAPASY W SPIŻARNI DOMOWEJ ============
@@ -400,7 +442,8 @@ import collapse from "./lib/alpine-collapse-esm.js";
 import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
-import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie } from "./zakupy.js";
+import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
+         normalizujDopisek, dzialDopisku } from "./zakupy.js";
 import { nalozSpizarnie, opisZapasu, kluczProduktu } from "./spizarnia.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { PRODUKTY } from "./produkty.js";
@@ -482,6 +525,11 @@ Alpine.data("ekranZakupy", () => ({
   pominiete: [],
   stanSieci: "",
   odhaczone: new Set(),
+  /* Rzeczy dopisane ręcznie: { klucz: { tekst } }. NIE są przypięte do okresu —
+     pasta do zębów nie kończy się dlatego, że skończył się tydzień planowania
+     (rozstrzygnięcie Miłosza, 29 sierpnia). Znikają dopiero odhaczone. */
+  dopisane: {},
+  nowyDopisek: "",
   kluczOdhaczen: null,
   kluczListy: null,
 
@@ -573,6 +621,12 @@ Alpine.data("ekranZakupy", () => ({
     /* Spiżarnia jest wspólna dla stołu i nie zależy od okresu — zapas leży w domu
        niezależnie od tego, jaki tydzień planujecie. */
     if (!this.odsubSpizarni) {
+      /* Dopisane, jak spiżarnia, są wspólne dla stołu i NIE zależą od okresu —
+         dlatego wiszą obok, nie pod kluczem okresu. */
+      onValue(ref(db, `domy/${kodDomu}/dopisane`), snap => {
+        this.dopisane = snap.val() || {};
+      }, blad => this.nasluchPadl("dopisanych pozycji", blad));
+
       this.odsubSpizarni = onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
         this.spizarnia = snap.val() || {};
         this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
@@ -794,6 +848,43 @@ Alpine.data("ekranZakupy", () => ({
       .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
   },
 
+  /* Dopisanie rzeczy do listy. Zapisujemy OBIEKT pod NOWYM kluczem, nie wartość
+     prostą pod istniejącą gałęzią — wartość prosta zapisana pod gałąź z nasłuchem
+     nie dociera do bazy i kończy się wyjątkiem ze środka Firebase (decyzja 76). */
+  async dopisz() {
+    const tekst = normalizujDopisek(this.nowyDopisek);
+    if (!tekst) return;
+    this.nowyDopisek = "";
+    try {
+      const { db, ref, push, set } = this.fb;
+      const nowy = push(ref(db, `domy/${kodDomu}/dopisane`));
+      await set(nowy, { tekst, kiedy: Date.now() });
+      this.komunikat = `Dopisano „${tekst}”`;
+    } catch (e) {
+      console.error("Nie udało się dopisać:", e);
+      this.nowyDopisek = tekst;
+      this.komunikat = `Nie udało się dopisać: ${e?.code || e?.message || e}`;
+    }
+  },
+
+  async skreslDopisek(p) {
+    /* Optymistycznie, jak przy odhaczaniu: człowiek przy kasie nie czeka na sieć.
+       Gdy zapis padnie, pozycja wraca na listę i mówimy dlaczego. */
+    const kopia = this.dopisane[p.dopisek];
+    const bez = { ...this.dopisane };
+    delete bez[p.dopisek];
+    this.dopisane = bez;
+    try {
+      const { db, ref, remove } = this.fb;
+      await remove(ref(db, `domy/${kodDomu}/dopisane/${p.dopisek}`));
+      this.komunikat = `Skreślono „${p.produkt}”`;
+    } catch (e) {
+      console.error("Nie udało się skreślić:", e);
+      this.dopisane = { ...this.dopisane, [p.dopisek]: kopia };
+      this.komunikat = `Nie udało się skreślić: ${e?.code || e?.message || e}`;
+    }
+  },
+
   async dodajDoSpizarni() {
     const nazwa = this.nowyProdukt.trim();
     const gramy = Math.round(Number(this.nowaIlosc) || 0);
@@ -883,6 +974,34 @@ Alpine.data("ekranZakupy", () => ({
         ileDoKupienia: opisIlosci(p.doKupienia),
         ileWDomu: opisIlosci(p.masz),
         wKoszyku: this.odhaczone.has(klucz(p.produkt)),
+      }))
+      .concat(this.pozycjeDopisane);
+  },
+
+  /* Dopisane ręcznie, przebrane w ten sam kształt co reszta listy — żeby wiersz,
+     odhaczanie i grupowanie działami były JEDNYM mechanizmem, nie dwoma.
+
+     Dział bierzemy ze słownika, gdy da się rozpoznać: chleb ma stanąć przy
+     pieczywie, nie w worku „dopisane”, bo w sklepie chodzi się działami
+     (zgłoszenie Miłosza, 29 sierpnia). Czego nie rozpoznamy — pasta do zębów,
+     worki na śmieci — ląduje w „Dopisane”.
+
+     `ileDoKupienia` jest pusty celowo: te pozycje nie mają gramatury i nie ma
+     tu czego przeliczać ani odejmować od spiżarni. Liczbę, jeśli trzeba, człowiek
+     wpisuje w treść: „2 pasty do zębów”. */
+  get pozycjeDopisane() {
+    return Object.entries(this.dopisane)
+      .map(([id, w]) => ({ id, tekst: normalizujDopisek(w?.tekst) }))
+      .filter(w => w.tekst)
+      .sort((a, b) => a.tekst.localeCompare(b.tekst, "pl"))
+      .map(w => ({
+        produkt: w.tekst,
+        dzial: dzialDopisku(w.tekst, this.slownik) || "Dopisane",
+        zDan: "dopisane ręcznie",
+        dopisek: w.id,
+        gramy: 0, masz: 0, doKupienia: 0, wDomu: false,
+        ileDoKupienia: "", ileWDomu: "",
+        wKoszyku: false,
       }));
   },
 

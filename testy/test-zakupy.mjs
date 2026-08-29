@@ -1,4 +1,6 @@
-import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie } from "../zakupy.js";
+import { policzZakupy, pogrupujDzialami, opisIlosci, kopiaNadajeSie,
+         normalizujDopisek, dzialDopisku } from "../zakupy.js";
+import { PRODUKTY } from "../produkty.js";
 import { nowyOkres, domyslnyRytm, pustaSiatka, przypiszDanie, zmienKtoJe, oznaczBezSkladnikow } from "../rytm.js";
 
 let zdane = 0, oblane = 0;
@@ -200,6 +202,86 @@ test("wystarczy JEDNA pozycja bez gramów, żeby odrzucić całą kopię", () =>
   /* Bo lista liczy się w całości: jedna pozycja bez liczby wywala spiżarnię
      dla wszystkich pozostałych. */
   prawda(!kopiaNadajeSie([{ produkt: "Ryż", gramy: 400 }, { produkt: "Mąka" }]));
+});
+
+console.log("\n— dopisane ręcznie pozycje —");
+
+test("normalizujDopisek przycina i skleja odstępy", () => {
+  rowne(normalizujDopisek("  pasta   do  zębów \n"), "pasta do zębów");
+});
+
+test("normalizujDopisek odrzuca pusty wpis zamiast dodawać pustą linijkę", () => {
+  rowne(normalizujDopisek("   "), null);
+  rowne(normalizujDopisek(""), null);
+  rowne(normalizujDopisek(null), null);
+  rowne(normalizujDopisek(undefined), null);
+});
+
+test("normalizujDopisek ucina wklejony przypadkiem akapit", () => {
+  rowne(normalizujDopisek("a".repeat(400)).length, 100);
+});
+
+console.log("\n— dopisane: w który dział trafiają —");
+
+/* Zgłoszenie Miłosza z 29 sierpnia: chleb dopisany ręcznie lądował w sekcji
+   „Dopisane”, choć apka wie, że chleb to jedzenie. W sklepie chodzi się działami,
+   nie źródłami danych. Testy chodzą po PRAWDZIWYM słowniku, nie po atrapie —
+   bo cała trudność siedzi w tym, że w słowniku są i „Masło”, i „Masło orzechowe”. */
+
+test("rzecz spoza spożywczych nie dostaje działu", () => {
+  rowne(dzialDopisku("pasta do zębów", PRODUKTY), null);
+  rowne(dzialDopisku("worki na śmieci", PRODUKTY), null);
+  rowne(dzialDopisku("karma dla kota", PRODUKTY), null);
+});
+
+test("jedzenie trafia do działu ze słownika", () => {
+  rowne(dzialDopisku("ser", PRODUKTY), "Nabiał");
+  rowne(dzialDopisku("jajka", PRODUKTY), "Nabiał");
+});
+
+test("dokładne trafienie wygrywa z dłuższymi nazwami z innego działu", () => {
+  /* „Masło” to Nabiał, ale „Masło orzechowe 100%” to Spiżarnia. Bez pierwszeństwa
+     dla trafienia dokładnego wpis przegrywał sam ze sobą i szedł do Dopisanych. */
+  rowne(dzialDopisku("Masło", PRODUKTY), "Nabiał");
+});
+
+test("bliższe trafienie wygrywa z ogólniejszym", () => {
+  rowne(dzialDopisku("masło orzechowe", PRODUKTY), "Spiżarnia");
+});
+
+test("liczba z przodu nie psuje rozpoznania", () => {
+  rowne(dzialDopisku("2 chleby", PRODUKTY), dzialDopisku("chleb", PRODUKTY));
+  rowne(dzialDopisku("3x ryż", PRODUKTY), dzialDopisku("ryż", PRODUKTY));
+});
+
+test("polska końcówka nie psuje rozpoznania", () => {
+  /* „chleby” nie zaczyna się od „chleb żytni razowy” ani odwrotnie —
+     ratuje to dopiero wspólny początek. */
+  rowne(dzialDopisku("chleby", PRODUKTY), dzialDopisku("chleb", PRODUKTY));
+});
+
+test("krótki wpis nie łapie przypadkowego produktu", () => {
+  /* Dwie litery pasują do zbyt wielu rzeczy, a zły dział wysyła człowieka
+     w złą alejkę — gorzej niż brak działu. */
+  rowne(dzialDopisku("ry", PRODUKTY), null);
+  rowne(dzialDopisku("ma", PRODUKTY), null);
+});
+
+test("wpis pasujący do dwóch różnych działów zostaje bez działu", () => {
+  const atrapa = [{ n: "Kawa mielona", dzial: "Spiżarnia" },
+                  { n: "Kawa rozpuszczalna", dzial: "Szafka" }];
+  rowne(dzialDopisku("kawa", atrapa), null);
+});
+
+test("wpis pasujący do dwóch produktów z TEGO SAMEGO działu dostaje ten dział", () => {
+  const atrapa = [{ n: "Kawa mielona", dzial: "Spiżarnia" },
+                  { n: "Kawa ziarnista", dzial: "Spiżarnia" }];
+  rowne(dzialDopisku("kawa", atrapa), "Spiżarnia");
+});
+
+test("pusty słownik nie wywala funkcji", () => {
+  rowne(dzialDopisku("chleb", []), null);
+  rowne(dzialDopisku("chleb"), null);
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
