@@ -80,6 +80,23 @@ for (const p of PLIKI) {
   }
 }
 
+/* NAGŁÓWKI EKRANÓW nie przechodzą przez t() — ekran podaje je do danePowloki()
+   albo do ustawNaglowek(). Ta dziura kosztowała wydanie: v83 wyszło z polskimi
+   nagłówkami na wszystkich ośmiu ekranach i nikt tego nie sprawdzał. */
+const NAGLOWKI = /(?:tytul|opis)\s*:\s*"([^"\\\n]+)"|ustawNaglowek\(\s*"([^"\\\n]*)"\s*,\s*"([^"\\\n]*)"/g;
+/* Tylko ekrany: `tytul:` i `opis:` w modułach (pomoc.js, kuchnia.js) to ich
+   własne pola danych, nie nagłówki — czekają w partii komunikatów. */
+for (const p of PLIKI.filter(f => f.endsWith(".html"))) {
+  const tekst = bezKomentarzy(readFileSync(new URL(p, KORZEN), "utf8"), true);
+  for (const m of tekst.matchAll(NAGLOWKI)) {
+    for (const napis of [m[1], m[2], m[3]]) {
+      if (!napis || !napis.trim() || NIE_TLUMACZYMY.has(napis)) continue;
+      if (!uzyte.has(napis)) uzyte.set(napis, new Set());
+      uzyte.get(napis).add(p);
+    }
+  }
+}
+
 /* Tytuły kart są wołane nie przez t(), tylko przez powłokę (document.title),
    więc dla sprawdzenia „martwych pozycji” liczą się jako używane. */
 for (const p of PLIKI.filter(f => f.endsWith(".html"))) {

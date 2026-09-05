@@ -572,8 +572,7 @@ Alpine.data("ekranDania", () => ({
       .filter(d => !this.preferencje[d.id]);
     this.lubiane = Object.values(this.preferencje).filter(v => v === "lubie").length;
     this.krok = "talia";
-    this.tytul = "Dania";
-    this.opis = "Przesuwaj: to, co polubicie, trafi do jadłospisu.";
+    this.ustawNaglowek("Dania", "Przesuwaj: to, co polubicie, trafi do jadłospisu.");
     this.laduje = false;
   },
 

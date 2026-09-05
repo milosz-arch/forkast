@@ -88,10 +88,34 @@ export function danePowloki({ ekran, tytul, opis }) {
       /** Tłumaczy napis na język stołu. Klucz to polski napis (decyzja 120). */
       t(napis) { return tlumacz(napis, this.jezyk); },
 
-      /* Nagłówek i podtytuł jako gettery, nie wartości: inaczej zostałyby
-         po polsku po przełączeniu języka — policzone raz, przy starcie. */
-      get tytul() { return bezSierot(this.t(tytul)); },
-      get opis()  { return bezSierot(this.t(opis)); },
+      /* NAGŁÓWEK I PODTYTUŁ — zwykłe pola, NIE gettery.
+
+         Pierwsza wersja robiła z nich gettery i nie działało to wcale: ekran
+         bierze powłokę przez `...danePowloki({…})`, a rozsypywanie obiektu
+         WYWOŁUJE getter i zapisuje jego wynik jako zwykłą wartość. Nagłówek
+         zamarzał po polsku na zawsze. Wyszło dopiero na telefonie Miłosza,
+         bo żaden test nie czyta ekranu (pułapka 13).
+
+         Polski oryginał trzymamy obok, w `tytulPl` / `opisPl`, żeby dało się
+         przetłumaczyć jeszcze raz przy zmianie języka. */
+      tytulPl: tytul,
+      opisPl: opis,
+      tytul: "",
+      opis: "",
+
+      /** Ekran zmieniający nagłówek w trakcie (talia: Wykluczenia → Dania)
+          MUSI wołać to, a nie przypisywać `tytul` — inaczej podmieni napis
+          na sztywno i zmiana języka go nie ruszy. */
+      ustawNaglowek(nowyTytul, nowyOpis = "") {
+        this.tytulPl = nowyTytul;
+        this.opisPl = nowyOpis;
+        this.przelicznaglowek();
+      },
+
+      przelicznaglowek() {
+        this.tytul = bezSierot(tlumacz(this.tytulPl, this.jezyk));
+        this.opis  = bezSierot(tlumacz(this.opisPl, this.jezyk));
+      },
       /* Karta Dań znika z paska, gdy nie ma już czego oceniać (decyzja 115) —
          wraca sama, gdy dojdą nowe dania startowe. Na samym ekranie Dań zostaje,
          bo wejście z Ustawień bez podświetlonej karty wyglądałoby na błąd.
@@ -149,6 +173,7 @@ export function danePowloki({ ekran, tytul, opis }) {
         ustawJezykModulow(id);
         document.documentElement.lang = id;
         if (tytulKarty) document.title = tlumacz(tytulKarty, id);
+        this.przelicznaglowek();
       },
 
       /** Wybór człowieka w Ustawieniach. Zapis do bazy robi ekran — powłoka

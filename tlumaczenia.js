@@ -25,6 +25,18 @@
    ===================================================================== */
 
 export const SLOWNIK = {
+  /* Nagłówki ekranów — podawane do danePowloki(), nie przez t(). */
+  "Jadłospis": "Meal plan",
+  "Ułóż sam albo daj apce ułożyć z tego, co lubicie.": "Build it yourself or let the app build it from what you like.",
+  "Przepisy": "Recipes",
+  "Wszystko, co polubiliście — z krokami i gramaturą.": "Everything you liked — with steps and amounts.",
+  "Wykluczenia": "Exclusions",
+  "Zanim pokażę dania — czy jest coś, czego w ogóle nie jecie?": "Before I show you any dishes — is there anything you don't eat at all?",
+  "Jak wygląda Wasz zwykły okres i czym gotujecie.": "What your usual period looks like and what you cook with.",
+  "Lista zakupów": "Shopping list",
+  "Policzona z jadłospisu. Działa też bez zasięgu.": "Counted from the plan. Works without a signal too.",
+  "Dania": "Dishes",
+  "Przesuwaj: to, co polubicie, trafi do jadłospisu.": "Swipe: what you like goes into the plan.",
   "Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.": "A page from a book, a sheet from a notebook, a screenshot — or just the plate of food.",
   "Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.": "One or two photos work best. With more, the AI may run out of time.",
   "Wyślij do AI": "Send to AI",
