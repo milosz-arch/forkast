@@ -97,6 +97,24 @@ for (const p of PLIKI.filter(f => f.endsWith(".html"))) {
   }
 }
 
+/* ETYKIETY ZAKŁADEK stoją w ZAKLADKI w powloka.js i idą na ekran przez
+   t(z.nazwa) — czyli przez zmienną, której to sprawdzenie nie widzi. Bez tego
+   „Zakupy” wyglądałoby na martwą pozycję słownika i kusiło do skasowania,
+   a skasowanie zabrałoby tłumaczenie z paska nawigacji na ośmiu ekranach.
+   Czego tu NIE ma: pilnowania, że etykiety w ogóle idą przez t() — to robi
+   test-napisy-moduly.mjs, bo tam mieszka cała ta klasa napisów. */
+{
+  const powloka = readFileSync(new URL("powloka.js", KORZEN), "utf8");
+  const blok = powloka.match(/ZAKLADKI\s*=\s*\[([\s\S]*?)\]/);
+  prawda(blok, "nie znalazłem ZAKLADKI w powloka.js");
+  const etykiety = [...blok[1].matchAll(/nazwa\s*:\s*"([^"\\\n]+)"/g)].map(m => m[1]);
+  prawda(etykiety.length >= 5, `spodziewałem się pięciu zakładek, jest ${etykiety.length}`);
+  for (const napis of etykiety) {
+    if (!uzyte.has(napis)) uzyte.set(napis, new Set());
+    uzyte.get(napis).add("powloka.js");
+  }
+}
+
 /* Tytuły kart są wołane nie przez t(), tylko przez powłokę (document.title),
    więc dla sprawdzenia „martwych pozycji” liczą się jako używane. */
 for (const p of PLIKI.filter(f => f.endsWith(".html"))) {

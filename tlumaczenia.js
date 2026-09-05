@@ -36,6 +36,11 @@ export const SLOWNIK = {
   "Lista zakupów": "Shopping list",
   "Policzona z jadłospisu. Działa też bez zasięgu.": "Counted from the plan. Works without a signal too.",
   "Dania": "Dishes",
+  /* Pasek nawigacji — etykiety z ZAKLADKI w powloka.js, podawane przez t(z.nazwa).
+     Pięć z sześciu miało tłumaczenia z innych miejsc, brakowało tylko „Zakupy”. */
+  "Zakupy": "Shopping",
+  " — otworzy się po ": " — opens after ",
+  " daniach": " dishes",
   "Przesuwaj: to, co polubicie, trafi do jadłospisu.": "Swipe: what you like goes into the plan.",
   "Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.": "A page from a book, a sheet from a notebook, a screenshot — or just the plate of food.",
   "Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.": "One or two photos work best. With more, the AI may run out of time.",

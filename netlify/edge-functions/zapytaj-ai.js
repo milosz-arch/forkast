@@ -51,10 +51,16 @@
    Wysłanie „budżetu” modelowi z rodziny 3.x nie daje błędu. Daje model myślący
    na pełnych obrotach i człowieka patrzącego na kręcące się kółko.
 
-   Gemini 2.0 Flash i Flash-Lite zostały wycofane 1 czerwca 2026 i dlatego ich tu nie ma. */
+   Gemini 2.0 Flash i Flash-Lite zostały wycofane 1 czerwca 2026 i dlatego ich tu nie ma.
+
+   5 września skreślone kolejne dwie: `gemini-2.5-flash` i `gemini-2.5-flash-lite`
+   odpowiadają dziś 404. Martwa nazwa na liście nie boli, dopóki jej nie potrzeba —
+   a potrzeba jej dokładnie wtedy, gdy pierwszy model zawodzi, i wtedy każda kosztuje
+   swoje jedenaście sekund z budżetu dwudziestu pięciu. Uprzejme 404 wraca po pół
+   sekundy, ale model, który zamiast odmówić się zawiesi, zjada cały limit próby.
+   Zasada z tego samego akapitu wyżej jest dalej spełniona: na pierwszym miejscu
+   stoi model nazwany z numerem, tylko już żywy. */
 const MODELE_ZAPASOWE = [
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash",       myslenie: "budzet" },
-  { wersja: "v1beta", nazwa: "gemini-2.5-flash-lite",  myslenie: "budzet" },
   { wersja: "v1beta", nazwa: "gemini-3.1-flash-lite",  myslenie: "poziom" },
   { wersja: "v1beta", nazwa: "gemini-flash-latest",    myslenie: "poziom" },
 ];

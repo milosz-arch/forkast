@@ -44,7 +44,7 @@
          :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                                  : 'text-stone-500 dark:text-stone-400'">
         <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
-        <span x-text="z.nazwa"></span>
+        <span x-text="t(z.nazwa)"></span>
       </a>
     </template>
     <a href="ustawienia.html"
@@ -262,7 +262,7 @@
              :class="zamknieta(z.id) ? 'text-stone-300 dark:text-stone-700'
                                      : 'text-stone-500 dark:text-stone-400'">
             <svg class="ikona"><use :href="'#i-' + z.id"/></svg>
-            <span x-text="z.nazwa"></span>
+            <span x-text="t(z.nazwa)"></span>
           </a>
         </template>
       </div>
