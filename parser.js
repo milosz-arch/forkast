@@ -296,34 +296,9 @@ function makroSieZgadza(p) {
   return -roznica <= 0.15;                     // niedobór — brak wytłumaczenia
 }
 
-/**
- * @param {string} tekst   surowa odpowiedź wklejona przez użytkownika
- * @param {Array}  slownik [{ n, dzial, ... }] — produkty, które apka już zna
- * @returns {{dania, noweProdukty, bledy, ostrzezenia}}
- *   bledy      — danie NIE wchodzi do bazy, trzeba coś zrobić
- *   ostrzezenia— danie wchodzi, ale pokazujemy je do potwierdzenia
- */
-export function parsujOdpowiedz(tekst, slownik = []) {
-  const bledy = [], ostrzezenia = [];
-  if (typeof tekst === "string" && tekst.length > LIMITY.ladunekBajtow * 4) {
-    throw new Error("Odpowiedź jest podejrzanie długa — nie przetwarzam jej.");
-  }
-  const surowe = wyciagnijJSON(tekst);
-
-  // Model bywa kreatywny co do opakowania: {dania:[…]} albo […] albo pojedyncze danie.
-  let dania = surowe.dania ?? surowe.przepisy ?? surowe.posilki ?? surowe.meals;
-  if (!dania && Array.isArray(surowe)) dania = surowe;
-  if (!dania && surowe.nazwa) dania = [surowe];
-  dania = doTablicy(dania);
-  if (!dania.length) throw new Error("W odpowiedzi nie ma ani jednego dania.");
-
-  const znane = new Map();
-  for (const p of slownik) {
-    znane.set(normalizuj(p.n), p);
-    if (p.id) znane.set(normalizuj(p.id), p);
-  }
-
-  // Nowe produkty najpierw — dania mogą się do nich odwoływać.
+/* Nowe produkty z odpowiedzi modelu — wspólne dla dodawania dania i wersji
+   restauracyjnej. Dopisuje do `znane`, żeby dalsze sprawdzanie je widziało. */
+function zbierzNoweProdukty(surowe, znane, bledy, ostrzezenia) {
   const noweProdukty = [];
   for (const raw of doTablicy(surowe.noweProdukty ?? surowe.nowe_produkty ?? surowe.produkty)) {
     const nazwa = oczysc(raw.nazwa ?? raw.n ?? raw.name);
@@ -358,6 +333,43 @@ export function parsujOdpowiedz(tekst, slownik = []) {
     noweProdukty.push(p);
     znane.set(normalizuj(nazwa), p);
   }
+  return noweProdukty;
+}
+
+function slownikNaMape(slownik) {
+  const znane = new Map();
+  for (const p of slownik) {
+    znane.set(normalizuj(p.n), p);
+    if (p.id) znane.set(normalizuj(p.id), p);
+  }
+  return znane;
+}
+
+/**
+ * @param {string} tekst   surowa odpowiedź wklejona przez użytkownika
+ * @param {Array}  slownik [{ n, dzial, ... }] — produkty, które apka już zna
+ * @returns {{dania, noweProdukty, bledy, ostrzezenia}}
+ *   bledy      — danie NIE wchodzi do bazy, trzeba coś zrobić
+ *   ostrzezenia— danie wchodzi, ale pokazujemy je do potwierdzenia
+ */
+export function parsujOdpowiedz(tekst, slownik = []) {
+  const bledy = [], ostrzezenia = [];
+  if (typeof tekst === "string" && tekst.length > LIMITY.ladunekBajtow * 4) {
+    throw new Error("Odpowiedź jest podejrzanie długa — nie przetwarzam jej.");
+  }
+  const surowe = wyciagnijJSON(tekst);
+
+  // Model bywa kreatywny co do opakowania: {dania:[…]} albo […] albo pojedyncze danie.
+  let dania = surowe.dania ?? surowe.przepisy ?? surowe.posilki ?? surowe.meals;
+  if (!dania && Array.isArray(surowe)) dania = surowe;
+  if (!dania && surowe.nazwa) dania = [surowe];
+  dania = doTablicy(dania);
+  if (!dania.length) throw new Error("W odpowiedzi nie ma ani jednego dania.");
+
+  const znane = slownikNaMape(slownik);
+
+  // Nowe produkty najpierw — dania mogą się do nich odwoływać.
+  const noweProdukty = zbierzNoweProdukty(surowe, znane, bledy, ostrzezenia);
 
   const gotowe = [];
   for (const [i, raw] of dania.entries()) {
@@ -577,4 +589,51 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
     }
   }
   return bledy;
+}
+
+/**
+ * Odpowiedź na prompt wersji restauracyjnej (zbudujPromptRestauracyjny).
+ * @param {string} tekst    surowa odpowiedź modelu
+ * @param {object} danie    wersja podstawowa: { skladniki: [{produkt, gramy}] }
+ * @param {Array}  slownik  produkty, które apka zna
+ * @returns {{ ok, kroki, akcenty, noweProdukty, uwaga, bledy, ostrzezenia }}
+ *   ok = false → nic nie zapisujemy; `bledy` nadają się do odesłania modelowi (pushback).
+ */
+export function parsujWersjeRestauracyjna(tekst, danie, slownik = []) {
+  const bledy = [], ostrzezenia = [];
+  if (typeof tekst === "string" && tekst.length > LIMITY.ladunekBajtow * 4) {
+    throw new Error("Odpowiedź jest podejrzanie długa — nie przetwarzam jej.");
+  }
+  const surowe = wyciagnijJSON(tekst);
+  const znane = slownikNaMape(slownik);
+  const noweProdukty = zbierzNoweProdukty(surowe, znane, bledy, ostrzezenia);
+
+  const kroki = doTablicy(surowe.kroki ?? surowe.steps).map(k => oczysc(k)).filter(Boolean);
+  if (kroki.length < (danie.kroki?.length || 1)) {
+    bledy.push(`Wersja restauracyjna ma ${kroki.length} kroków, podstawowa ${danie.kroki?.length || 0} — ma być dłuższa, nie krótsza.`);
+  }
+
+  const akcenty = [];
+  for (const s of skladnikiNaListe(surowe.akcenty ?? surowe.dodatki ?? [])) {
+    const nazwa = oczysc(s.produkt);
+    if (!nazwa) continue;
+    if (!dlugoscOk(nazwa, LIMITY.nazwaSkladnika)) {
+      bledy.push(`Nazwa akcentu ma ${nazwa.length} znaków, dozwolone do ${LIMITY.nazwaSkladnika.max}.`); continue;
+    }
+    const p = znane.get(normalizuj(nazwa));
+    if (!p) { bledy.push(`Akcent „${nazwa}” nie jest na liście produktów i nie został dopisany do noweProdukty.`); continue; }
+    if (s.gramy == null || s.gramy <= 0) { bledy.push(`Akcent „${nazwa}” nie ma gramatury.`); continue; }
+    if (danie.skladniki.some(f => normalizuj(f.produkt) === normalizuj(p.n))) {
+      bledy.push(`„${p.n}” jest składnikiem podstawowym, nie akcentem — usuń go z akcentów.`); continue;
+    }
+    akcenty.push({ produkt: p.n, gramy: s.gramy });
+  }
+  if (akcenty.length > LIMITY.liczbaSkladnikow.max) {
+    bledy.push(`${akcenty.length} akcentów to za dużo (limit ${LIMITY.liczbaSkladnikow.max}).`);
+  }
+
+  if (kroki.length) bledy.push(...sprawdzAkcenty(kroki, danie.skladniki, akcenty));
+
+  const uwaga = oczysc(surowe.uwaga ?? "");
+  return { ok: !bledy.length, kroki, akcenty, noweProdukty, uwaga, bledy, ostrzezenia };
 }

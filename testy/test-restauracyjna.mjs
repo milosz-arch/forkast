@@ -1,8 +1,10 @@
 /* Kształt wersji restauracyjnej (decyzja 109): każda ilość w krokach spoza
    fundamentu ma pozycję w akcentach, a sumy się zgadzają. Przypadki wzięte
    z drugiego pomiaru 5 września — sól i cytryna — plus pułapki polskiej odmiany. */
-import { sprawdzAkcenty, ilosciZKrokow } from "../parser.js";
+import { sprawdzAkcenty, ilosciZKrokow, parsujWersjeRestauracyjna } from "../parser.js";
 import { zbudujPromptRestauracyjny, zbudujPoprawkeRestauracyjna } from "../prompt.js";
+import { readFileSync } from "fs";
+const czytaj = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 
 let zdane = 0, oblane = 0;
 function test(nazwa, fn) {
@@ -161,6 +163,72 @@ test("składnik nieznany nigdzie → błąd, który każe dopisać do akcentów"
   prawda(b.some(x => x.includes("kminu") && x.includes("Dopisz")), b.join(" | "));
 });
 
+console.log("\n— parsowanie całej odpowiedzi (prawdziwa odpowiedź Gemini, pomiar 3 z v75) —");
+
+/* Skrócona do tego, co sprawdzanie czyta; liczby i nazwy dosłownie z odpowiedzi. */
+const ODPOWIEDZ_V75 = {
+  kroki: [
+    "Pokrój 250 g piersi z kurczaka w równe paski, a 150 g papryki i 60 g cebuli w plastry o grubości 5 mm.",
+    "Wymieszaj w misce 250 g piersi z kurczaka z 10 g oliwy extra virgin, 2 g kminu rzymskiego, 2 g papryki wędzonej, 2 g soli oraz 1 g pieprzu czarnego, po czym odstaw na 20 minut; w tym czasie pokrój 10 g natki pietruszki.",
+    "Przygotuj dip, mieszając 80 g jogurtu greckiego z 5 g soku z cytryny i 1 g soli.",
+    "Rozgrzej 15 g oleju rzepakowego na patelni na mocy 8/9, po czym ułóż 250 g piersi z kurczaka; smaż 4 minuty do 74°C wewnątrz.",
+    "Zdejmij 250 g piersi z kurczaka na talerz, wrzuć 150 g papryki i 60 g cebuli, smaż 4 minuty na mocy 7/9.",
+    "Deglasuj patelnię, dodając 10 g soku z cytryny, mieszając z warzywami przez 30 sekund.",
+    "Spróbuj mieszanki: jeśli smak jest zbyt płaski, dodaj 1 g soli; jeśli brakuje głębi, dodaj 1 g soku z cytryny.",
+    "Rozgrzej 120 g tortilli pszennej na suchej patelni na mocy 6/9 przez 20 sekund z każdej strony.",
+    "Nałóż nadzienie na ciepłą tortillę, polej 86 g dipu jogurtowego, posyp 10 g natki pietruszki i zwiń, podając w temperaturze około 60°C.",
+  ],
+  akcenty: [
+    { produkt: "Oliwa extra virgin", gramy: 10 }, { produkt: "Kmin rzymski", gramy: 2 },
+    { produkt: "Papryka wędzona", gramy: 2 },    { produkt: "Sól", gramy: 4 },
+    { produkt: "Pieprz czarny", gramy: 1 },      { produkt: "Cytryny", gramy: 16 },
+    { produkt: "Olej rzepakowy", gramy: 15 },    { produkt: "Natka pietruszki", gramy: 10 },
+  ],
+  noweProdukty: [
+    { nazwa: "Pieprz czarny", kcal: 251, bialko: 10, wegle: 64, tluszcz: 3, dzial: "Szafka" },
+    { nazwa: "Sól", kcal: 0, bialko: 0, wegle: 0, tluszcz: 0, dzial: "Szafka" },
+  ],
+  uwaga: "Smażenie kurczaka razem z zimnymi warzywami powoduje gotowanie mięsa zamiast karmelizacji.",
+};
+const SLOWNIK_V75 = ["Tortilla pszenna","Pierś z kurczaka","Papryka","Cebula","Jogurt grecki",
+  "Oliwa extra virgin","Kmin rzymski","Papryka wędzona","Cytryny","Olej rzepakowy","Natka pietruszki"]
+  .map(n => ({ n, dzial: "x" }));
+const TORTILLA = { nazwa: "Tortilla", porcje: 2, skladniki: FUNDAMENT, kroki: ["1","2","3","4","5"] };
+const zTekstem = (o) => "```json\n" + JSON.stringify(o) + "\n```";
+
+test("prawdziwa odpowiedź v75 przechodzi: 9 kroków, 8 akcentów, sól i pieprz jako nowe produkty", () => {
+  const w = parsujWersjeRestauracyjna(zTekstem(ODPOWIEDZ_V75), TORTILLA, SLOWNIK_V75);
+  rowne(w.bledy, [], "błędy");
+  prawda(w.ok, "ok");
+  rowne(w.kroki.length, 9); rowne(w.akcenty.length, 8);
+  rowne(w.noweProdukty.map(p => p.n), ["Pieprz czarny", "Sól"]);
+  prawda(w.uwaga.startsWith("Smażenie"), "uwaga");
+});
+
+test("akcent spoza słownika i bez wpisu w noweProdukty → nie ok", () => {
+  const o = { ...ODPOWIEDZ_V75, noweProdukty: [ODPOWIEDZ_V75.noweProdukty[1]] };   // bez pieprzu
+  const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
+  prawda(!w.ok && w.bledy.some(b => b.includes("Pieprz czarny") && b.includes("noweProdukty")), w.bledy.join(" | "));
+});
+
+test("składnik fundamentu wpisany do akcentów → nie ok", () => {
+  const o = { ...ODPOWIEDZ_V75, akcenty: [...ODPOWIEDZ_V75.akcenty, { produkt: "Cebula", gramy: 20 }] };
+  const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
+  prawda(!w.ok && w.bledy.some(b => b.includes("Cebula") && b.includes("podstawowym")), w.bledy.join(" | "));
+});
+
+test("mniej kroków niż wersja podstawowa → nie ok", () => {
+  const o = { ...ODPOWIEDZ_V75, kroki: ODPOWIEDZ_V75.kroki.slice(0, 3) };
+  const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
+  prawda(!w.ok && w.bledy.some(b => b.includes("3 kroków")), w.bledy.join(" | "));
+});
+
+test("rozjazd sum z 109 przechodzi przez parser jako błąd, nie ostrzeżenie", () => {
+  const o = { ...ODPOWIEDZ_V75, akcenty: ODPOWIEDZ_V75.akcenty.map(a => a.produkt === "Sól" ? { ...a, gramy: 9 } : a) };
+  const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
+  prawda(!w.ok && w.bledy.some(b => b.includes("Sól") && b.includes("9")), w.bledy.join(" | "));
+});
+
 console.log("\n— prompt i pushback (108, 109) —");
 
 const DANIE = { nazwa: "Tortilla z kurczakiem", porcje: 2, skladniki: FUNDAMENT, kroki: ["Pokrój kurczaka.", "Smaż."] };
@@ -187,6 +255,38 @@ test("pushback niesie poprzednią odpowiedź i każdy rozjazd", () => {
   const p = zbudujPoprawkeRestauracyjna("PROMPT", "{\"kroki\":[]}", ["Sól: brak", "Cytryny: 10 vs 2"]);
   prawda(p.startsWith("PROMPT"), "pushback nie zaczyna się od oryginalnego promptu");
   prawda(p.includes("{\"kroki\":[]}") && p.includes("- Sól: brak") && p.includes("- Cytryny: 10 vs 2"), p);
+});
+
+console.log("\n— drzwi na ekranie przepisów (pułapka 22) —");
+
+const przepisy = czytaj("../przepisy.html");
+const skrypt = przepisy.slice(przepisy.indexOf('<script type="module">'));
+const szablon = przepisy.slice(0, przepisy.indexOf('<script type="module">'));
+
+test("ulepsz() i ponow() mają przycisk w szablonie", () => {
+  prawda(/@click="ulepsz\(p\)"/.test(szablon), "brak przycisku wołającego ulepsz(p)");
+  prawda(/@click="ponow\(p\)"/.test(szablon), "brak przycisku wołającego ponow(p)");
+});
+
+test("ekran czyta odpowiedź przez parsujWersjeRestauracyjna i robi jedną rundę poprawki", () => {
+  prawda(/import \{[^}]*parsujWersjeRestauracyjna[^}]*\} from "\.\/parser\.js"/.test(skrypt), "brak importu parsera");
+  prawda((skrypt.match(/parsujWersjeRestauracyjna\(/g) || []).length === 2, "ma być dokładnie: próba + poprawka");
+  prawda(/zbudujPoprawkeRestauracyjna\(prompt, tekst, wynik\.bledy\)/.test(skrypt), "pushback nie dostaje rozjazdów");
+});
+
+test("zapis idzie pod restauracyjne/{id} jako obiekt (pułapka 2), a nowe produkty pod produktyWlasne", () => {
+  prawda(/set\(ref\(db, `domy\/\$\{kodDomu\}\/restauracyjne\/\$\{p\.id\}`\), wpis\)/.test(skrypt), "zły kształt lub ścieżka zapisu");
+  prawda(/const wpis = \{ kroki:/.test(skrypt), "wpis nie jest obiektem");
+  prawda(/update\(ref\(db, `domy\/\$\{kodDomu\}\/produktyWlasne`\), zmiany\)/.test(skrypt), "nowe produkty nie trafiają do produktyWlasne");
+});
+
+test("gałąź restauracyjne jest czytana przy starcie — inaczej przełącznik znika po odświeżeniu", () => {
+  prawda(/get\(ref\(db, `domy\/\$\{kodDomu\}\/restauracyjne`\)\)/.test(skrypt), "brak odczytu restauracyjne w initEkranu");
+  prawda(/this\.restauracyjne = snapRest\.val\(\) \|\| \{\}/.test(skrypt), "odczyt jest, ale nie ląduje w stanie");
+});
+
+test("komunikat błędu niesie etap i numer wydania", () => {
+  prawda(/Nie udało się \(\$\{etap\}\)/.test(skrypt) && /\$\{WYDANIE\}/.test(skrypt), "błąd bez etapu albo bez wydania");
 });
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}`);

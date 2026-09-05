@@ -205,13 +205,76 @@
                     </template>
                   </ul>
 
+                  <!-- Wersja restauracyjna (decyzje 101–109): to samo danie, dwa pełne widoki.
+                       Przycisk tylko przy daniach z krokami — prompt buduje się z kroków
+                       podstawowych, więc bez nich nie ma z czego. -->
+                  <template x-if="p.kroki?.length">
+                    <div class="mt-5">
+                      <template x-if="restauracyjne[p.id]">
+                        <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800"
+                             role="group" aria-label="Wersja przepisu">
+                          <button type="button" @click="widok[p.id] = 'podstawowa'"
+                                  :aria-pressed="(widok[p.id] !== 'restauracyjna').toString()"
+                                  class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
+                                  :class="widok[p.id] !== 'restauracyjna'
+                                    ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100'
+                                    : 'text-stone-500 dark:text-stone-400'">Podstawowa</button>
+                          <button type="button" @click="widok[p.id] = 'restauracyjna'"
+                                  :aria-pressed="(widok[p.id] === 'restauracyjna').toString()"
+                                  class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
+                                  :class="widok[p.id] === 'restauracyjna'
+                                    ? 'bg-white text-emerald-700 shadow-sm dark:bg-stone-900 dark:text-emerald-400'
+                                    : 'text-stone-500 dark:text-stone-400'">Restauracyjna</button>
+                        </div>
+                      </template>
+
+                      <template x-if="!restauracyjne[p.id] && !stanAI[p.id]">
+                        <button type="button" @click="ulepsz(p)"
+                                class="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl
+                                       border border-emerald-200 bg-emerald-50 px-4 text-[0.95rem] font-semibold
+                                       text-emerald-800 transition active:bg-emerald-100
+                                       dark:border-emerald-800/50 dark:bg-emerald-400/10 dark:text-emerald-300">
+                          <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg>
+                          Wersja restauracyjna — AI, ok. 10 s
+                        </button>
+                      </template>
+
+                      <template x-if="typeof stanAI[p.id] === 'string'">
+                        <p class="rounded-xl bg-stone-50 px-4 py-3 text-[0.9rem] text-stone-600
+                                  dark:bg-stone-800/60 dark:text-stone-300" aria-live="polite"
+                           x-text="(stanAI[p.id] === 'poprawka' ? 'AI poprawia liczby… ' : 'AI układa wersję restauracyjną… ') + sekundy[p.id] + ' s'"></p>
+                      </template>
+
+                      <template x-if="stanAI[p.id]?.blad">
+                        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.85rem] text-red-800
+                                    dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200">
+                          <p x-text="stanAI[p.id].blad"></p>
+                          <button type="button" @click="ponow(p)"
+                                  class="mt-2 min-h-[2.4rem] font-semibold underline">Spróbuj jeszcze raz</button>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
                   <template x-if="p.kroki?.length">
                     <div>
                       <h3 class="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
-                                 text-emerald-700 dark:text-emerald-400">Jak to zrobić</h3>
+                                 text-emerald-700 dark:text-emerald-400"
+                          x-text="widok[p.id] === 'restauracyjna' ? 'Jak to zrobić — wersja restauracyjna' : 'Jak to zrobić'"></h3>
                       <ol class="mt-2 list-decimal space-y-2 pl-5 text-[1rem] leading-relaxed">
-                        <template x-for="k in p.kroki" :key="k"><li x-text="k"></li></template>
+                        <template x-for="(k, i) in krokiDoPokazania(p)" :key="i"><li x-text="k"></li></template>
                       </ol>
+
+                      <!-- Lista różnicy (decyzja 102): lista zakupów liczy wersję podstawową,
+                           więc tu stoi wprost, co trzeba dokupić. Miejsce na liście zakupów — otwarte. -->
+                      <template x-if="widok[p.id] === 'restauracyjna' && restauracyjne[p.id]">
+                        <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
+                                    dark:bg-amber-400/10 dark:text-amber-200">
+                          <p><span class="font-bold">Dokłada do zakupów:</span>
+                             <span x-text="(restauracyjne[p.id].akcenty || []).map(a => `${a.produkt} ${a.gramy} g`).join(', ') || 'nic — same techniki'"></span>.</p>
+                          <p x-show="restauracyjne[p.id].uwaga" class="mt-1.5 italic" x-text="restauracyjne[p.id].uwaga"></p>
+                        </div>
+                      </template>
                     </div>
                   </template>
 
@@ -270,9 +333,34 @@ import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { opisCzasuDlaSprzetu, czasDlaSprzetu, wymagaWyprzedzenia } from "./czas.js";
 import { kuchniaDania } from "./kuchnie.js";
+import { PRODUKTY } from "./produkty.js";
+import { WYDANIE } from "./wersja.js";
+import { zbudujPromptRestauracyjny, zbudujPoprawkeRestauracyjna } from "./prompt.js";
+import { parsujWersjeRestauracyjna } from "./parser.js";
 
 
 const kodDomu = kodStolu();
+
+/* Ten sam klucz produktu co na ekranie dodawania — inaczej „Sól” z dwóch ekranów
+   wylądowałaby w bazie dwa razy. */
+const slug = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/* Jedno wywołanie funkcji brzegowej — tą samą drogą co dodawanie dania.
+   Odpowiedź czytana najpierw jako tekst: przy przekroczeniu czasu Netlify odsyła HTML. */
+async function zapytajAI(prompt) {
+  const odp = await fetch("/api/zapytaj-ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, kodDomu, obrazy: [] }),
+  });
+  const surowa = await odp.text();
+  let json = null;
+  try { json = JSON.parse(surowa); } catch { /* nie JSON */ }
+  if (!json) throw new Error("AI nie zdążyło odpowiedzieć w wyznaczonym czasie.");
+  if (!odp.ok) throw new Error(json.blad || "Coś poszło nie tak po stronie AI.");
+  return json.tekst;
+}
 
 Alpine.plugin(collapse);
 
@@ -296,6 +384,73 @@ Alpine.data("ekranPrzepisy", () => ({
   laduje: true,
   polubione: [],
   fraza: "",
+
+  /* Wersje restauracyjne: id dania → { kroki, akcenty, uwaga, kiedy }. Jedna gałąź
+     w bazie na stół (`restauracyjne/{id}`) — działa tak samo dla dań startowych
+     (plik statyczny, nie da się dopisać pola) i własnych. */
+  restauracyjne: {},
+  stanAI: {},      // id → "czekam" | "poprawka" | { blad }
+  sekundy: {},     // id → licznik na ekranie
+  widok: {},       // id → "podstawowa" | "restauracyjna"; niezapamiętywany
+  slownik: [],
+
+  krokiDoPokazania(p) {
+    return this.widok[p.id] === "restauracyjna" && this.restauracyjne[p.id]
+      ? this.restauracyjne[p.id].kroki : p.kroki;
+  },
+
+  ponow(p) { delete this.stanAI[p.id]; return this.ulepsz(p); },
+
+  /* Drugie wywołanie (decyzja 103): prompt z wersji podstawowej, sprawdzenie kształtu
+     (109), przy rozjeździe jedna runda poprawki, potem zapis albo „nie udało się”
+     — a wtedy danie zostaje dokładnie takie, jakie było. Każdy etap ma własną nazwę
+     w komunikacie (pułapka 26). */
+  async ulepsz(p) {
+    if (!db) { this.mrugnij?.("Brak internetu — AI nie odpowie."); return; }
+    this.stanAI[p.id] = "czekam";
+    this.sekundy[p.id] = 0;
+    const tyk = setInterval(() => { this.sekundy[p.id] = (this.sekundy[p.id] || 0) + 1; }, 1000);
+    const koniec = (blad) => {
+      clearInterval(tyk);
+      if (blad) this.stanAI[p.id] = { blad: `${blad} (${WYDANIE})` };
+      else delete this.stanAI[p.id];
+    };
+
+    let etap = "pytanie AI";
+    try {
+      const prompt = zbudujPromptRestauracyjny(p, this.slownik);
+      let tekst = await zapytajAI(prompt);
+      etap = "czytanie odpowiedzi";
+      let wynik = parsujWersjeRestauracyjna(tekst, p, this.slownik);
+
+      if (!wynik.ok) {
+        etap = "poprawka AI";
+        this.stanAI[p.id] = "poprawka";
+        tekst = await zapytajAI(zbudujPoprawkeRestauracyjna(prompt, tekst, wynik.bledy));
+        etap = "czytanie poprawki";
+        wynik = parsujWersjeRestauracyjna(tekst, p, this.slownik);
+      }
+      if (!wynik.ok) { koniec(`Nie udało się — AI dwa razy oddało przepis z rozjazdem: ${wynik.bledy[0]}`); return; }
+
+      etap = "zapis nowych produktów";
+      if (wynik.noweProdukty.length) {
+        const zmiany = {};
+        for (const np of wynik.noweProdukty) zmiany[slug(np.n)] = np;
+        await update(ref(db, `domy/${kodDomu}/produktyWlasne`), zmiany);
+        this.slownik = [...this.slownik, ...wynik.noweProdukty];
+      }
+
+      etap = "zapis wersji";
+      const wpis = { kroki: wynik.kroki, akcenty: wynik.akcenty, uwaga: wynik.uwaga || "", kiedy: Date.now() };
+      await set(ref(db, `domy/${kodDomu}/restauracyjne/${p.id}`), wpis);
+      this.restauracyjne[p.id] = wpis;
+      this.widok[p.id] = "restauracyjna";
+      koniec(null);
+      this.mrugnij?.("Wersja restauracyjna gotowa.");
+    } catch (e) {
+      koniec(`Nie udało się (${etap}): ${e.message}`);
+    }
+  },
 
   get widoczne() {
     const f = this.fraza.trim().toLowerCase();
@@ -331,12 +486,16 @@ Alpine.data("ekranPrzepisy", () => ({
     }
 
 
-    const [snapPref, snapWlasne, snapUst] = await Promise.all([
+    const [snapPref, snapWlasne, snapUst, snapRest, snapProd] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/preferencje`)),
       get(ref(db, `domy/${kodDomu}/wlasneDania`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      get(ref(db, `domy/${kodDomu}/restauracyjne`)),
+      get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
     ]);
     this.sprzet = (snapUst.val() || {}).kuchnia || null;
+    this.restauracyjne = snapRest.val() || {};
+    this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
     const preferencje = snapPref.val() || {};
     this.ustawOdblokowanie(stanPoczatkowy(preferencje));
     const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
