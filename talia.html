@@ -33,7 +33,7 @@
 
   <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
               md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
-       aria-label="Nawigacja główna">
+       :aria-label="t('Nawigacja główna')">
     <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
               text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
     <template x-for="z in zakladki" :key="z.id">
@@ -54,7 +54,7 @@
        class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
               transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
       <svg class="ikona"><use href="#i-ustawienia"/></svg>
-      <span>Ustawienia</span>
+      <span x-text="t('Ustawienia')"></span>
     </a>
   </nav>
 
@@ -79,21 +79,21 @@
       <div class="ml-auto flex shrink-0 items-center gap-2">
         <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
               :aria-pressed="ekranSwieci.toString()"
-              :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
-                                       : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+              :aria-label="ekranSwieci ? t('Ekran nie gaśnie. Dotknij, żeby wyłączyć.')
+                                       : t('Ekran gaśnie. Dotknij, żeby świecił.')"
               class="flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
                      text-[0.68rem] font-bold backdrop-blur-md transition"
               :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                   : 'border-white/40 bg-white/15 text-white/90'">
         <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
-        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? t('Świeci') : t('Gaśnie')"></span>
       </button>
         <button type="button" @click="pomocKlucz = 'dania'"
-              aria-label="Jak to działa"
+              :aria-label="t('Jak to działa')"
               class="flex size-11 items-center justify-center rounded-full border
                      border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95">i</button>
-        <a href="ustawienia.html" aria-label="Ustawienia"
+        <a href="ustawienia.html" :aria-label="t('Ustawienia')"
          class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
                 transition active:scale-95">
@@ -133,7 +133,7 @@
           <button type="button" @click="pokazTalie()"
                   class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
                          bg-emerald-700 font-bold text-white transition active:scale-[0.98]
-                         dark:bg-emerald-600">Pokaż dania</button>
+                         dark:bg-emerald-600" x-text="t('Pokaż dania')"></button>
         </section>
 
         <!-- Podpowiedź o dodaniu do ekranu głównego. Pokazuje się od trzeciego
@@ -148,15 +148,11 @@
             <button type="button" x-show="instalacja?.system === 'android' && mamyPropozycje()"
                     @click="zainstalujTeraz()"
                     class="flex min-h-[2.5rem] flex-1 items-center justify-center rounded-xl
-                           bg-emerald-700 px-4 font-bold text-white dark:bg-emerald-600">
-              Dodaj do ekranu
-            </button>
+                           bg-emerald-700 px-4 font-bold text-white dark:bg-emerald-600" x-text="t('Dodaj do ekranu')"></button>
             <button type="button" @click="ukryjInstalacje()"
                     class="flex min-h-[2.5rem] items-center justify-center rounded-xl border-2
                            border-emerald-700/20 px-4 text-[0.82rem] font-semibold
-                           text-stone-600 dark:border-emerald-400/25 dark:text-stone-400">
-              Nie teraz
-            </button>
+                           text-stone-600 dark:border-emerald-400/25 dark:text-stone-400" x-text="t('Nie teraz')"></button>
           </div>
         </div>
 
@@ -195,7 +191,7 @@
                 <!-- Wyjaśnienie pod „i”, bo pełny tekst nie mieści się w jednej linii,
                      a zajmowanie trzech linii na stałe kosztuje więcej, niż daje. -->
                 <button type="button" @click="pomocKlucz = 'dania'"
-                        aria-label="Dlaczego warto przejrzeć więcej dań"
+                        :aria-label="t('Dlaczego warto przejrzeć więcej dań')"
                         class="flex size-8 shrink-0 items-center justify-center rounded-full border
                                border-stone-300 text-[0.82rem] font-bold text-stone-500
                                dark:border-stone-600 dark:text-stone-400">i</button>
@@ -234,7 +230,7 @@
                 <span class="stempel-czasu mt-1 shrink-0"
                       :class="`stempel-czasu--${stanCzasu(danie)}`"
                       x-show="opisCzasu(danie)"><span x-text="minutyCzasu(danie)"></span><span
-                      class="jednostka">min</span></span>
+                      class="jednostka" x-text="t('min')"></span></span>
               </div>
 
               <!-- Kuchnia SŁOWEM, przy każdym daniu (decyzja 68). Flaga wypadła:
@@ -264,18 +260,14 @@
                      danie na dziś, a ono wymagało wczoraj. -->
                 <span x-show="niewykonalne(danie)"
                       class="rounded-full bg-red-50 px-2 py-0.5 text-[0.68rem] font-semibold
-                             text-red-800 dark:bg-red-400/15 dark:text-red-300">
-                  wymaga piekarnika
-                </span>
+                             text-red-800 dark:bg-red-400/15 dark:text-red-300" x-text="t('wymaga piekarnika')"></span>
                 <span x-show="!niewykonalne(danie) && powodyCzasu(danie).length"
                       class="text-[0.68rem] text-stone-400"
                       :title="powodyCzasu(danie).join('; ')"
-                      x-text="`+ ${powodyCzasu(danie).length === 1 ? 'Wasz sprzęt' : 'Wasz sprzęt'}`"></span>
+                      x-text="`+ ${powodyCzasu(danie).length === 1 ? t('Wasz sprzęt') : t('Wasz sprzęt')}`"></span>
                 <span x-show="wymagaWyprzedzenia(danie)"
                       class="rounded-full bg-amber-50 px-2 py-0.5 text-[0.68rem] font-semibold
-                             text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">
-                  zacznij dzień wcześniej
-                </span>
+                             text-amber-800 dark:bg-amber-400/15 dark:text-amber-300" x-text="t('zacznij dzień wcześniej')"></span>
               </p>
 
               <!-- Składniki w dwóch kolumnach od szerokości tabletu — gęściej,
@@ -298,22 +290,20 @@
                  która ma być najczęstsza (link do przepisu albo zdjęcie strony
                  z książki). Człowiek trafiał na wpisywanie gramatury z palca
                  i nie dowiadywał się, że apka umie to zrobić za niego. -->
-            <p class="mt-5 mb-2 text-center text-[0.82rem] text-stone-500 dark:text-stone-400">
-              Nic z tego? Dodajcie swoje dania.
-            </p>
+            <p class="mt-5 mb-2 text-center text-[0.82rem] text-stone-500 dark:text-stone-400" x-text="t('Nic z tego? Dodajcie swoje dania.')"></p>
             <div class="grid grid-cols-2 gap-2.5">
               <a href="dodaj-z-ai.html"
                  class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-emerald-600/40 bg-emerald-50 font-semibold text-emerald-800 no-underline
                         transition active:scale-[0.98] dark:border-emerald-500/30
                         dark:bg-emerald-500/10 dark:text-emerald-300">
-                <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Przez AI
+                <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> <span x-text="t('Przez AI')"></span>
               </a>
               <a href="formularz.html"
                  class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-dashed border-stone-300 font-semibold text-stone-600 no-underline
                         transition active:scale-[0.98] dark:border-stone-700 dark:text-stone-400">
-                <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Ręcznie
+                <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> <span x-text="t('Ręcznie')"></span>
               </a>
             </div>
           </div>
@@ -326,33 +316,29 @@
                         dark:bg-emerald-500/10">
               <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-swieto"/></svg>
             </div>
-            <h2 class="mt-4 text-xl font-bold" x-text="lubiane ? 'To wszystko na teraz' : 'Nic nie trafiło?'"></h2>
+            <h2 class="mt-4 text-xl font-bold" x-text="lubiane ? t('To wszystko na teraz') : t('Nic nie trafiło?')"></h2>
             <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400"
                x-text="lubiane
                  ? `Polubiliście ${lubiane} dań. Wystarczy, żeby ułożyć jadłospis.`
-                 : 'W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.'"></p>
+                 : t('W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.')"></p>
             <a x-show="lubiane" href="jadlospis.html"
                class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
-                      bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600">
-              Ułóż jadłospis
-            </a>
+                      bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600" x-text="t('Ułóż jadłospis')"></a>
             <!-- Zmiana zdania (decyzja 115): gdy wszystko ocenione, karta Dań znika z paska,
                  a to jest jedyna droga, żeby odlubić danie. Ocena nadpisuje poprzednią. -->
             <button type="button" x-show="lubiane" @click="przejrzyjOdNowa()"
                     class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
-                           border-2 border-stone-200 font-bold dark:border-stone-700">
-              Przejrzyj jeszcze raz
-            </button>
+                           border-2 border-stone-200 font-bold dark:border-stone-700" x-text="t('Przejrzyj jeszcze raz')"></button>
             <div x-show="!lubiane" class="mt-5 grid gap-2.5">
               <a href="dodaj-z-ai.html"
                  class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl bg-emerald-700
                         font-bold text-white no-underline dark:bg-emerald-600">
-                <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Dodaj przez AI
+                <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> <span x-text="t('Dodaj przez AI')"></span>
               </a>
               <a href="formularz.html"
                  class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl border-2
                         border-stone-200 font-bold no-underline dark:border-stone-700">
-                <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Wpisz ręcznie
+                <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> <span x-text="t('Wpisz ręcznie')"></span>
               </a>
             </div>
           </div>
@@ -378,27 +364,27 @@
                   class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl border-2
                          border-stone-200 bg-white font-bold text-stone-600 transition active:scale-95
                          dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-            <svg class="ikona ikona-sm"><use href="#i-x"/></svg> Nie lubię
+            <svg class="ikona ikona-sm"><use href="#i-x"/></svg> <span x-text="t('Nie lubię')"></span>
           </button>
           <button type="button" @click="zdecyduj('tak')"
                   class="flex min-h-[3.35rem] items-center justify-center gap-2 rounded-xl
                          bg-emerald-700 font-bold text-white shadow-sm transition active:scale-95
                          dark:bg-emerald-600">
-            <svg class="ikona ikona-sm"><use href="#i-serce"/></svg> Lubię
+            <svg class="ikona ikona-sm"><use href="#i-serce"/></svg> <span x-text="t('Lubię')"></span>
           </button>
         </div>
 
         <button type="button" @click="cofnij()" x-show="historia.length" x-transition.opacity
                 class="mt-2 flex min-h-[2.5rem] w-full items-center justify-center gap-2 rounded-xl
                        text-[0.82rem] font-semibold text-stone-500 dark:text-stone-400">
-          <svg class="ikona ikona-sm"><use href="#i-cofnij"/></svg> Cofnij ostatnią
+          <svg class="ikona ikona-sm"><use href="#i-cofnij"/></svg> <span x-text="t('Cofnij ostatnią')"></span>
         </button>
       </div>
     </div>
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
-         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" :aria-label="t('Nawigacja główna')">
       <div class="mx-auto flex h-16 max-w-lg">
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
@@ -561,6 +547,8 @@ Alpine.data("ekranDania", () => ({
     this.preferencje = snapPref.val() || {};
     this.odswiezPostep();
     this.wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
+    /* Język stołu z bazy — nadpisuje kopię z pamięci telefonu (decyzja 119). */
+    this.przyjmijJezykZeStolu(snapUst.val());
     this.sprzet = (snapUst.val() || {}).kuchnia || null;
 
     /* Jeśli wykluczenia były już ustawione, pomijamy ten krok — nikt nie chce

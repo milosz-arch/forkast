@@ -33,7 +33,7 @@
 
   <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
               md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
-       aria-label="Nawigacja główna">
+       :aria-label="t('Nawigacja główna')">
     <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
               text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
     <template x-for="z in zakladki" :key="z.id">
@@ -54,7 +54,7 @@
        class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
               transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
       <svg class="ikona"><use href="#i-ustawienia"/></svg>
-      <span>Ustawienia</span>
+      <span x-text="t('Ustawienia')"></span>
     </a>
   </nav>
 
@@ -79,21 +79,21 @@
       <div class="ml-auto flex shrink-0 items-center gap-2">
         <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
               :aria-pressed="ekranSwieci.toString()"
-              :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
-                                       : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+              :aria-label="ekranSwieci ? t('Ekran nie gaśnie. Dotknij, żeby wyłączyć.')
+                                       : t('Ekran gaśnie. Dotknij, żeby świecił.')"
               class="flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
                      text-[0.68rem] font-bold backdrop-blur-md transition"
               :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                   : 'border-white/40 bg-white/15 text-white/90'">
         <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
-        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? t('Świeci') : t('Gaśnie')"></span>
       </button>
         <button type="button" @click="pomocKlucz = 'jadlospis'"
-              aria-label="Jak to działa"
+              :aria-label="t('Jak to działa')"
               class="flex size-11 items-center justify-center rounded-full border
                      border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95">i</button>
-        <a href="ustawienia.html" aria-label="Ustawienia"
+        <a href="ustawienia.html" :aria-label="t('Ustawienia')"
          class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
                 transition active:scale-95">
@@ -120,12 +120,12 @@
                          bg-emerald-700 px-3 text-[1rem] font-bold text-white shadow-sm
                          transition active:scale-95 dark:bg-emerald-600">
             <svg class="ikona ikona-sm shrink-0"><use href="#i-iskra"/></svg>
-            <span class="truncate">Ułóż automatycznie</span>
+            <span class="truncate" x-text="t('Ułóż automatycznie')"></span>
           </button>
           <button type="button" @click="wyczysc()"
                   class="min-h-[2.9rem] shrink-0 rounded-xl border-2 border-stone-200 bg-white px-5
                          text-[1rem] font-bold transition active:scale-95
-                         dark:border-stone-700 dark:bg-stone-900">Wyczyść</button>
+                         dark:border-stone-700 dark:bg-stone-900" x-text="t('Wyczyść')"></button>
         </div>
 
         <!-- Uwagi automatu: jedno zbiorcze zamiast sześciu identycznych -->
@@ -173,7 +173,7 @@
                 <span x-show="czyDzis(d.data)"
                       class="shrink-0 rounded-full bg-emerald-600 px-2 py-0.5 text-[0.68rem]
                              font-extrabold uppercase tracking-wider text-white
-                             dark:bg-emerald-500 dark:text-stone-900">dziś</span>
+                             dark:bg-emerald-500 dark:text-stone-900" x-text="t('dziś')"></span>
                 <span class="shrink-0 text-[0.82rem] font-bold tabular-nums"
                       :class="pelnyDzien(d) ? 'text-emerald-700 dark:text-emerald-400'
                                             : 'text-stone-400'"
@@ -189,9 +189,7 @@
                  x-text="podpisLicznika(d)"></p>
 
               <p x-show="!Object.keys(d.posilki).length"
-                 class="text-[0.82rem] italic text-stone-400">
-                Wszystkie posiłki wyłączone tego dnia.
-              </p>
+                 class="text-[0.82rem] italic text-stone-400" x-text="t('Wszystkie posiłki wyłączone tego dnia.')"></p>
 
               <ul class="divide-y divide-stone-100 dark:divide-stone-800">
                 <!-- Wyłączony posiłek ZOSTAJE widoczny, jeśli dom w ogóle taki jada.
@@ -210,7 +208,7 @@
                                    text-stone-300 dark:text-stone-600">
                       <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]"
                             x-text="typ"></span>
-                      <span class="italic"> — wyłączone, dotknij, żeby włączyć —</span>
+                      <span class="italic" x-text="t('— wyłączone, dotknij, żeby włączyć —')"></span>
                     </button>
 
                     <template x-if="d.posilki[typ]">
@@ -240,19 +238,14 @@
                       <!-- Posiłek zaplanowany w wersji restauracyjnej (113) — lista zakupów liczy z niej. -->
                       <span x-show="d.posilki[typ].restauracyjna && !d.posilki[typ].bezSkladnikow"
                             class="ml-1 rounded-full bg-emerald-50 px-1.5 text-[0.68rem] font-bold
-                                   text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300">
-                        restauracyjna
-                      </span>
+                                   text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300" x-text="t('restauracyjna')"></span>
                       <!-- Danie w planie, którego tym sprzętem nie da się zrobić.
                            Lepiej powiedzieć teraz niż przy garnku. -->
                       <span x-show="niewykonalnePosilku(d, typ)"
                             class="ml-1 rounded-full bg-red-50 px-1.5 text-[0.68rem] font-bold
-                                   text-red-800 dark:bg-red-400/15 dark:text-red-300">
-                        bez piekarnika nie zrobisz
-                      </span>
+                                   text-red-800 dark:bg-red-400/15 dark:text-red-300" x-text="t('bez piekarnika nie zrobisz')"></span>
                       <span x-show="!d.posilki[typ].bezSkladnikow && !d.posilki[typ].danie"
-                            class="text-[1rem] italic text-stone-300 dark:text-stone-600">
-                        — dotknij, żeby wybrać —</span>
+                            class="text-[1rem] italic text-stone-300 dark:text-stone-600" x-text="t('— dotknij, żeby wybrać —')"></span>
                     </button>
                     <!-- PTASZEK: ugotowane i zjedzone przeze mnie.
 
@@ -313,14 +306,14 @@
         <a x-show="!laduje" href="zakupy.html"
            class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                   bg-emerald-700 font-bold text-white no-underline md:max-w-md dark:bg-emerald-600">
-          <svg class="ikona ikona-sm"><use href="#i-zakupy"/></svg> Zobacz listę zakupów
+          <svg class="ikona ikona-sm"><use href="#i-zakupy"/></svg> <span x-text="t('Zobacz listę zakupów')"></span>
         </a>
       </div>
     </main>
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
-         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" :aria-label="t('Nawigacja główna')">
       <div class="mx-auto flex h-16 max-w-lg">
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
@@ -368,7 +361,7 @@
                     dark:border-stone-800 dark:bg-stone-900">
           <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                     text-emerald-700 dark:text-emerald-400"
-             x-text="`Składniki na ${przepis.ileOsob} ${przepis.ileOsob === 1 ? 'osobę' : 'osoby'}`"></p>
+             x-text="`Składniki na ${przepis.ileOsob} ${przepis.ileOsob === 1 ? t('osobę') : 'osoby'}`"></p>
           <ul class="mt-2">
             <template x-for="s in skladDoPokazania(przepis.danie, przepis.wsp)" :key="s.produkt">
               <li class="flex justify-between py-1 text-[1rem] text-stone-600 dark:text-stone-400">
@@ -389,19 +382,19 @@
           <div class="mt-3">
             <template x-if="maWersje(przepis.danie)">
               <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1 dark:bg-stone-800"
-                   role="group" aria-label="Wersja przepisu">
+                   role="group" :aria-label="t('Wersja przepisu')">
                 <button type="button" @click="wybierzWersje(false)"
                         :aria-pressed="(widok[przepis.danie.id] !== 'restauracyjna').toString()"
                         class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                         :class="widok[przepis.danie.id] !== 'restauracyjna'
                           ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100'
-                          : 'text-stone-500 dark:text-stone-400'">Podstawowa</button>
+                          : 'text-stone-500 dark:text-stone-400'" x-text="t('Podstawowa')"></button>
                 <button type="button" @click="wybierzWersje(true)"
                         :aria-pressed="(widok[przepis.danie.id] === 'restauracyjna').toString()"
                         class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                         :class="widok[przepis.danie.id] === 'restauracyjna'
                           ? 'bg-white text-emerald-700 shadow-sm dark:bg-stone-900 dark:text-emerald-400'
-                          : 'text-stone-500 dark:text-stone-400'">Restauracyjna</button>
+                          : 'text-stone-500 dark:text-stone-400'" x-text="t('Restauracyjna')"></button>
               </div>
             </template>
             <template x-if="!maWersje(przepis.danie) && !stanAI[przepis.danie.id]">
@@ -411,20 +404,20 @@
                              text-emerald-800 transition active:bg-emerald-100
                              dark:border-emerald-800/50 dark:bg-emerald-400/10 dark:text-emerald-300">
                 <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg>
-                Wersja restauracyjna — AI, ok. 10 s
+                <span x-text="t('Wersja restauracyjna — AI, ok. 10 s')"></span>
               </button>
             </template>
             <template x-if="typeof stanAI[przepis.danie.id] === 'string'">
               <p class="rounded-xl bg-stone-100 px-4 py-3 text-[0.9rem] text-stone-600
                         dark:bg-stone-800/60 dark:text-stone-300" aria-live="polite"
-                 x-text="(stanAI[przepis.danie.id] === 'poprawka' ? 'AI poprawia liczby… ' : 'AI układa wersję restauracyjną… ') + sekundy[przepis.danie.id] + ' s'"></p>
+                 x-text="(stanAI[przepis.danie.id] === 'poprawka' ? t('AI poprawia liczby… ') : t('AI układa wersję restauracyjną… ')) + sekundy[przepis.danie.id] + ' s'"></p>
             </template>
             <template x-if="stanAI[przepis.danie.id]?.blad">
               <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.85rem] text-red-800
                           dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200">
                 <p x-text="stanAI[przepis.danie.id].blad"></p>
                 <button type="button" @click="ponow(przepis.danie)"
-                        class="mt-2 min-h-[2.4rem] font-semibold underline">Spróbuj jeszcze raz</button>
+                        class="mt-2 min-h-[2.4rem] font-semibold underline" x-text="t('Spróbuj jeszcze raz')"></button>
               </div>
             </template>
           </div>
@@ -435,16 +428,16 @@
                     dark:border-stone-800 dark:bg-stone-900">
           <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                     text-emerald-700 dark:text-emerald-400"
-             x-text="widok[przepis.danie.id] === 'restauracyjna' ? 'Jak to zrobić — wersja restauracyjna' : 'Jak to zrobić'"></p>
+             x-text="widok[przepis.danie.id] === 'restauracyjna' ? t('Jak to zrobić — wersja restauracyjna') : t('Jak to zrobić')"></p>
           <ol class="mt-2 list-decimal space-y-2.5 pl-5 text-[1rem] leading-relaxed">
             <template x-for="(k, i) in krokiDoPokazania(przepis.danie)" :key="i"><li x-text="k"></li></template>
           </ol>
           <template x-if="widok[przepis.danie.id] === 'restauracyjna' && maWersje(przepis.danie)">
             <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
                         dark:bg-amber-400/10 dark:text-amber-200">
-              <p><span class="font-bold">Względem podstawowej:</span>
+              <p><span class="font-bold" x-text="t('Względem podstawowej:')"></span>
                  <span x-text="roznicaSkladu(przepis.danie, przepis.wsp)"></span>.</p>
-              <p class="mt-1.5 font-semibold">Ten posiłek jest zaplanowany w wersji restauracyjnej — lista zakupów liczy z tego składu.</p>
+              <p class="mt-1.5 font-semibold" x-text="t('Ten posiłek jest zaplanowany w wersji restauracyjnej — lista zakupów liczy z tego składu.')"></p>
               <p x-show="restauracyjne[przepis.danie.id].uwaga" class="mt-1.5 italic"
                  x-text="restauracyjne[przepis.danie.id].uwaga"></p>
             </div>
@@ -453,17 +446,15 @@
 
         <p x-show="!przepis.danie.kroki?.length"
            class="mt-3 rounded-2xl bg-stone-100 px-4 py-3 text-[0.82rem] italic text-stone-500
-                  dark:bg-stone-800/60 dark:text-stone-400">
-          To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.
-        </p>
+                  dark:bg-stone-800/60 dark:text-stone-400" x-text="t('To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.')"></p>
 
         <div class="mt-4 grid grid-cols-2 gap-2.5">
           <button type="button" @click="zmienZPrzepisu()"
                   class="min-h-[2.9rem] rounded-xl border-2 border-stone-200 bg-white font-bold
-                         dark:border-stone-700 dark:bg-stone-900">Zmień danie</button>
+                         dark:border-stone-700 dark:bg-stone-900" x-text="t('Zmień danie')"></button>
           <button type="button" @click="przepis = null"
                   class="min-h-[2.9rem] rounded-xl bg-emerald-700 font-bold text-white
-                         dark:bg-emerald-600">Zamknij</button>
+                         dark:bg-emerald-600" x-text="t('Zamknij')"></button>
         </div>
       </div>
     </template>
@@ -482,9 +473,7 @@
     <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700"></div>
     <h3 class="mb-3 text-lg font-bold" x-text="arkusz ? `${arkusz.typ} — ${podpisDnia(arkusz.dzien.data)}` : ''"></h3>
 
-    <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.82rem] text-stone-500">
-      Nie masz polubionego dania, które pasuje na ten posiłek.
-    </p>
+    <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.82rem] text-stone-500" x-text="t('Nie masz polubionego dania, które pasuje na ten posiłek.')"></p>
 
     <template x-for="d in pasujaceDania" :key="d.id">
       <button type="button" @click="wybierzDanie(d)"
@@ -492,25 +481,25 @@
                      border-stone-100 bg-white px-4 py-3 text-left transition
                      active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
         <span class="font-medium" x-text="d.nazwa"></span>
-        <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="d.skladniki.length + ' składników'"></span>
+        <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="d.skladniki.length + t(' składników')"></span>
       </button>
     </template>
 
     <p class="mb-2 mt-4 ml-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
-              text-stone-400">Bez gotowania</p>
+              text-stone-400" x-text="t('Bez gotowania')"></p>
     <template x-for="p in BEZ_SKLADNIKOW" :key="p.etykieta">
       <button type="button" @click="wybierzBez(p)"
               class="mb-2 flex min-h-[2.9rem] w-full flex-col justify-center rounded-xl border
                      border-stone-100 bg-white px-4 py-3 text-left transition
                      active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
         <span class="font-medium" x-text="p.etykieta"></span>
-        <span class="mt-0.5 text-[0.82rem] text-stone-400">nie wchodzi do listy zakupów</span>
+        <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="t('nie wchodzi do listy zakupów')"></span>
       </button>
     </template>
 
     <button type="button" @click="zamknijArkusz()"
             class="mt-2 min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white font-bold
-                   dark:border-stone-700 dark:bg-stone-900">Zamknij</button>
+                   dark:border-stone-700 dark:bg-stone-900" x-text="t('Zamknij')"></button>
   </div>
 </div>
 
@@ -663,6 +652,8 @@ Alpine.data("ekranJadlospis", () => ({
     this.wszystkieDania = [...TALIA_STARTOWA, ...wlasne];
     this.polubione = this.wszystkieDania.filter(d => preferencje[d.id] === "lubie");
     this.ustawienia = snapUst.val() || {};
+    /* Język stołu z bazy — nadpisuje kopię z pamięci telefonu (decyzja 119). */
+    this.przyjmijJezykZeStolu(snapUst.val());
     this.sprzet = this.ustawienia.kuchnia || null;
     this.ustawOdblokowanie(stanPoczatkowy(preferencje, snapWykl.val() || []));
 

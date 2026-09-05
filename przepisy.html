@@ -33,7 +33,7 @@
 
   <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
               md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
-       aria-label="Nawigacja główna">
+       :aria-label="t('Nawigacja główna')">
     <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
               text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
     <template x-for="z in zakladki" :key="z.id">
@@ -54,7 +54,7 @@
        class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
               transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
       <svg class="ikona"><use href="#i-ustawienia"/></svg>
-      <span>Ustawienia</span>
+      <span x-text="t('Ustawienia')"></span>
     </a>
   </nav>
 
@@ -79,21 +79,21 @@
       <div class="ml-auto flex shrink-0 items-center gap-2">
         <button type="button" x-show="ekranObslugiwany" @click="przelaczEkran()"
               :aria-pressed="ekranSwieci.toString()"
-              :aria-label="ekranSwieci ? 'Ekran nie gaśnie. Dotknij, żeby wyłączyć.'
-                                       : 'Ekran gaśnie. Dotknij, żeby świecił.'"
+              :aria-label="ekranSwieci ? t('Ekran nie gaśnie. Dotknij, żeby wyłączyć.')
+                                       : t('Ekran gaśnie. Dotknij, żeby świecił.')"
               class="flex min-h-[2.5rem] items-center gap-1.5 rounded-full border px-3
                      text-[0.68rem] font-bold backdrop-blur-md transition"
               :class="ekranSwieci ? 'border-white bg-white text-emerald-800'
                                   : 'border-white/40 bg-white/15 text-white/90'">
         <svg class="ikona ikona-sm"><use :href="ekranSwieci ? '#i-slonce' : '#i-ksiezyc'"/></svg>
-        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? 'Świeci' : 'Gaśnie'"></span>
+        <span class="hidden min-[380px]:inline" x-text="ekranSwieci ? t('Świeci') : t('Gaśnie')"></span>
       </button>
         <button type="button" @click="pomocKlucz = 'przepisy'"
-              aria-label="Jak to działa"
+              :aria-label="t('Jak to działa')"
               class="flex size-11 items-center justify-center rounded-full border
                      border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95">i</button>
-        <a href="ustawienia.html" aria-label="Ustawienia"
+        <a href="ustawienia.html" :aria-label="t('Ustawienia')"
          class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
                 transition active:scale-95">
@@ -117,18 +117,18 @@
           <a href="dodaj-z-ai.html"
              class="flex min-h-[3.15rem] items-center justify-center gap-2 rounded-xl bg-emerald-700
                     font-bold text-white no-underline transition active:scale-[0.98] dark:bg-emerald-600">
-            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Dodaj przez AI
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> <span x-text="t('Dodaj przez AI')"></span>
           </a>
           <a href="formularz.html"
              class="flex min-h-[3.15rem] items-center justify-center gap-2 rounded-xl border-2
                     border-stone-200 bg-white font-bold no-underline transition active:scale-[0.98]
                     dark:border-stone-700 dark:bg-stone-900">
-            <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Wpisz ręcznie
+            <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> <span x-text="t('Wpisz ręcznie')"></span>
           </a>
         </div>
 
-        <label for="szukaj" class="sr-only">Szukaj dania</label>
-        <input id="szukaj" type="search" x-model="fraza" placeholder="Szukaj dania…"
+        <label for="szukaj" class="sr-only" x-text="t('Szukaj dania')"></label>
+        <input id="szukaj" type="search" x-model="fraza" :placeholder="t('Szukaj dania…')"
                x-show="!laduje && polubione.length"
                class="mb-4 min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                       text-[17px] outline-none transition focus:border-emerald-600
@@ -149,20 +149,15 @@
         <div x-show="!laduje && !polubione.length" x-transition
              class="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
-          <p class="text-stone-500 dark:text-stone-400">
-            Nie masz jeszcze polubionych dań. Przejrzyj Dania — przepisy pojawią się tutaj same.
-          </p>
+          <p class="text-stone-500 dark:text-stone-400" x-text="t('Nie masz jeszcze polubionych dań. Przejrzyj Dania — przepisy pojawią się tutaj same.')"></p>
           <a href="talia.html" class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center
-             rounded-xl bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600">
-            Przejdź do dań</a>
+             rounded-xl bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600" x-text="t('Przejdź do dań')"></a>
           <a href="dodaj-z-ai.html" class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center
              gap-2 rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700">
-            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Albo dodaj własny przepis</a>
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> <span x-text="t('Albo dodaj własny przepis')"></span></a>
         </div>
 
-        <p x-show="!laduje && polubione.length && !widoczne.length" class="py-10 text-center text-stone-400">
-          Nic takiego nie masz.
-        </p>
+        <p x-show="!laduje && polubione.length && !widoczne.length" class="py-10 text-center text-stone-400" x-text="t('Nic takiego nie masz.')"></p>
 
         <!-- Dwie kolumny na szerokim ekranie: przepisy różnią się długością,
              więc kolumny CSS układają je ciaśniej niż siatka. -->
@@ -179,7 +174,7 @@
                   </span>
                   <span class="mt-0.5 block text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                                text-emerald-700 dark:text-emerald-400"
-                        x-text="p.typy.join(' · ') + ' · na ' + p.porcje + ' os. · ' + opisCzasu(p)"></span>
+                        x-text="p.typy.join(' · ') + t(' · na ') + p.porcje + t(' os. · ') + opisCzasu(p)"></span>
                 </span>
                 <svg class="ikona ikona-sm shrink-0 text-stone-400 transition-transform"
                      :class="otwarty ? 'rotate-180' : ''"><use href="#i-strzalka"/></svg>
@@ -212,19 +207,19 @@
                     <div class="mt-5">
                       <template x-if="maWersje(p)">
                         <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800"
-                             role="group" aria-label="Wersja przepisu">
+                             role="group" :aria-label="t('Wersja przepisu')">
                           <button type="button" @click="widok[p.id] = 'podstawowa'"
                                   :aria-pressed="(widok[p.id] !== 'restauracyjna').toString()"
                                   class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                                   :class="widok[p.id] !== 'restauracyjna'
                                     ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100'
-                                    : 'text-stone-500 dark:text-stone-400'">Podstawowa</button>
+                                    : 'text-stone-500 dark:text-stone-400'" x-text="t('Podstawowa')"></button>
                           <button type="button" @click="widok[p.id] = 'restauracyjna'"
                                   :aria-pressed="(widok[p.id] === 'restauracyjna').toString()"
                                   class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                                   :class="widok[p.id] === 'restauracyjna'
                                     ? 'bg-white text-emerald-700 shadow-sm dark:bg-stone-900 dark:text-emerald-400'
-                                    : 'text-stone-500 dark:text-stone-400'">Restauracyjna</button>
+                                    : 'text-stone-500 dark:text-stone-400'" x-text="t('Restauracyjna')"></button>
                         </div>
                       </template>
 
@@ -235,14 +230,14 @@
                                        text-emerald-800 transition active:bg-emerald-100
                                        dark:border-emerald-800/50 dark:bg-emerald-400/10 dark:text-emerald-300">
                           <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg>
-                          Wersja restauracyjna — AI, ok. 10 s
+                          <span x-text="t('Wersja restauracyjna — AI, ok. 10 s')"></span>
                         </button>
                       </template>
 
                       <template x-if="typeof stanAI[p.id] === 'string'">
                         <p class="rounded-xl bg-stone-50 px-4 py-3 text-[0.9rem] text-stone-600
                                   dark:bg-stone-800/60 dark:text-stone-300" aria-live="polite"
-                           x-text="(stanAI[p.id] === 'poprawka' ? 'AI poprawia liczby… ' : 'AI układa wersję restauracyjną… ') + sekundy[p.id] + ' s'"></p>
+                           x-text="(stanAI[p.id] === 'poprawka' ? t('AI poprawia liczby… ') : t('AI układa wersję restauracyjną… ')) + sekundy[p.id] + ' s'"></p>
                       </template>
 
                       <template x-if="stanAI[p.id]?.blad">
@@ -250,7 +245,7 @@
                                     dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200">
                           <p x-text="stanAI[p.id].blad"></p>
                           <button type="button" @click="ponow(p)"
-                                  class="mt-2 min-h-[2.4rem] font-semibold underline">Spróbuj jeszcze raz</button>
+                                  class="mt-2 min-h-[2.4rem] font-semibold underline" x-text="t('Spróbuj jeszcze raz')"></button>
                         </div>
                       </template>
                     </div>
@@ -260,7 +255,7 @@
                     <div>
                       <h3 class="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                                  text-emerald-700 dark:text-emerald-400"
-                          x-text="widok[p.id] === 'restauracyjna' ? 'Jak to zrobić — wersja restauracyjna' : 'Jak to zrobić'"></h3>
+                          x-text="widok[p.id] === 'restauracyjna' ? t('Jak to zrobić — wersja restauracyjna') : t('Jak to zrobić')"></h3>
                       <ol class="mt-2 list-decimal space-y-2 pl-5 text-[1rem] leading-relaxed">
                         <template x-for="(k, i) in krokiDoPokazania(p)" :key="i"><li x-text="k"></li></template>
                       </ol>
@@ -270,7 +265,7 @@
                       <template x-if="widok[p.id] === 'restauracyjna' && maWersje(p)">
                         <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
                                     dark:bg-amber-400/10 dark:text-amber-200">
-                          <p><span class="font-bold">Względem podstawowej:</span>
+                          <p><span class="font-bold" x-text="t('Względem podstawowej:')"></span>
                              <span x-text="roznicaSkladu(p)"></span>.</p>
                           <p x-show="restauracyjne[p.id].uwaga" class="mt-1.5 italic" x-text="restauracyjne[p.id].uwaga"></p>
                         </div>
@@ -282,9 +277,7 @@
                        ich nie mają i to jest w porządku — trzeba to tylko powiedzieć. -->
                   <p x-show="!p.kroki?.length"
                      class="mt-4 rounded-xl bg-stone-50 px-4 py-3 text-[0.82rem] italic text-stone-500
-                            dark:bg-stone-800/60 dark:text-stone-400">
-                    To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.
-                  </p>
+                            dark:bg-stone-800/60 dark:text-stone-400" x-text="t('To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.')"></p>
                 </div>
               </div>
             </article>
@@ -295,7 +288,7 @@
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
-         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" :aria-label="t('Nawigacja główna')">
       <div class="mx-auto flex h-16 max-w-lg">
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
@@ -405,6 +398,8 @@ Alpine.data("ekranPrzepisy", () => ({
       get(ref(db, `domy/${kodDomu}/wykluczenia`)),
       this.wczytajRestauracyjne(fb, kodDomu),
     ]);
+    /* Język stołu z bazy — nadpisuje kopię z pamięci telefonu (decyzja 119). */
+    this.przyjmijJezykZeStolu(snapUst.val());
     this.sprzet = (snapUst.val() || {}).kuchnia || null;
     const preferencje = snapPref.val() || {};
     this.ustawOdblokowanie(stanPoczatkowy(preferencje, snapWykl.val() || []));

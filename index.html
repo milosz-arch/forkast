@@ -41,11 +41,11 @@
          konfigurację, mimo że nie miał już nic do konfigurowania. Miłosz: „musi być
          po prostu coś typu siemanko Miłosz i przejdź do aplikacji”. -->
     <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight"
-        x-text="wraca ? (ja ? `Cześć, ${imieMoje}` : 'Witaj z powrotem') : 'Cześć, tu Forkast'"></h1>
+        x-text="wraca ? (ja ? `Cześć, ${imieMoje}` : t('Witaj z powrotem')) : t('Cześć, tu Forkast')"></h1>
     <p class="mx-auto mt-2 max-w-[34ch] text-[1rem] leading-snug text-white/85"
        x-text="wraca
-         ? 'Wasz stół jest nakryty. Wchodzisz i planujecie dalej.'
-         : 'Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?'"></p>
+         ? t('Wasz stół jest nakryty. Wchodzisz i planujecie dalej.')
+         : t('Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?')"></p>
   </header>
 
   <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-6"
@@ -54,31 +54,48 @@
 
       <!-- ================= START ================= -->
       <section x-show="krok === 'start'" x-transition class="space-y-3">
+        <!-- PYTANIE O JĘZYK PRZY PIERWSZYM WEJŚCIU (decyzja 117).
+             Nie zgadujemy z ustawień telefonu — Polak z angielskim systemem
+             dostałby angielski stół i nie wiedziałby czemu. Pytanie stoi NAD
+             przyciskami, bo od odpowiedzi zależy, w jakim języku są te przyciski.
+             Dosiadający się dostanie i tak język stołu, do którego wchodzi. -->
+        <div class="flex items-center justify-center gap-2 pb-1" role="group"
+             :aria-label="t('Language / Język')">
+          <template x-for="j in jezyki" :key="j.id">
+            <button type="button" @click="ustawJezyk(j.id)"
+                    :aria-pressed="(jezyk === j.id).toString()"
+                    class="min-h-[2.5rem] rounded-full border-2 px-4 text-[0.9rem] font-semibold transition active:scale-95"
+                    :class="jezyk === j.id
+                      ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                      : 'border-stone-200 text-stone-500 dark:border-stone-700 dark:text-stone-400'">
+              <span x-text="j.wlasna"></span>
+            </button>
+          </template>
+        </div>
+
         <button type="button" @click="nowyStol()" :disabled="zajety"
                 class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
                        text-[1rem] font-bold text-white transition active:scale-[0.98]
                        disabled:opacity-50 dark:bg-emerald-600"
-                x-text="zajety ? 'Zakładam…' : 'Nakrywam nowy stół'"></button>
+                x-text="zajety ? t('Zakładam…') : t('Nakrywam nowy stół')"></button>
 
         <button type="button" @click="krok = 'kod'"
                 class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl border-2
                        border-stone-200 bg-white text-[1rem] font-bold transition active:scale-[0.98]
-                       dark:border-stone-700 dark:bg-stone-900">Dosiadam się — mam kod</button>
+                       dark:border-stone-700 dark:bg-stone-900" x-text="t('Dosiadam się — mam kod')"></button>
 
         <p class="pt-3 text-[0.82rem] italic leading-relaxed text-stone-500 dark:text-stone-400">
-          Forkast zapisuje tylko to, co sam wpiszesz: imiona albo pseudonimy osób przy stole,
-          czego nie jecie i jakie dania lubicie. Dane leżą w bazie Google (Firebase) i możesz
-          je skasować jednym przyciskiem w każdej chwili.
+          <span x-text="t('Forkast zapisuje tylko to, co sam wpiszesz: imiona albo pseudonimy osób przy stole, czego nie jecie i jakie dania lubicie. Dane leżą w bazie Google (Firebase) i możesz je skasować jednym przyciskiem w każdej chwili.')"></span>
           <a href="mailto:buskomilosz@gmail.com?subject=Forkast%20%E2%80%94%20co%C5%9B%20nie%20dzia%C5%82a"
-             class="text-emerald-700 underline underline-offset-2 dark:text-emerald-400">Coś nie działa? Napisz do mnie</a>
+             class="text-emerald-700 underline underline-offset-2 dark:text-emerald-400" x-text="t('Coś nie działa? Napisz do mnie')"></a>
         </p>
       </section>
 
       <!-- ================= WPISANIE KODU ================= -->
       <section x-show="krok === 'kod'" x-transition class="space-y-3">
-        <label for="poleKodu" class="block text-[1rem] font-semibold">Kod stołu</label>
+        <label for="poleKodu" class="block text-[1rem] font-semibold" x-text="t('Kod stołu')"></label>
         <input id="poleKodu" type="text" x-model="wpisanyKod" maxlength="8" autocomplete="off"
-               autocapitalize="characters" placeholder="np. NH7XOO"
+               autocapitalize="characters" :placeholder="t('np. NH7XOO')"
                class="min-h-[3.15rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                       text-center text-[1.45rem] font-bold tracking-[0.2em] uppercase outline-none
                       transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15
@@ -92,10 +109,10 @@
                 class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
                        font-bold text-white transition active:scale-[0.98] disabled:opacity-50
                        dark:bg-emerald-600"
-                x-text="sprawdzam ? 'Sprawdzam…' : 'Dołącz'"></button>
+                x-text="sprawdzam ? t('Sprawdzam…') : t('Dołącz')"></button>
         <button type="button" @click="krok = 'start'; bladKodu = ''"
                 class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
-                       text-stone-500 dark:text-stone-400">Wróć</button>
+                       text-stone-500 dark:text-stone-400" x-text="t('Wróć')"></button>
       </section>
 
       <!-- ================= OSOBY PRZY STOLE ================= -->
@@ -111,16 +128,14 @@
           <a href="talia.html"
              class="flex min-h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl
                     bg-emerald-700 text-[1.1rem] font-bold text-white no-underline
-                    transition active:scale-[0.98] dark:bg-emerald-600">
-            Przejdź do aplikacji
-          </a>
+                    transition active:scale-[0.98] dark:bg-emerald-600" x-text="t('Przejdź do aplikacji')"></a>
           <button type="button" @click="pokazUstawieniaStolu = !pokazUstawieniaStolu"
                   :aria-expanded="pokazUstawieniaStolu.toString()"
                   class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
                          font-semibold text-stone-500 dark:text-stone-400"
                   x-text="pokazUstawieniaStolu
-                    ? 'Schowaj ustawienia stołu'
-                    : 'Kod stołu, osoby przy stole'"></button>
+                    ? t('Schowaj ustawienia stołu')
+                    : t('Kod stołu, osoby przy stole')"></button>
         </div>
 
         <!-- Konfiguracja: zawsze widoczna przy pierwszym wejściu, u wracającego
@@ -133,7 +148,7 @@
                     dark:border-emerald-500/20 dark:bg-emerald-500/10">
           <div class="flex items-center gap-4">
             <div class="min-w-0 flex-1">
-              <p class="text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400">Kod tego stołu</p>
+              <p class="text-[0.82rem] font-semibold text-stone-600 dark:text-stone-400" x-text="t('Kod tego stołu')"></p>
               <p class="zaznaczalne mt-0.5 text-[1.45rem] font-bold tracking-[0.22em] text-emerald-800
                         dark:text-emerald-300" x-text="kodDomu"></p>
               <p x-show="smacznyKod" class="mt-1 text-[0.82rem] font-semibold text-emerald-700
@@ -143,16 +158,12 @@
                     class="flex min-h-[2.5rem] shrink-0 items-center rounded-xl border-2
                            border-emerald-700/20 bg-white px-4 text-[0.82rem] font-bold text-emerald-800
                            transition active:scale-95 dark:border-emerald-400/30 dark:bg-stone-900
-                           dark:text-emerald-300">Kopiuj</button>
+                           dark:text-emerald-300" x-text="t('Kopiuj')"></button>
           </div>
-          <p class="mt-3 text-[0.82rem] text-stone-600 dark:text-stone-400">
-            Podaj go tym, którzy siadają z Wami do stołu. Zapisz, zanim zamkniesz kartę.
-          </p>
+          <p class="mt-3 text-[0.82rem] text-stone-600 dark:text-stone-400" x-text="t('Podaj go tym, którzy siadają z Wami do stołu. Zapisz, zanim zamkniesz kartę.')"></p>
         </div>
 
-        <p class="text-[1rem] text-stone-600 dark:text-stone-400">
-          Kto siada do stołu? Dodaj przynajmniej siebie — resztę możesz dopisać kiedy chcesz.
-        </p>
+        <p class="text-[1rem] text-stone-600 dark:text-stone-400" x-text="t('Kto siada do stołu? Dodaj przynajmniej siebie — resztę możesz dopisać kiedy chcesz.')"></p>
 
         <ul class="space-y-2">
           <template x-for="d in domownicy" :key="d.id">
@@ -187,14 +198,14 @@
         </ul>
 
         <div class="flex gap-2">
-          <input type="text" x-model="noweImie" placeholder="Imię lub pseudonim" autocomplete="off"
+          <input type="text" x-model="noweImie" :placeholder="t('Imię lub pseudonim')" autocomplete="off"
                  @keydown.enter="dodaj()"
                  class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
                         text-[17px] outline-none transition focus:border-emerald-600
                         dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
           <button type="button" @click="dodaj()"
                   class="min-h-[2.9rem] shrink-0 rounded-xl bg-emerald-700 px-6 font-bold text-white
-                         transition active:scale-95 dark:bg-emerald-600">Dodaj</button>
+                         transition active:scale-95 dark:bg-emerald-600" x-text="t('Dodaj')"></button>
         </div>
 
         <p x-show="bladOsoby" class="text-[0.82rem] text-red-700 dark:text-red-400" x-text="bladOsoby"></p>
@@ -209,11 +220,8 @@
         <div x-show="domownicy.length > 1" x-transition
              class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
-          <p class="text-[1rem] font-bold">Który z Was to Ty?</p>
-          <p class="mt-1 text-[0.82rem] leading-snug text-stone-500 dark:text-stone-400">
-            Tylko na tym telefonie. Plan i lista zakupów są wspólne — to potrzebne po to,
-            żeby kalorie liczyły się Tobie, a nie całemu stołowi.
-          </p>
+          <p class="text-[1rem] font-bold" x-text="t('Który z Was to Ty?')"></p>
+          <p class="mt-1 text-[0.82rem] leading-snug text-stone-500 dark:text-stone-400" x-text="t('Tylko na tym telefonie. Plan i lista zakupów są wspólne — to potrzebne po to, żeby kalorie liczyły się Tobie, a nie całemu stołowi.')"></p>
           <div class="mt-3 flex flex-wrap gap-2">
             <template x-for="d in domownicy" :key="d.id">
               <button type="button" @click="wybierzSiebie(d.id)"
@@ -231,19 +239,13 @@
 
         <a href="talia.html" x-show="domownicy.length && !wraca"
            class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
-                  text-[1rem] font-bold text-white no-underline dark:bg-emerald-600">
-          Dalej — wybierz dania
-        </a>
-        <p x-show="!domownicy.length" class="text-center text-[0.82rem] text-stone-400">
-          Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.
-        </p>
+                  text-[1rem] font-bold text-white no-underline dark:bg-emerald-600" x-text="t('Dalej — wybierz dania')"></a>
+        <p x-show="!domownicy.length" class="text-center text-[0.82rem] text-stone-400" x-text="t('Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.')"></p>
 
         <div class="pt-2">
           <button type="button" @click="zapomnij()"
                   class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
-                         text-stone-500 dark:text-stone-400">
-            To nie mój stół — zacznij od nowa
-          </button>
+                         text-stone-500 dark:text-stone-400" x-text="t('To nie mój stół — zacznij od nowa')"></button>
         </div>
       </section>
     </div>
@@ -354,6 +356,12 @@ Alpine.data("ekranWejscie", () => ({
     const trafione = SMACZNE.find(w => kod.includes(w));
     this.smacznyKod = trafione ? `Twój kod ma w środku „${trafione}”. Dobry znak.` : "";
     this.krok = "osoby";
+    /* Stół, do którego wchodzę, ma już swój język — mój wybór z poprzedniego
+       ekranu nie ma prawa go zmienić (decyzja 119). Osobny odczyt, bo ten
+       ekran nie czytał ustawień w ogóle. */
+    get(ref(db, `domy/${kod}/ustawienia`))
+      .then(snap => this.przyjmijJezykZeStolu(snap.val()))
+      .catch(e => console.warn("Nie udało się odczytać języka stołu:", e));
     onValue(ref(db, `domy/${kod}/domownicy`), snap => {
       this.domownicy = Object.entries(snap.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
       /* Jeśli mnie ktoś usunął ze stołu z drugiego telefonu, wybór przestaje
@@ -387,6 +395,9 @@ Alpine.data("ekranWejscie", () => ({
         return;
       }
       await set(ref(db, `domy/${kod}/utworzono`), Date.now());
+      /* Język wybrany na tym ekranie staje się językiem stołu. Obiektem,
+         nie wartością prostą — pułapki 2 i 3. */
+      await set(ref(db, `domy/${kod}/ustawienia`), { jezyk: this.jezyk });
       localStorage.setItem("forkast-dom", kod);
       this.wejdz(kod);
     } catch {

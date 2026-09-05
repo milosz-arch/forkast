@@ -32,7 +32,7 @@
 
   <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
               md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
-       aria-label="Nawigacja główna">
+       :aria-label="t('Nawigacja główna')">
     <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
               text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
     <template x-for="z in zakladki" :key="z.id">
@@ -50,7 +50,7 @@
        class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
               transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
       <svg class="ikona"><use href="#i-ustawienia"/></svg>
-      <span>Ustawienia</span>
+      <span x-text="t('Ustawienia')"></span>
     </a>
   </nav>
 
@@ -73,7 +73,7 @@
     <div class="flex min-h-[2.75rem] items-center gap-2">
       <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
       <div class="ml-auto flex shrink-0 items-center gap-2">
-        <a href="ustawienia.html" aria-label="Ustawienia"
+        <a href="ustawienia.html" :aria-label="t('Ustawienia')"
          class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
                 transition active:scale-95">
@@ -81,10 +81,8 @@
       </a>
       </div>
     </div>
-      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj danie</h1>
-      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85">
-        Bez AI — po prostu to, co i tak gotujecie.
-      </p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="t('Dodaj danie')"></h1>
+      <p class="mt-1 max-w-[36ch] text-[0.82rem] leading-snug text-white/85" x-text="t('Bez AI — po prostu to, co i tak gotujecie.')"></p>
     </header>
 
     <main class="plynne bez-paska min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-5 md:px-8"
@@ -95,7 +93,7 @@
         <div x-show="!zapisane" x-transition class="space-y-5">
 
           <div>
-            <label for="nazwa" class="mb-2 block text-[1rem] font-semibold">Nazwa dania</label>
+            <label for="nazwa" class="mb-2 block text-[1rem] font-semibold" x-text="t('Nazwa dania')"></label>
             <input id="nazwa" type="text" x-model="nazwa" autocomplete="off"
                    class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                           text-[17px] outline-none transition focus:border-emerald-600
@@ -104,8 +102,8 @@
           </div>
 
           <div>
-            <p class="mb-2 text-[1rem] font-semibold">Typ posiłku <span class="font-normal text-stone-400">(można wybrać kilka)</span></p>
-            <div class="flex flex-wrap gap-2" role="group" aria-label="Typ posiłku">
+            <p class="mb-2 text-[1rem] font-semibold"><span x-text="t('Typ posiłku')"></span> <span class="font-normal text-stone-400" x-text="t('(można wybrać kilka)')"></span></p>
+            <div class="flex flex-wrap gap-2" role="group" :aria-label="t('Typ posiłku')">
               <template x-for="t in TYPY_POSILKOW" :key="t">
                 <button type="button" @click="przelaczTyp(t)" :aria-pressed="typy.includes(t).toString()"
                         class="min-h-[2.7rem] rounded-full border-2 px-5 font-semibold capitalize transition active:scale-95"
@@ -119,9 +117,7 @@
           </div>
 
           <div>
-            <label for="porcje" class="mb-2 block text-[1rem] font-semibold">
-              Na ile osób jest ta gramatura
-            </label>
+            <label for="porcje" class="mb-2 block text-[1rem] font-semibold" x-text="t('Na ile osób jest ta gramatura')"></label>
             <input id="porcje" type="number" min="1" max="20" x-model.number="porcje"
                    class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                           text-[17px] outline-none transition focus:border-emerald-600
@@ -130,9 +126,7 @@
           </div>
 
           <div>
-            <label for="kuchnia" class="mb-2 block text-[1rem] font-semibold">
-              Z jakiej kuchni
-            </label>
+            <label for="kuchnia" class="mb-2 block text-[1rem] font-semibold" x-text="t('Z jakiej kuchni')"></label>
             <select id="kuchnia" x-model="kuchnia"
                     class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4
                            text-[17px] outline-none transition focus:border-emerald-600
@@ -142,27 +136,24 @@
                 <option :value="kod" x-text="k.nazwa"></option>
               </template>
             </select>
-            <p class="mt-1.5 text-[0.82rem] text-stone-500 dark:text-stone-400">
-              Owsianka, koktajl czy kanapka nie należą do żadnej kuchni narodowej —
-              zostaw „uniwersalna”.
-            </p>
+            <p class="mt-1.5 text-[0.82rem] text-stone-500 dark:text-stone-400" x-text="t('Owsianka, koktajl czy kanapka nie należą do żadnej kuchni narodowej — zostaw „uniwersalna”.')"></p>
           </div>
 
           <div>
-            <p class="mb-2 text-[1rem] font-semibold">Składniki</p>
+            <p class="mb-2 text-[1rem] font-semibold" x-text="t('Składniki')"></p>
             <div class="space-y-2.5">
               <template x-for="(s, i) in skladniki" :key="i">
                 <div class="flex gap-2">
-                  <input type="text" x-model="s.produkt" :list="'produkty-' + i" placeholder="Produkt"
+                  <input type="text" x-model="s.produkt" :list="'produkty-' + i" :placeholder="t('Produkt')"
                          class="min-h-[2.9rem] flex-1 rounded-xl border-2 border-stone-200 bg-white px-4
                                 text-[17px] outline-none transition focus:border-emerald-600
                                 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
-                  <input type="number" x-model.number="s.gramy" placeholder="gramy" min="1"
+                  <input type="number" x-model.number="s.gramy" :placeholder="t('gramy')" min="1"
                          class="min-h-[2.9rem] w-28 rounded-xl border-2 border-stone-200 bg-white px-3
                                 text-[17px] outline-none transition focus:border-emerald-600
                                 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
                   <button type="button" @click="skladniki.splice(i, 1)"
-                          :aria-label="'Usuń składnik ' + (i + 1)"
+                          :aria-label="t('Usuń składnik ') + (i + 1)"
                           class="flex size-[52px] shrink-0 items-center justify-center rounded-xl
                                  text-stone-400 transition active:bg-stone-100 dark:active:bg-stone-800">
                     <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -187,7 +178,7 @@
                     class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                            border-2 border-dashed border-stone-300 font-semibold text-stone-600
                            transition active:scale-[0.98] dark:border-stone-700 dark:text-stone-400">
-              <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> Dodaj składnik
+              <svg class="ikona ikona-sm"><use href="#i-plus"/></svg> <span x-text="t('Dodaj składnik')"></span>
             </button>
           </div>
 
@@ -206,14 +197,14 @@
                     no-underline transition active:scale-[0.98] dark:border-emerald-500/30
                     dark:bg-emerald-500/10 dark:text-emerald-300">
             <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg>
-            Wolisz, żeby AI to wypełniło?
+            <span x-text="t('Wolisz, żeby AI to wypełniło?')"></span>
           </a>
 
           <button type="button" @click="zapisz()" :disabled="zapisywanie"
                   class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
                          font-bold text-white transition active:scale-[0.98] disabled:opacity-50
                          dark:bg-emerald-600"
-                  x-text="zapisywanie ? 'Zapisuję…' : 'Zapisz danie'"></button>
+                  x-text="zapisywanie ? t('Zapisuję…') : t('Zapisz danie')"></button>
         </div>
 
         <!-- ================= PO ZAPISIE ================= -->
@@ -224,23 +215,21 @@
                       dark:bg-emerald-500/10">
             <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-ptaszek"/></svg>
           </div>
-          <h2 class="mt-4 text-xl font-bold">Dodane!</h2>
-          <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400">
-            Danie trafiło do Waszych dań jako polubione.
-          </p>
+          <h2 class="mt-4 text-xl font-bold" x-text="t('Dodane!')"></h2>
+          <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400" x-text="t('Danie trafiło do Waszych dań jako polubione.')"></p>
           <button type="button" @click="odNowa()"
                   class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
-                         bg-emerald-700 font-bold text-white dark:bg-emerald-600">Dodaj kolejne</button>
+                         bg-emerald-700 font-bold text-white dark:bg-emerald-600" x-text="t('Dodaj kolejne')"></button>
           <a href="talia.html" class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center
              rounded-xl border-2 border-stone-200 font-bold no-underline
-             dark:border-stone-700">Wróć do dań</a>
+             dark:border-stone-700" x-text="t('Wróć do dań')"></a>
         </div>
       </div>
     </main>
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
-         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" :aria-label="t('Nawigacja główna')">
       <div class="mx-auto flex h-16 max-w-lg">
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"

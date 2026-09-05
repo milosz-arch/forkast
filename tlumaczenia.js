@@ -1,0 +1,254 @@
+/* =====================================================================
+   TŁUMACZENIA — słownik polski → angielski.
+
+   KLUCZEM JEST POLSKI NAPIS (decyzja 120). W kodzie stoi t("Zapisz"),
+   a nie t("przyciski.zapisz"), z jednego powodu: Miłosz czyta ten kod
+   i ma widzieć, co jest na ekranie, zamiast odszyfrowywać nazwy szufladek.
+   Cena tego wyboru jest znana i przyjęta — zmiana polskiego napisu zrywa
+   powiązanie ze słownikiem. Dlatego zrywa je GŁOŚNO: test-tlumaczenia.mjs
+   oblewa na każdym t(), które nie ma pozycji w słowniku, i nie da się
+   wtedy wydać wersji.
+
+   Brak tłumaczenia zwraca polski napis, nie pustkę i nie wyjątek. Ekran
+   z jednym polskim słowem jest zły, ale ekran z dziurą albo białą stroną
+   jest gorszy — a wyłapuje to test, nie użytkownik.
+
+   NAZW WŁASNYCH NIE TŁUMACZYMY (decyzja 118): tortilla zostaje tortillą,
+   chili chili, curry curry. Wchodzą do słownika tylko wtedy, gdy stoją
+   w dłuższym zdaniu, które trzeba przetłumaczyć w całości.
+
+   DWA WEJŚCIA, JEDEN SŁOWNIK:
+   - w ekranach (Alpine) wołamy t("…") z powłoki — czyta this.jezyk, więc
+     przełączenie języka od razu przerysowuje ekran;
+   - w modułach bez Alpine (pomoc.js, kuchnia.js) wołamy tb("…"), które
+     bierze język ustawiony przez powłokę przez ustawJezykModulow().
+   ===================================================================== */
+
+export const SLOWNIK = {
+  "Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.": "A page from a book, a sheet from a notebook, a screenshot — or just the plate of food.",
+  "Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.": "One or two photos work best. With more, the AI may run out of time.",
+  "Wyślij do AI": "Send to AI",
+  "Wolisz wpisać ręcznie?": "Rather type it in yourself?",
+  "Sprawdź, zanim zapiszę": "Check it before I save",
+  "Nie ma tu ani jednego dania, które da się zapisać.": "There is not a single dish here that can be saved.",
+  "Dodaj do moich dań": "Add to my dishes",
+  "Odrzuć": "Discard",
+  "Zapisane": "Saved",
+  "Dopisz do listy": "Add to the list",
+  /* Tytuły kart przeglądarki — nie da się ich owinąć w t() w szablonie,
+     bo <head> jest poza Alpine. Tłumaczy je powłoka (patrz powloka.js). */
+  "Dania — Forkast": "Dishes — Forkast",
+  "Jadłospis — Forkast": "Meal plan — Forkast",
+  "Zakupy — Forkast": "Shopping — Forkast",
+  "Przepisy — Forkast": "Recipes — Forkast",
+  "Dodaj przez AI — Forkast": "Add with AI — Forkast",
+  "Dodaj danie — Forkast": "Add a dish — Forkast",
+  "Ustawienia — Forkast": "Settings — Forkast",
+  " os. · ": " ppl · ",
+  " składników": " ingredients",
+  " · na ": " · for ",
+  "(można wybrać kilka)": "(you can pick several)",
+  "AI poprawia liczby… ": "AI is fixing the numbers… ",
+  "AI układa wersję restauracyjną… ": "AI is writing the restaurant version… ",
+  "Albo dodaj własny przepis": "Or add your own recipe",
+  "Bez AI — po prostu to, co i tak gotujecie.": "No AI — just what you cook anyway.",
+  "Bez gotowania": "No cooking",
+  "Bez limitu jest sensowne, jeśli gotujecie większą porcję na kilka dni — albo jeśli polubionych dań jest na razie mało.": "No limit makes sense if you cook a bigger batch for several days — or if you have only a few liked dishes so far.",
+  "Co masz w kuchni": "What you have in the kitchen",
+  "Cofnij ostatnią": "Undo the last one",
+  "Coś nie działa? Napisz do mnie": "Something not working? Write to me",
+  "Cześć, tu Forkast": "Hi, this is Forkast",
+  "Czy dania mogą się powtarzać": "Can dishes repeat",
+  "Czym gotujecie": "What you cook with",
+  "Dalej — wybierz dania": "Next — pick dishes",
+  "Dania, które sami dodaliście. Możesz je pobrać jako plik i trzymać u siebie, niezależnie od tej aplikacji.": "Dishes you added yourselves. You can download them as a file and keep them on your own, independently of this app.",
+  "Danie trafiło do Waszych dań jako polubione.": "The dish was added to your dishes as liked.",
+  "Dlaczego warto przejrzeć więcej dań": "Why it pays to review more dishes",
+  "Do kupienia": "To buy",
+  "Dodaj": "Add",
+  "Dodaj danie": "Add a dish",
+  "Dodaj do ekranu": "Add to home screen",
+  "Dodaj do spiżarni": "Add to the pantry",
+  "Dodaj kolejne": "Add another",
+  "Dodaj przez AI": "Add with AI",
+  "Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.": "Add at least one person to go on.",
+  "Dodaj składnik": "Add an ingredient",
+  "Dodane!": "Added!",
+  "Domyślnie apka idzie za ustawieniem telefonu.": "By default the app follows your phone's setting.",
+  "Dopisz": "Add",
+  "Dopisz coś do listy — np. pasta do zębów": "Add something to the list — e.g. toothpaste",
+  "Dopisz pozycję do listy zakupów": "Add an item to the shopping list",
+  "Dosiadam się — mam kod": "Joining in — I have a code",
+  "Dotknij imienia, żeby je poprawić. Zmiana widoczna dla całego stołu — plan, zakupy i odhaczenia zostają przy tej samej osobie.": "Tap a name to change it. The change is visible to the whole table — the plan, the shopping and the ticks stay with the same person.",
+  "Dotyczy całego stołu — wszyscy przy nim zobaczą tę zmianę.": "Applies to the whole table — everyone at it will see this change.",
+  "Dołącz": "Join",
+  "Długość okresu": "Length of the period",
+  "Ekran gaśnie. Dotknij, żeby świecił.": "The screen dims. Tap to keep it on.",
+  "Ekran nie gaśnie. Dotknij, żeby wyłączyć.": "The screen stays on. Tap to turn it off.",
+  "Forkast zapisuje tylko to, co sam wpiszesz: imiona albo pseudonimy osób przy stole, czego nie jecie i jakie dania lubicie. Dane leżą w bazie Google (Firebase) i możesz je skasować jednym przyciskiem w każdej chwili.": "Forkast saves only what you type in: the names or nicknames of the people at the table, what you don't eat and which dishes you like. The data sits in a Google database (Firebase) and you can wipe it with one button at any time.",
+  "Gaśnie": "Dims",
+  "Ile — sztuk, gramów, opakowań": "How much — pieces, grams, packs",
+  "Imiona przy stole": "Names at the table",
+  "Imię lub pseudonim": "Name or nickname",
+  "Jak to działa": "How it works",
+  "Jak to zrobić": "How to make it",
+  "Jak to zrobić — wersja restauracyjna": "How to make it — restaurant version",
+  "Jasne": "Got it",
+  "Jeśli coś wygląda inaczej niż u innych, dotknij „Pobierz najnowszą”.": "If something looks different than for the others, tap „Get the latest”.",
+  "Jeśli musisz mrużyć oczy — zwiększ. Dotyczy tylko tego urządzenia.": "If you have to squint — make it bigger. This device only.",
+  "Język": "Language",
+  "Kim jesteś przy tym stole": "Who you are at this table",
+  "Kod Waszego stołu": "Your table code",
+  "Kod stołu": "Table code",
+  "Kod stołu, osoby przy stole": "Table code, people at the table",
+  "Kod tego stołu": "This table's code",
+  "Kopiuj": "Copy",
+  "Kto siada do stołu? Dodaj przynajmniej siebie — resztę możesz dopisać kiedy chcesz.": "Who sits down at the table? Add at least yourself — you can add the rest whenever you like.",
+  "Które posiłki i dla kogo": "Which meals and for whom",
+  "Który z Was to Ty?": "Which one of you is you?",
+  "Language / Język": "Language",
+  "Limit powtórzeń": "Repeat limit",
+  "Lubię": "I like it",
+  "Na ile dni planujecie naraz": "How many days you plan at once",
+  "Na ile osób jest ta gramatura": "How many people these amounts are for",
+  "Na pewno? Dotknij ponownie — tego nie da się cofnąć": "Sure? Tap again — this cannot be undone",
+  "Najpierw dodaj kogoś do stołu na ekranie startowym.": "First add someone to the table on the start screen.",
+  "Nakrywam nowy stół": "Setting a new table",
+  "Nawigacja główna": "Main navigation",
+  "Nazwa dania": "Dish name",
+  "Nazwa dania, zdjęcie przepisu — albo zdjęcie samego talerza.": "A dish name, a photo of a recipe — or a photo of the plate itself.",
+  "Nic do kupienia. Ułóż jadłospis, a lista policzy się sama — albo dopisz coś ręcznie na dole.": "Nothing to buy. Build a plan and the list counts itself — or add something by hand below.",
+  "Nic nie trafiło?": "Nothing landed?",
+  "Nic takiego nie masz.": "You have nothing like that.",
+  "Nic z tego? Dodajcie swoje dania.": "None of these? Add your own dishes.",
+  "Nie lubię": "Not for me",
+  "Nie masz jeszcze polubionych dań. Przejrzyj Dania — przepisy pojawią się tutaj same.": "You have no liked dishes yet. Go through Dishes — the recipes will show up here by themselves.",
+  "Nie masz polubionego dania, które pasuje na ten posiłek.": "You have no liked dish that fits this meal.",
+  "Nie teraz": "Not now",
+  "Nie wygaszaj ekranu": "Keep the screen on",
+  "Nie wygaszaj ekranu, gdy używam aplikacji": "Keep the screen on while I'm using the app",
+  "Nikt nie wybrany — licznik w jadłospisie jest wtedy schowany.": "Nobody chosen — the counter in the plan stays hidden then.",
+  "Owsianka, koktajl czy kanapka nie należą do żadnej kuchni narodowej — zostaw „uniwersalna”.": "Porridge, a smoothie or a sandwich belong to no national cuisine — leave „universal”.",
+  "Piekarnik": "Oven",
+  "Po co spiżarnia": "What the pantry is for",
+  "Pobieram…": "Fetching…",
+  "Pobierz najnowszą": "Get the latest",
+  "Pobierz nasze dania": "Download our dishes",
+  "Podaj go tym, którzy siadają z Wami do stołu. Wpisują go przy pierwszym wejściu.": "Give it to the people who sit down with you. They type it in the first time they come in.",
+  "Podaj go tym, którzy siadają z Wami do stołu. Zapisz, zanim zamkniesz kartę.": "Give it to the people who sit down with you. Write it down before you close the tab.",
+  "Podstawowa": "Basic",
+  "Pokaż dania": "Show dishes",
+  "Produkt": "Product",
+  "Przejdź do aplikacji": "Go to the app",
+  "Przejdź do dań": "Go to dishes",
+  "Przejdź do jadłospisu": "Go to the plan",
+  "Przejrzeliście wszystkie dania, więc karta Dań zeszła z paska. Wróci, gdy dojdą nowe.": "You have been through every dish, so the Dishes tab left the bar. It comes back when new ones arrive.",
+  "Przejrzyj dania jeszcze raz": "Go through the dishes again",
+  "Przejrzyj jeszcze raz": "Go through them again",
+  "Przepis mówiący „smaż na 6/9” to instrukcja do indukcji — na gazie nie znaczy nic. Powiedz, co masz, a nowe dania od AI będą pod to pisane.": "A recipe saying „fry at 6/9” is an instruction for induction — on gas it means nothing. Tell us what you have and new AI dishes will be written for it.",
+  "Przez AI": "With AI",
+  "Przełącz tryb ciemny": "Toggle dark mode",
+  "Przydaje się przy wózku w sklepie i przy mokrych rękach w kuchni. W tle gaśnie normalnie i nie zjada baterii.": "Handy with a trolley in the shop and wet hands in the kitchen. In the background it dims normally and does not eat the battery.",
+  "Płyta": "Hob",
+  "Restauracyjna": "Restaurant",
+  "Rodzaj piekarnika": "Type of oven",
+  "Rodzaj płyty": "Type of hob",
+  "Rozmiar liter": "Text size",
+  "Ręcznie": "By hand",
+  "Schowaj ustawienia stołu": "Hide table settings",
+  "Składniki": "Ingredients",
+  "Spiżarnia jest pusta. To w porządku — wpiszcie tylko to, czego macie więcej niż na jeden raz.": "The pantry is empty. That is fine — write in only what you have more of than one go.",
+  "Sposób dodania": "How to add it",
+  "Sprawdzam…": "Checking…",
+  "Sprzęt kuchenny": "Kitchen equipment",
+  "Spróbuj jeszcze raz": "Try again",
+  "Szukaj dania": "Search dishes",
+  "Szukaj dania…": "Search dishes…",
+  "Ta przeglądarka tego nie potrafi. Jeśli otwierasz Forkast z linku w WhatsAppie albo Messengerze, otwórz go w Safari albo Chrome — tam zadziała.": "This browser cannot do it. If you are opening Forkast from a link in WhatsApp or Messenger, open it in Safari or Chrome — it works there.",
+  "Ten posiłek jest zaplanowany w wersji restauracyjnej — lista zakupów liczy z tego składu.": "This meal is planned in the restaurant version — the shopping list counts from those ingredients.",
+  "To danie nie ma zapisanych kroków — dodaj je przez AI, jeśli chcesz mieć przepis.": "This dish has no saved steps — add it with AI if you want a recipe.",
+  "To nie mój stół — zacznij od nowa": "Not my table — start over",
+  "To wartość domyślna dla nowego okresu, nie reguła na sztywno — w jadłospisie da się zmienić pojedynczy posiłek w pojedynczym dniu.": "This is the default for a new period, not a fixed rule — in the plan you can change a single meal on a single day.",
+  "To wszystko na teraz": "That is all for now",
+  "Tryb ciemny": "Dark mode",
+  "Tryb jasny": "Light mode",
+  "Tydzień to tylko najczęstszy wybór, nie jedyny — jeśli robicie zakupy co trzy dni albo raz na dwa tygodnie, ustaw to tutaj.": "A week is only the most common choice, not the only one — if you shop every three days or once a fortnight, set it here.",
+  "Tylko na tym telefonie. Plan i lista zakupów są wspólne — to potrzebne po to, żeby kalorie liczyły się Tobie, a nie całemu stołowi.": "This phone only. The plan and the shopping list are shared — this is here so the calories count for you, not for the whole table.",
+  "Tylko na tym telefonie. Potrzebne, żeby ptaszek przy posiłku liczył kalorie Tobie, a nie całemu domowi.": "This phone only. Needed so the tick on a meal counts the calories for you, not for the whole household.",
+  "Typ posiłku": "Meal type",
+  "Ustawienia": "Settings",
+  "Usuń składnik ": "Remove ingredient ",
+  "Usuń ten stół i wszystko, co przy nim zapisaliśmy": "Delete this table and everything saved at it",
+  "Ułóż automatycznie": "Fill it in for us",
+  "Ułóż jadłospis": "Build the plan",
+  "W koszyku": "In the basket",
+  "W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.": "That is fine — these dishes were meant to be a start, not a complete set. Add your own.",
+  "Wasz sprzęt": "Your equipment",
+  "Wasz stół jest nakryty. Wchodzisz i planujecie dalej.": "Your table is set. Come in and carry on planning.",
+  "Wasze dania": "Your dishes",
+  "Wersja aplikacji:": "App version:",
+  "Wersja przepisu": "Recipe version",
+  "Wersja restauracyjna — AI, ok. 10 s": "Restaurant version — AI, about 10 s",
+  "Witaj z powrotem": "Welcome back",
+  "Wolisz, żeby AI to wypełniło?": "Rather have AI fill this in?",
+  "Wpisz ręcznie": "Type it in yourself",
+  "Wpiszcie, ile czego macie w domu. Lista wyżej odejmie to od zakupów, żeby nie kazała Wam kupować kilograma mąki co tydzień.": "Write in how much of what you have at home. The list above subtracts it from the shopping, so it does not tell you to buy a kilo of flour every week.",
+  "Wróć": "Back",
+  "Wróć do dań": "Back to dishes",
+  "Wszystkie posiłki wyłączone tego dnia.": "Every meal is off that day.",
+  "Wyczyść": "Clear",
+  "Względem podstawowej:": "Against the basic version:",
+  "Z jakiej kuchni": "Which cuisine",
+  "Zakładam…": "Setting it up…",
+  "Zamieniamy najgorsze pytanie dnia — „co ja dziś zjem?” — w coś, co da się przeżyć. Zaczynamy?": "We turn the worst question of the day — „what do I eat today?” — into something you can live with. Shall we?",
+  "Zamknij": "Close",
+  "Zapasy w spiżarni domowej": "What is in the pantry at home",
+  "Zapisuję…": "Saving…",
+  "Zapisz danie": "Save the dish",
+  "Zmień danie": "Change the dish",
+  "Zobacz listę zakupów": "See the shopping list",
+  "bez piekarnika nie zrobisz": "cannot be made without an oven",
+  "dziś": "today",
+  "gramy": "grams",
+  "ile": "how much",
+  "min": "min",
+  "nie wchodzi do listy zakupów": "not counted into the shopping list",
+  "np. NH7XOO": "e.g. NH7XOO",
+  "np. Naleśniki z dżemem": "e.g. Pancakes with jam",
+  "osobę": "person",
+  "restauracyjna": "restaurant",
+  "wymaga piekarnika": "needs an oven",
+  "zacznij dzień wcześniej": "start a day earlier",
+  "Świeci": "Stays on",
+  "— dotknij, żeby wybrać —": "— tap to choose —",
+  "— wyłączone, dotknij, żeby włączyć —": "— off, tap to turn on —",
+  "✓ gotowe": "✓ done",
+};
+
+/**
+ * @param {string} napis  polski napis, dokładnie taki jak w kodzie
+ * @param {string} jezyk  "pl" albo "en"
+ */
+export function tlumacz(napis, jezyk) {
+  if (!jezyk || jezyk === "pl") return napis;
+  const gotowe = SLOWNIK[napis];
+  return gotowe === undefined ? napis : gotowe;
+}
+
+/* Język dla modułów, które nie mają dostępu do stanu Alpine. Ustawia go
+   powłoka przy starcie ekranu i przy każdej zmianie — moduły same go nie
+   czytają z bazy, bo wtedy każdy z nich musiałby znać stół. */
+let jezykModulow = "pl";
+
+export function ustawJezykModulow(jezyk) {
+  jezykModulow = jezyk || "pl";
+}
+
+export function tb(napis) {
+  return tlumacz(napis, jezykModulow);
+}
+
+/** Dla testu: napisy używane w kodzie, których nie ma w słowniku. */
+export function brakujace(napisy) {
+  return [...new Set(napisy)].filter(n => !(n in SLOWNIK));
+}

@@ -33,7 +33,7 @@
 
   <nav class="hidden shrink-0 flex-col gap-1.5 border-r border-stone-200/70 bg-white p-5
               md:flex md:w-60 lg:w-64 dark:border-stone-800 dark:bg-stone-900"
-       aria-label="Nawigacja główna">
+       :aria-label="t('Nawigacja główna')">
     <p class="mb-4 border-b border-stone-100 pb-5 text-lg font-black tracking-tight
               text-emerald-700 dark:border-stone-800 dark:text-emerald-400">Forkast</p>
     <template x-for="z in zakladki" :key="z.id">
@@ -51,7 +51,7 @@
        class="mt-1 flex h-12 items-center gap-3 rounded-xl px-3.5 text-stone-500 no-underline
               transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
       <svg class="ikona"><use href="#i-ustawienia"/></svg>
-      <span>Ustawienia</span>
+      <span x-text="t('Ustawienia')"></span>
     </a>
   </nav>
 
@@ -75,11 +75,11 @@
       <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-white/80">Forkast</p>
       <div class="ml-auto flex shrink-0 items-center gap-2">
         <button type="button" @click="pomocKlucz = 'dodawanie'"
-              aria-label="Jak to działa"
+              :aria-label="t('Jak to działa')"
               class="flex size-11 items-center justify-center rounded-full border
                      border-white/35 bg-white/15 text-[1rem] font-bold text-white
                      backdrop-blur-md transition active:scale-95">i</button>
-        <a href="ustawienia.html" aria-label="Ustawienia"
+        <a href="ustawienia.html" :aria-label="t('Ustawienia')"
          class="flex size-11 items-center justify-center rounded-full border
                 border-white/35 bg-white/15 text-white no-underline backdrop-blur-md
                 transition active:scale-95">
@@ -87,10 +87,8 @@
       </a>
       </div>
     </div>
-      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight">Dodaj przez AI</h1>
-      <p class="mt-1 max-w-[38ch] text-[0.82rem] leading-snug text-white/85">
-        Nazwa dania, zdjęcie przepisu — albo zdjęcie samego talerza.
-      </p>
+      <h1 class="mt-1.5 text-[1.75rem] font-bold leading-tight tracking-tight" x-text="t('Dodaj przez AI')"></h1>
+      <p class="mt-1 max-w-[38ch] text-[0.82rem] leading-snug text-white/85" x-text="t('Nazwa dania, zdjęcie przepisu — albo zdjęcie samego talerza.')"></p>
 
     </header>
 
@@ -100,7 +98,7 @@
 
         <!-- ================= WEJŚCIE ================= -->
         <div x-show="krok === 'wejscie'" x-transition>
-          <div class="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="Sposób dodania">
+          <div class="mb-4 grid grid-cols-2 gap-2" role="group" :aria-label="t('Sposób dodania')">
             <template x-for="t in TRYBY" :key="t.id">
               <button type="button" @click="tryb = t.id" :aria-pressed="(tryb === t.id).toString()"
                       class="min-h-[2.7rem] rounded-xl border-2 px-2 text-[0.82rem] font-semibold transition"
@@ -112,7 +110,7 @@
             </template>
           </div>
 
-          <input x-show="tryb === 'nazwa'" type="text" x-model="nazwa" placeholder="np. Naleśniki z dżemem"
+          <input x-show="tryb === 'nazwa'" type="text" x-model="nazwa" :placeholder="t('np. Naleśniki z dżemem')"
                  class="min-h-[2.9rem] w-full rounded-xl border-2 border-stone-200 bg-white px-4 text-[17px]
                         outline-none transition focus:border-emerald-600 focus:ring-4
                         focus:ring-emerald-500/15 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
@@ -123,12 +121,8 @@
                           dark:border-stone-700">
               <input type="file" accept="image/*" multiple class="hidden" @change="wczytajZdjecia($event)">
               <span class="font-semibold" x-text="opisZdjec"></span>
-              <span class="mt-1 text-[0.82rem] text-stone-400">
-                Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.
-              </span>
-              <span class="mt-0.5 text-[0.82rem] text-stone-400">
-                Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.
-              </span>
+              <span class="mt-1 text-[0.82rem] text-stone-400" x-text="t('Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.')"></span>
+              <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="t('Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.')"></span>
             </label>
             <div x-show="zdjecia.length" class="mt-3 flex flex-wrap gap-2">
               <template x-for="(z, i) in zdjecia" :key="i">
@@ -141,13 +135,11 @@
                   class="mt-4 flex min-h-[2.9rem] w-full items-center justify-center gap-2 rounded-xl
                          bg-emerald-700 font-bold text-white transition active:scale-[0.98]
                          disabled:opacity-40 dark:bg-emerald-600">
-            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> Wyślij do AI
+            <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg> <span x-text="t('Wyślij do AI')"></span>
           </button>
 
           <a href="formularz.html" class="mt-3 flex min-h-[2.5rem] w-full items-center justify-center
-             text-[0.82rem] font-semibold text-stone-500 no-underline dark:text-stone-400">
-            Wolisz wpisać ręcznie?
-          </a>
+             text-[0.82rem] font-semibold text-stone-500 no-underline dark:text-stone-400" x-text="t('Wolisz wpisać ręcznie?')"></a>
         </div>
 
         <!-- ================= CZEKANIE =================
@@ -191,7 +183,7 @@
                       dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200" x-text="blad"></div>
           <button type="button" @click="krok = 'wejscie'"
                   class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
-                         font-bold text-white dark:bg-emerald-600">Spróbuj jeszcze raz</button>
+                         font-bold text-white dark:bg-emerald-600" x-text="t('Spróbuj jeszcze raz')"></button>
         </div>
 
         <!-- ================= PODGLĄD PRZED ZAPISEM =================
@@ -200,7 +192,7 @@
              przy zdjęciu to AI czyta cudzą kartkę, więc jej treść wpływa na to,
              co wróci. Cała treść wstawiana przez x-text, nigdy jako HTML. -->
         <div x-show="krok === 'podglad'" x-transition class="space-y-3">
-          <h2 class="text-lg font-bold">Sprawdź, zanim zapiszę</h2>
+          <h2 class="text-lg font-bold" x-text="t('Sprawdź, zanim zapiszę')"></h2>
 
           <p x-show="pomiar" class="text-[0.75rem] tabular-nums text-stone-400 dark:text-stone-500"
              x-text="pomiar"></p>
@@ -211,7 +203,7 @@
               <h3 class="text-[1.25rem] font-bold leading-snug" x-text="d.nazwa"></h3>
               <p class="mt-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                         text-emerald-700 dark:text-emerald-400"
-                 x-text="d.typy.join(' · ') + ' · na ' + d.porcje + ' os.'"></p>
+                 x-text="d.typy.join(' · ') + t(' · na ') + d.porcje + ' os.'"></p>
               <ul class="mt-3 space-y-1.5">
                 <template x-for="s in d.skladniki" :key="s.produkt">
                   <li class="flex justify-between text-[1rem] text-stone-600 dark:text-stone-400">
@@ -229,16 +221,14 @@
                       dark:bg-amber-900/25 dark:text-amber-200" x-text="u"></p>
           </template>
 
-          <p x-show="!wynik.dania.length" class="text-[1rem] text-stone-500">
-            Nie ma tu ani jednego dania, które da się zapisać.
-          </p>
+          <p x-show="!wynik.dania.length" class="text-[1rem] text-stone-500" x-text="t('Nie ma tu ani jednego dania, które da się zapisać.')"></p>
 
           <button type="button" x-show="wynik.dania.length" @click="zatwierdz()"
                   class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl bg-emerald-700
-                         font-bold text-white dark:bg-emerald-600">Dodaj do moich dań</button>
+                         font-bold text-white dark:bg-emerald-600" x-text="t('Dodaj do moich dań')"></button>
           <button type="button" @click="odrzuc()"
                   class="flex min-h-[2.9rem] w-full items-center justify-center rounded-xl border-2
-                         border-stone-200 font-bold dark:border-stone-700">Odrzuć</button>
+                         border-stone-200 font-bold dark:border-stone-700" x-text="t('Odrzuć')"></button>
         </div>
 
         <!-- ================= ZAPISANE ================= -->
@@ -249,21 +239,20 @@
                       dark:bg-emerald-500/10">
             <svg class="ikona text-emerald-700 dark:text-emerald-400"><use href="#i-ptaszek"/></svg>
           </div>
-          <h2 class="mt-4 text-xl font-bold">Zapisane</h2>
+          <h2 class="mt-4 text-xl font-bold" x-text="t('Zapisane')"></h2>
           <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400" x-text="podsumowanie"></p>
           <button type="button" @click="odNowa()"
                   class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
-                         bg-emerald-700 font-bold text-white dark:bg-emerald-600">Dodaj kolejne</button>
+                         bg-emerald-700 font-bold text-white dark:bg-emerald-600" x-text="t('Dodaj kolejne')"></button>
           <a href="talia.html" class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center
-             rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700">
-            Wróć do dań</a>
+             rounded-xl border-2 border-stone-200 font-bold no-underline dark:border-stone-700" x-text="t('Wróć do dań')"></a>
         </div>
       </div>
     </main>
 
     <nav class="shrink-0 border-t border-stone-200/70 bg-stone-50/95 backdrop-blur-xl md:hidden
                 dark:border-stone-800 dark:bg-stone-950/95"
-         style="padding-bottom:env(safe-area-inset-bottom,0px)" aria-label="Nawigacja główna">
+         style="padding-bottom:env(safe-area-inset-bottom,0px)" :aria-label="t('Nawigacja główna')">
       <div class="mx-auto flex h-16 max-w-lg">
         <template x-for="z in zakladki" :key="z.id">
           <a :href="zamknieta(z.id) ? 'talia.html' : z.plik"
@@ -407,6 +396,8 @@ Alpine.data("ekranAI", () => ({
     ]);
     this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}, snapWykl.val() || []));
     this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
+    /* Język stołu z bazy — nadpisuje kopię z pamięci telefonu (decyzja 119). */
+    this.przyjmijJezykZeStolu(snapUst.val());
     this.kuchniaTekst = opisKuchni((snapUst.val() || {}).kuchnia);
   },
 

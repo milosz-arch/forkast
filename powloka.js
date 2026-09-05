@@ -12,6 +12,8 @@
    ===================================================================== */
 
 import { obslugiwane, czyWlaczone, przelacz, nasluchuj, wlaczBlokadeEkranu } from "./ekran.js";
+import { JEZYKI, naStart, zapamietaj, zBazy } from "./jezyk.js";
+import { tlumacz, ustawJezykModulow } from "./tlumaczenia.js";
 
 /* Pasek na dole: pięć pozycji to maksimum, przy którym podpisy zostają czytelne
    i cele dotykowe nie schodzą poniżej progu. Ustawienia zeszły stąd do zębatki
@@ -65,11 +67,31 @@ export function zastosujUstawieniaWygladu() {
  */
 export function danePowloki({ ekran, tytul, opis }) {
   const startowe = zastosujUstawieniaWygladu();
+  /* Tytuł karty przeglądarki stoi w <head>, czyli POZA zasięgiem Alpine —
+     x-data siedzi na <body>. Nie da się go owinąć w t() w szablonie, więc
+     bierzemy polski oryginał raz i tłumaczymy go przy każdej zmianie języka.
+     Klucz jest ten sam co wszędzie: polski napis. */
+  const tytulKarty = typeof document !== "undefined" ? document.title : "";
   return {
       /* Nagłówek i podtytuł każdego z ośmiu ekranów przechodzą przez bezSierot
          w jednym miejscu — dlatego nie ma tego w ośmiu plikach osobno. */
-      ekran, tytul: bezSierot(tytul), opis: bezSierot(opis),
+      ekran,
       bezSierot,
+
+      /* JĘZYK STOŁU. Zwykłe pole, nie getter — Alpine obserwuje je jak każde
+         inne, więc zmiana przerysowuje KAŻDE t() na ekranie bez przeładowania.
+         Zaczynamy od kopii z pamięci telefonu, bo baza odpowie dopiero za
+         chwilę, a pierwsza klatka ma być już we właściwym języku. */
+      jezyk: naStart(),
+      jezyki: JEZYKI,
+
+      /** Tłumaczy napis na język stołu. Klucz to polski napis (decyzja 120). */
+      t(napis) { return tlumacz(napis, this.jezyk); },
+
+      /* Nagłówek i podtytuł jako gettery, nie wartości: inaczej zostałyby
+         po polsku po przełączeniu języka — policzone raz, przy starcie. */
+      get tytul() { return bezSierot(this.t(tytul)); },
+      get opis()  { return bezSierot(this.t(opis)); },
       /* Karta Dań znika z paska, gdy nie ma już czego oceniać (decyzja 115) —
          wraca sama, gdy dojdą nowe dania startowe. Na samym ekranie Dań zostaje,
          bo wejście z Ustawień bez podświetlonej karty wyglądałoby na błąd.
@@ -107,6 +129,11 @@ export function danePowloki({ ekran, tytul, opis }) {
       komunikat: "",
 
       initPowloka() {
+        this.zastosujJezyk(this.jezyk);
+        /* Zmiana języka: zapamiętaj na tym telefonie, powiedz modułom bez
+           Alpine i popraw atrybut lang — czytnik ekranu wymawia inaczej
+           polski i angielski, a bez tego czytałby angielski po polsku. */
+        this.$watch("jezyk", v => this.zastosujJezyk(v));
         if (this.ekranObslugiwany) {
           wlaczBlokadeEkranu({ bezPrzycisku: true });
           nasluchuj(stan => { this.ekranSwieci = stan; });
@@ -115,6 +142,25 @@ export function danePowloki({ ekran, tytul, opis }) {
           document.documentElement.classList.toggle("dark", v);
           localStorage.setItem("forkast-motyw", v ? "ciemny" : "jasny");
         });
+      },
+
+      zastosujJezyk(id) {
+        zapamietaj(id);
+        ustawJezykModulow(id);
+        document.documentElement.lang = id;
+        if (tytulKarty) document.title = tlumacz(tytulKarty, id);
+      },
+
+      /** Wybór człowieka w Ustawieniach. Zapis do bazy robi ekran — powłoka
+          nie zna stołu i nie ma prawa go znać. */
+      ustawJezyk(id) {
+        if (JEZYKI.some(j => j.id === id)) this.jezyk = id;
+      },
+
+      /** To, co przyszło z gałęzi `ustawienia` stołu. Baza jest prawdą,
+          pamięć telefonu tylko kopią — dlatego to nadpisuje. */
+      przyjmijJezykZeStolu(ustawienia) {
+        this.jezyk = zBazy(ustawienia);
       },
 
       ustawSkale(id) {
