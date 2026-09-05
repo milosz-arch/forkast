@@ -4,9 +4,9 @@ A meal-planning web app that turns the worst question of the day, "what am I eat
 
 Built as a progressive web app for a shared household: one person creates a "table", everyone else joins with a six-character code, and the plan, the recipes and the shopping list stay in sync across their phones. You can add a dish by typing it in, or by photographing a recipe and letting the app read it.
 
-The interface is in Polish, since it was built for my family and friends to actually use.
+The interface ships in Polish and English. Language is a property of the table, not of the phone, so everyone who joins the same table reads the same language; it is chosen on first open and can be changed in Settings.
 
-**Live:** [forkast.app](https://forkast.netlify.app) · **Status:** in use by real households, not a demo
+**Live:** [forkastapp.netlify.app](https://forkastapp.netlify.app) · **Status:** in use by real households, not a demo
 
 ---
 
@@ -25,11 +25,11 @@ The interface is in Polish, since it was built for my family and friends to actu
 |---|---|
 | Front end | Alpine.js and Tailwind, both loaded as browser builds |
 | Data | Firebase Realtime Database |
-| AI | Google Gemini, called through a Netlify serverless function |
+| AI | Google Gemini, called through a Netlify edge function |
 | Hosting | Netlify |
 | Build step | None |
 
-No bundler, no framework CLI, no `npm install`. Deployment is dragging a folder into Netlify. That constraint was deliberate: I'm a recruiter who codes, not a professional engineer, and a stack I can deploy from a phone is a stack that stays alive.
+No bundler, no framework CLI, no `npm install`. Netlify publishes the files exactly as they sit in the repository, so a deployment is a commit. That constraint was deliberate: I'm a recruiter who codes, not a professional engineer, and a stack with nothing to build is a stack that stays alive.
 
 ## Engineering notes
 
