@@ -10,14 +10,14 @@
    dane na żywo nie mają czego szukać w pamięci podręcznej, a odpowiedź AI
    zapisana z poprzedniego razu byłaby wręcz szkodliwa.
    ===================================================================== */
-const CACHE = "forkast-v84";
+const CACHE = "forkast-v85";
 const SZKIELET = [
   "./index.html", "./talia.html", "./jadlospis.html", "./zakupy.html",
   "./przepisy.html", "./ustawienia.html", "./formularz.html", "./dodaj-z-ai.html",
-  "./styl.css", "./manifest.json", "./ikona.svg", "./ikona-180.png", "./ikona-192.png", "./ikona-512.png",
+  "./styl.css", "./manifest.json", "./ikona.svg", "./ikona-180.png", "./ikona-192.png", "./ikona-512.png", "./ikona-maskable-512.png",
   "./favicon-32.png", "./ikony.html",
   "./lib/tailwind.js", "./lib/alpine-esm.js", "./lib/alpine-collapse-esm.js",
-  "./powloka.js", "./baza.js", "./instalacja.js", "./wersja.js", "./postep.js", "./spizarnia.js", "./czas.js", "./kuchnie.js", "./pomoc.js", "./pomoc.html", "./ekran.js", "./tekst.js", "./kuchnia.js",
+  "./powloka.js", "./jezyk.js", "./tlumaczenia.js", "./restauracyjna.js", "./baza.js", "./instalacja.js", "./wersja.js", "./postep.js", "./spizarnia.js", "./czas.js", "./kuchnie.js", "./pomoc.js", "./pomoc.html", "./ekran.js", "./tekst.js", "./kuchnia.js",
   "./dom.js", "./rytm.js", "./automat.js", "./zakupy.js", "./wykluczenia.js",
   "./parser.js", "./prompt.js", "./formularz.js",
   "./produkty.js", "./talia-startowa.js", "./licznik.js"
