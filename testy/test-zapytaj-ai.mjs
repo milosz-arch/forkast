@@ -202,28 +202,21 @@ test("tryb „Link” nie wraca bez narzędzia do czytania stron", () => {
     "faktycznie została pobrana — przy zablokowanej stronie wróci zmyślony przepis");
 });
 
-/* ---------- pomiar wersji restauracyjnej (decyzja 106), TYMCZASOWE ---------- */
+/* ---------- strona pomiaru (decyzja 106), TYMCZASOWA — test wyłączy się sam po jej skasowaniu ----------
+   Flaga `pomiar` została usunięta 5 września (107): wersja restauracyjna mieści się
+   w zwykłym limicie próby, więc strona idzie dokładnie tą drogą, co dodawanie dania. */
 
 let pomiar = "";
-try { pomiar = czytaj("../pomiar.html"); } catch { /* strona skasowana — testy niżej same się wyłączą */ }
+try { pomiar = czytaj("../pomiar.html"); } catch { /* strona skasowana */ }
 
-test("strona pomiaru woła ten sam adres co ekran dodawania i wysyła flagę pomiar", () => {
+test("strona pomiaru woła ten sam adres co ekran dodawania i nie wysyła martwej flagi", () => {
   if (!pomiar) return;
   const wKodzie = funkcja.match(/export const config\s*=\s*\{[^}]*path:\s*["']([^"']+)["']/)[1];
   const wStronie = pomiar.match(/fetch\(\s*["'](\/[^"']*zapytaj-ai)["']/);
   prawda(wStronie && wStronie[1] === wKodzie,
     `pomiar.html woła ${wStronie?.[1] || "nic"}, a funkcja nasłuchuje pod ${wKodzie}`);
-  prawda(/pomiar:\s*true/.test(pomiar),
-    "pomiar.html nie wysyła `pomiar: true` — model dostanie 11 s i pomiar zmierzy limit, nie danie");
-});
-
-test("flaga pomiar naprawdę zmienia limit jednej próby", () => {
-  if (!pomiar) return;
-  prawda(/\bpomiar\b/.test(bezKomentarzy.match(/const \{[^}]*\} = dane;/)?.[0] || ""),
-    "funkcja nie czyta `pomiar` z treści zapytania — flaga ze strony pomiaru leci w próżnię");
-  const naProbe = bezKomentarzy.match(/const naProbe\s*=\s*([^;]+);/);
-  prawda(naProbe && /pomiar/.test(naProbe[1]),
-    "limit jednej próby nie zależy od flagi pomiar — wersja restauracyjna zostanie ucięta po 11 s");
+  prawda(!/pomiar:\s*true/.test(pomiar) && !/\bpomiar\b/.test(bezKomentarzy.match(/const \{[^}]*\} = dane;/)?.[0] || ""),
+    "flaga `pomiar` wróciła — decyzja 107 uznała ją za niepotrzebną");
 });
 
 test("powód zakończenia odpowiedzi Gemini jedzie do apki", () => {

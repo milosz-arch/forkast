@@ -435,3 +435,132 @@ export function parsujOdpowiedz(tekst, slownik = []) {
 
   return { dania: gotowe, noweProdukty, bledy, ostrzezenia };
 }
+
+/* =====================================================================
+   WERSJA RESTAURACYJNA — kształt odpowiedzi sprawdzany w obie strony
+   (decyzja 109).
+
+   Drugi pomiar 5 września pokazał dwie dziury, których prompt nie zakazywał:
+   sól była w krokach (3 g), a na liście akcentów jej nie było; cytryna była
+   na liście (10 g), a w krokach (2 g). Lista różnicy z decyzji 102 („wersja
+   restauracyjna dokłada: …”) jest liczona z akcentów — jeśli akcenty kłamią,
+   kłamie jedyna rzecz, dla której istnieją.
+
+   Reguła: każda ilość w g/ml w krokach, która nie jest składnikiem fundamentu,
+   ma pozycję w akcentach, a suma z kroków równa się ilości na liście. Woda
+   nie jest produktem i nie liczy się.
+
+   Czytanie polskiej odmiany („soku z cytryny” → „Cytryny”): porównujemy
+   wspólny początek słów, nie całe słowa — jak w rdzenSlowa(), ale
+   z rankingiem: „pieprzu” pasuje do „Pieprz” (6 wspólnych liter) mocniej niż
+   do „Pierś” (3), więc wygrywa pieprz. Bez rankingu sam trzyliterowy rdzeń
+   mylił te dwa.
+   ===================================================================== */
+
+const SLOWA_BEZ_ZNACZENIA = new Set(["i","oraz","z","ze","na","do","w","we","przez",
+  "po","pod","nad","od","dla","lub","albo","az","a","o","u","przy"]);
+
+/* Ruchome „e”: czosnek→czosnku, cukier→cukru, ocet→octu, jajka→jajek, koper→kopru.
+   Dajemy każdemu słowu drugi wariant bez „e” przed ostatnią spółgłoską i porównujemy
+   najlepszą parę. „olej”→„olj” jest wariantem bezużytecznym, ale nieszkodliwym —
+   liczy się lepszy z dwóch. */
+function bezRuchomegoE(w) {
+  const n = w.length;
+  if (n < 4 || /[aeiouy]/.test(w[n - 1])) return null;
+  if (w.slice(n - 3, n - 1) === "ie") return w.slice(0, n - 3) + w[n - 1];   // cukier→cukr
+  if (w[n - 2] === "e") return w.slice(0, n - 2) + w[n - 1];                 // czosnek→czosnk
+  return null;
+}
+
+/* Wspólny początek dwóch znormalizowanych słów; 0, gdy nie jest to ta sama nazwa.
+
+   Próg: cała krótsza forma bez jednej litery, nie mniej niż trzy. Luźniejszy próg
+   (bez dwóch liter) przepuszczał „pieprzu” jako „Pierś” — i gdy pieprzu nie było
+   w akcentach, przyklejał go do fundamentu bez słowa. Wyszło przy sabotażu testu. */
+function wspolnyPoczatek(a, b) {
+  let naj = 0;
+  for (const x of [a, bezRuchomegoE(a)]) for (const y of [b, bezRuchomegoE(b)]) {
+    if (!x || !y) continue;
+    let n = 0;
+    while (n < x.length && n < y.length && x[n] === y[n]) n++;
+    const wymagane = Math.max(3, Math.min(x.length, y.length) - 1);
+    if (n >= wymagane) naj = Math.max(naj, n);
+  }
+  return naj;
+}
+
+function slowaNazwy(s) {
+  return normalizuj(s).split(" ").filter(w => w.length >= 3 && !SLOWA_BEZ_ZNACZENIA.has(w));
+}
+
+/* Ile fraza z kroku („oleju rzepakowego”) pasuje do nazwy produktu („Olej rzepakowy”).
+   Suma wspólnych początków po słowach; 0 = nie pasuje. */
+function dopasowanie(frazaSlowa, produktSlowa) {
+  let suma = 0;
+  for (const p of produktSlowa) {
+    let naj = 0;
+    for (const f of frazaSlowa) naj = Math.max(naj, wspolnyPoczatek(f, p));
+    suma += naj;
+  }
+  return suma;
+}
+
+/* Wyciąga z kroków każde „N g/ml + nazwa”. Nazwa to do trzech słów po jednostce,
+   ucięte na cyfrze albo znaku przestankowym. */
+const ILOSC_W_KROKU = /(\d+(?:[.,]\d+)?)\s*(g|ml)(?!\p{L})\s*([^\d.,;:!?()„”"]*)/giu;
+
+export function ilosciZKrokow(kroki) {
+  const out = [];
+  for (const [i, krok] of kroki.entries()) {
+    for (const m of String(krok).matchAll(ILOSC_W_KROKU)) {
+      const slowa = slowaNazwy(m[3]).slice(0, 3);
+      out.push({ krok: i + 1, ilosc: parseFloat(m[1].replace(",", ".")), jednostka: m[2], slowa, tekst: m[0].trim() });
+    }
+  }
+  return out;
+}
+
+/**
+ * @param {string[]} kroki      kroki wersji restauracyjnej
+ * @param {Array}    fundament  składniki wersji podstawowej [{produkt, gramy}] — nie sprawdzamy sum
+ * @param {Array}    akcenty    [{produkt, gramy}] — sprawdzamy w obie strony
+ * @returns {string[]} lista rozjazdów w liczbach, pusta = kształt się zgadza.
+ *   Zdania są pisane tak, żeby dało się je odesłać modelowi jako „popraw to”.
+ */
+export function sprawdzAkcenty(kroki, fundament, akcenty) {
+  const bledy = [];
+  const kandydaci = [
+    ...fundament.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: false })),
+    ...akcenty.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: true })),
+  ];
+  const wKrokach = new Map(akcenty.map(a => [a.produkt, 0]));
+
+  for (const w of ilosciZKrokow(kroki)) {
+    if (!w.slowa.length) {
+      bledy.push(`Krok ${w.krok}: „${w.tekst}” — ilość bez nazwy składnika.`);
+      continue;
+    }
+    if (w.slowa.some(s => wspolnyPoczatek(s, "woda") >= 3)) continue;   // woda nie jest produktem
+
+    let naj = null, najWynik = 0;
+    for (const k of kandydaci) {
+      const wynik = dopasowanie(w.slowa, k.slowa);
+      if (wynik > najWynik) { naj = k; najWynik = wynik; }
+    }
+    if (!naj) {
+      bledy.push(`Krok ${w.krok}: „${w.tekst}” — tego składnika nie ma ani w wersji podstawowej, ani w akcentach. Dopisz go do akcentów z gramaturą.`);
+      continue;
+    }
+    if (naj.akcent) wKrokach.set(naj.nazwa, wKrokach.get(naj.nazwa) + w.ilosc);
+  }
+
+  for (const a of akcenty) {
+    const suma = Math.round(wKrokach.get(a.produkt) * 10) / 10;
+    if (suma === 0) {
+      bledy.push(`Akcent „${a.produkt}” (${a.gramy} g) nie pojawia się z ilością w żadnym kroku. Usuń go z akcentów albo napisz w kroku, ile go użyć.`);
+    } else if (Math.abs(suma - a.gramy) > 0.05) {
+      bledy.push(`Akcent „${a.produkt}”: na liście ${a.gramy} g, w krokach razem ${suma} g. Obie liczby mają być równe.`);
+    }
+  }
+  return bledy;
+}

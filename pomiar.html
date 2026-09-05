@@ -17,10 +17,10 @@
 <body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100">
 
 <main class="mx-auto max-w-lg space-y-4 p-4">
-  <h1 class="text-xl font-semibold">Pomiar: tortilla, wersja restauracyjna</h1>
+  <h1 class="text-xl font-semibold">Pomiar 3: tortilla, kształt + pushback</h1>
   <p class="text-sm text-stone-600 dark:text-stone-400">
-    Wysyła jeden prompt przez tę samą funkcję co dodawanie dania. Model dostaje cały
-    budżet 24 s zamiast 11 s. Stół: <span id="stol" class="font-mono"></span>
+    Prompt z <code>prompt.js</code>, tą samą drogą co dodawanie dania. Sprawdza kształt
+    (decyzja 109) i przy rozjeździe robi jedną rundę poprawki. Stół: <span id="stol" class="font-mono"></span>
   </p>
 
   <button id="start" class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-white disabled:opacity-50">
@@ -47,73 +47,68 @@
 import { kodStolu } from "./baza.js";
 import { PRODUKTY } from "./produkty.js";
 import { WYDANIE } from "./wersja.js";
+import { zbudujPromptRestauracyjny, zbudujPoprawkeRestauracyjna } from "./prompt.js";
+import { wyciagnijJSON, sprawdzAkcenty } from "./parser.js";
 
 const $ = (id) => document.getElementById(id);
 const kodDomu = kodStolu();
 $("stol").textContent = kodDomu || "BRAK — załóż albo wejdź do stołu na ekranie głównym";
 if (!kodDomu) $("start").disabled = true;
 
-/* Lista produktów budowana tak samo jak w prompt.js — działami. */
-const dzialy = {};
-for (const p of PRODUKTY) (dzialy[p.dzial] ||= []).push(p.n);
-const lista = Object.entries(dzialy).map(([d, ns]) => `${d}: ${ns.join(", ")}`).join("\n");
-
-const PROMPT = `Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE obiektem JSON, bez żadnego tekstu przed ani po.
-
-Dostajesz danie w wersji podstawowej — takiej, jaką ktoś gotuje w tygodniu na szybko. Napisz to samo danie w wersji restauracyjnej: tak, jak uczyłbyś kogoś, kto ma zrobić je naprawdę dobrze i ma na to czas.
-
-DANIE W WERSJI PODSTAWOWEJ
-Tortilla z kurczakiem i warzywami, na 2 osoby.
-Składniki: Tortilla pszenna 120 g, Pierś z kurczaka 250 g, Papryka 150 g, Cebula 60 g, Jogurt grecki 80 g.
-Kroki:
-1. Pokrój pierś z kurczaka w paski, a paprykę i cebulę w cienkie plastry.
-2. Podsmaż kurczaka na patelni (7/9) 6 minut do temperatury wewnętrznej 74°C.
-3. Dodaj paprykę i cebulę, smaż razem 4 minuty.
-4. Rozgrzej tortillę pszenną na suchej patelni 20 sekund z każdej strony.
-5. Nałóż nadzienie na tortillę, polej jogurtem greckim i zwiń.
-
-CZEGO NIE WOLNO RUSZYĆ
-To ma być to samo danie w tej samej ilości. Pięć składników powyżej zostaje z DOKŁADNIE tymi gramaturami — nie zmieniasz ich, nie usuwasz, nie zastępujesz. Nie dokładasz drugiego węglowodanu ani drugiego białka. Nie zmieniasz liczby porcji.
-
-CO WOLNO DOŁOŻYĆ
-Akcenty: przyprawy, zioła, kwas, tłuszcz do smażenia, marynatę, dodatkowy krok w rodzaju moczenia cebuli w zimnej wodzie albo marynowania kurczaka. Każdy dołożony składnik wypisz osobno w tablicy "akcenty" z gramaturą — użytkownik dokupi je ręcznie, więc musi wiedzieć co i ile. Bierz nazwy z listy produktów, przepisane DOKŁADNIE tak, jak tam stoją; czego na liście nie ma, dopisz do "noweProdukty" z wartościami odżywczymi na 100 g.
-
-NA CZYM POLEGA WERSJA RESTAURACYJNA
-Nie na dopisaniu uwag do tych samych pięciu kroków. Ułóż przepis od nowa, według czasu:
-- Zacznij od tego, co musi czekać (marynata, odpoczynek, moczenie) i wskaż, co robić w tym czasie — kroki, które biegną równolegle, zapisz jako równoległe: „masz 20 minut — w tym czasie…”.
-- Przy każdym kroku z obróbką cieplną: moc palnika, czas, temperatura, i PO CZYM POZNAĆ, że gotowe — kolor, dźwięk, zapach, konsystencja. Przy kurczaku temperatura w środku.
-- Przy każdej decyzji, która nie jest oczywista, napisz DLACZEGO — co się stanie, jeśli zrobić inaczej.
-- Kolejność wrzucania na patelnię i czas między składnikami są ważniejsze niż lista składników. Powiedz, kiedy patelnia ma być pusta, kiedy pełna, kiedy zdjęta z ognia.
-- Kolejność jest zawsze: rozgrzana patelnia → tłuszcz → produkt. Do smażenia nazwij tłuszcz o wysokim punkcie dymienia (olej rzepakowy, masło klarowane); oliwa extra virgin idzie tylko na zimno albo do marynaty, bo na dużym ogniu się pali.
-- Sól idzie w co najmniej dwóch momentach przepisu, nie raz na końcu — i przy każdym z nich napisz ile.
-- Jeśli po smażeniu mięsa na patelni zostały przypieczone resztki, użyj ich: deglasuj podaną ilością płynu (woda, sok z cytryny, wino) i włącz to do sosu albo do warzyw. Ten krok wypisz z nazwy.
-- W jednym miejscu przepisu każ spróbować i powiedz, CZEGO szukać i czym korygować, z liczbami: „za płasko → 2 g soku z cytryny; za mało słone → 1 g soli”. Liczby zostają, decyzja idzie do kucharza.
-- Ostatni krok to składanie i podanie: temperatura, w jakiej to trafia na talerz, i co zrobić z tortillą, żeby nie pękała przy zwijaniu.
-
-WYMAGANIA, KTÓRYCH NIE WOLNO POMINĄĆ
-- WSZYSTKIE ilości w gramach albo mililitrach, także w krokach. Zakazane: szklanka, łyżka, łyżeczka, garść, szczypta, odrobina, „do smaku”, „na oko”. Pisz „5 g soli”, nie „szczypta”; „30 g oliwy”, nie „dwie łyżki”.
-- Każdy krok zaczyna się od czasownika i wymienia z nazwy każdy składnik, którego dotyczy. Składnik z "akcenty", który nie pojawia się w żadnym kroku, jest błędem.
-- Nie ma górnego limitu liczby kroków. Jest dolny: przepis krótszy niż wersja podstawowa nie jest wersją restauracyjną.
-
-LISTA PRODUKTÓW
-${lista}
-
-FORMAT ODPOWIEDZI
-{
-  "kroki": ["Pierwszy krok.", "Drugi krok."],
-  "akcenty": [
-    { "produkt": "Nazwa dokładnie z listy", "gramy": 10 }
+/* Danie testowe z decyzji 108 — w kształcie, w jakim leży w bazie. */
+const TORTILLA = {
+  nazwa: "Tortilla z kurczakiem i warzywami",
+  porcje: 2,
+  skladniki: [
+    { produkt: "Tortilla pszenna", gramy: 120 },
+    { produkt: "Pierś z kurczaka", gramy: 250 },
+    { produkt: "Papryka",          gramy: 150 },
+    { produkt: "Cebula",           gramy: 60 },
+    { produkt: "Jogurt grecki",    gramy: 80 },
   ],
-  "noweProdukty": [
-    { "nazwa": "...", "kcal": 0, "bialko": 0, "wegle": 0, "tluszcz": 0, "dzial": "..." }
+  kroki: [
+    "Pokrój pierś z kurczaka w paski, a paprykę i cebulę w cienkie plastry.",
+    "Podsmaż kurczaka na patelni (7/9) 6 minut do temperatury wewnętrznej 74°C.",
+    "Dodaj paprykę i cebulę, smaż razem 4 minuty.",
+    "Rozgrzej tortillę pszenną na suchej patelni 20 sekund z każdej strony.",
+    "Nałóż nadzienie na tortillę, polej jogurtem greckim i zwiń.",
   ],
-  "uwaga": "jedno zdanie, jeśli coś w wersji podstawowej Twoim zdaniem jest błędem — albo puste"
-}
+};
 
-Zwróć sam JSON. Bez wstępu, bez komentarza, bez podsumowania.`;
-
+const PROMPT = zbudujPromptRestauracyjny(TORTILLA, PRODUKTY);
 const sek = (ms) => (ms / 1000).toFixed(1).replace(".", ",") + " s";
 let ostatni = "";
+
+/* Jedno wywołanie tą samą drogą co dodawanie dania (bez flagi pomiar — decyzja 107
+   pokazała, że jest niepotrzebna). Zwraca tekst odpowiedzi i czasy. */
+async function zapytaj(prompt) {
+  const start = Date.now();
+  const odp = await fetch("/api/zapytaj-ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, kodDomu, obrazy: [] }),
+  });
+  const naTelefonie = Date.now() - start;
+  let json;
+  try { json = await odp.json(); }
+  catch { throw new Error(`Odpowiedź nie jest JSON-em (HTTP ${odp.status}) — ${WYDANIE}`); }
+  if (!odp.ok) throw new Error(`${json.blad || "Błąd funkcji"} (HTTP ${odp.status}) — ${WYDANIE}`);
+  return { tekst: json.tekst, czasy: { naTelefonie, ...json.czasy, koniec: json.koniec, model: json.model } };
+}
+
+/* Kształt — nie jakość. Jakość ocenia Miłosz (105). Zwraca listę rozjazdów (109). */
+function ocenKsztalt(tekst) {
+  const d = wyciagnijJSON(tekst);
+  const kroki = Array.isArray(d.kroki) ? d.kroki : [];
+  const akcenty = Array.isArray(d.akcenty) ? d.akcenty.map(a => ({ produkt: String(a.produkt ?? ""), gramy: Number(a.gramy) })) : [];
+  const bledy = sprawdzAkcenty(kroki, TORTILLA.skladniki, akcenty);
+  return { bledy, opis: `kroków: ${kroki.length}, akcentów: ${akcenty.length}, nowych produktów: ${d.noweProdukty?.length ?? 0}, znaków: ${tekst.length}` };
+}
+
+function ocenBezpiecznie(p) {
+  try { return ocenKsztalt(p.tekst); }
+  catch (e) { return { bledy: [`JSON niepoprawny: ${e.message} (koniec: ${p.czasy.koniec})`], opis: `znaków: ${p.tekst.length}` }; }
+}
 
 $("start").addEventListener("click", async () => {
   $("start").disabled = true;
@@ -121,38 +116,32 @@ $("start").addEventListener("click", async () => {
   $("blad").hidden = true;
   const start = Date.now();
   const tyk = setInterval(() => { $("zegar").textContent = sek(Date.now() - start); }, 100);
+  const log = [];
 
   try {
-    const odp = await fetch("/api/zapytaj-ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: PROMPT, kodDomu, obrazy: [], pomiar: true }),
-    });
-    const naTelefonie = Date.now() - start;
-    clearInterval(tyk);
-    $("zegar").textContent = sek(naTelefonie);
+    const p1 = await zapytaj(PROMPT);
+    const o1 = ocenBezpiecznie(p1);
+    log.push(`PRÓBA 1 — ${o1.opis}\n${JSON.stringify(p1.czasy)}\n` +
+             (o1.bledy.length ? `ROZJAZDY (${o1.bledy.length}):\n- ${o1.bledy.join("\n- ")}` : "KSZTAŁT ZGODNY"));
 
-    let json;
-    try { json = await odp.json(); }
-    catch { throw new Error(`Odpowiedź nie jest JSON-em (HTTP ${odp.status}) — ${WYDANIE}`); }
-    if (!odp.ok) throw new Error(`${json.blad || "Błąd funkcji"} (HTTP ${odp.status}) — ${WYDANIE}`);
-
-    const czasy = { naTelefonie, ...json.czasy, koniec: json.koniec, model: json.model, wydanie: WYDANIE };
-    $("czasy").textContent = JSON.stringify(czasy, null, 2);
-
-    /* Ocena kształtu — nie jakości. Jakość ocenia Miłosz (decyzja 105). */
-    const surowy = json.tekst.replace(/```json|```/g, "").trim();
-    let ocena;
-    try {
-      const d = JSON.parse(surowy);
-      ocena = `JSON poprawny. Kroków: ${d.kroki?.length ?? "?"}, akcentów: ${d.akcenty?.length ?? "?"}, ` +
-              `nowych produktów: ${d.noweProdukty?.length ?? "?"}. Znaków: ${surowy.length}.`;
-    } catch {
-      ocena = `JSON NIEPOPRAWNY (koniec: ${json.koniec}). Znaków: ${surowy.length}.`;
+    let koncowy = p1.tekst, wynik = o1;
+    if (o1.bledy.length) {
+      /* Pushback: jedna runda, ten sam prompt + jego odpowiedź + rozjazdy w liczbach. */
+      const p2 = await zapytaj(zbudujPoprawkeRestauracyjna(PROMPT, p1.tekst, o1.bledy));
+      const o2 = ocenBezpiecznie(p2);
+      log.push(`PRÓBA 2 (po pushbacku) — ${o2.opis}\n${JSON.stringify(p2.czasy)}\n` +
+               (o2.bledy.length ? `NADAL ROZJAZDY (${o2.bledy.length}) → NIE UDAŁO SIĘ:\n- ${o2.bledy.join("\n- ")}` : "KSZTAŁT ZGODNY PO POPRAWCE"));
+      koncowy = p2.tekst; wynik = o2;
     }
-    $("ocena").textContent = ocena;
-    $("tekst").value = json.tekst;
-    ostatni = `CZASY\n${JSON.stringify(czasy, null, 2)}\n\n${ocena}\n\nODPOWIEDŹ\n${json.tekst}`;
+
+    clearInterval(tyk);
+    $("zegar").textContent = sek(Date.now() - start) + " łącznie";
+    $("czasy").textContent = log.join("\n\n");
+    $("ocena").textContent = wynik.bledy.length
+      ? "Wynik: NIE UDAŁO SIĘ — danie zostałoby bez wersji restauracyjnej (103)."
+      : "Wynik: kształt zgodny.";
+    $("tekst").value = koncowy;
+    ostatni = `WYDANIE ${WYDANIE}\n\n${log.join("\n\n")}\n\nODPOWIEDŹ KOŃCOWA\n${koncowy}`;
     $("wynik").hidden = false;
   } catch (e) {
     clearInterval(tyk);

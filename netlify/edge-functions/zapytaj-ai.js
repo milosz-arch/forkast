@@ -102,12 +102,6 @@ const BUDZET_MS = 25000;
    wolny model wyczerpuje cały budżet i nigdy się nie dowiemy, czy drugi byłby szybszy. */
 const LIMIT_PROBY_MS = 11000;
 
-/* POMIAR (decyzja 106): strona `pomiar.html` wysyła `pomiar: true`. Wtedy JEDEN model
-   dostaje cały budżet zamiast 11 s — bo mierzymy, ile trwa wersja restauracyjna,
-   a nie który model jest szybszy. Zwykłe dodawanie dania tej flagi nie wysyła
-   i nic się dla niego nie zmienia. Do usunięcia razem ze stroną pomiaru. */
-const limitProby = (pomiar) => pomiar === true ? BUDZET_MS - 1000 : LIMIT_PROBY_MS;
-
 const adresModelu = (m) =>
   `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;
 
@@ -200,7 +194,7 @@ export default async (request) => {
   try { dane = await request.json(); }
   catch { return odpowiedz(400, { blad: "Nieprawidłowe zapytanie." }); }
 
-  const { prompt, obrazy, kodDomu, pomiar } = dane;
+  const { prompt, obrazy, kodDomu } = dane;
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return odpowiedz(400, { blad: "Brak treści promptu." });
   }
@@ -244,7 +238,7 @@ export default async (request) => {
     if (zostalo() < 3000) break;
 
     const stopZegar = new AbortController();
-    const naProbe = Math.min(limitProby(pomiar), zostalo() - 1000);
+    const naProbe = Math.min(LIMIT_PROBY_MS, zostalo() - 1000);
     const budzik = setTimeout(() => stopZegar.abort(), naProbe);
 
     const cialo = { contents: [{ parts }] };
