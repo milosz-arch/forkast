@@ -192,7 +192,7 @@ LICZBY MUSZĄ SIĘ ZGADZAĆ — to jest sprawdzane mechanicznie
 Aplikacja przeczyta z kroków każdą ilość w gramach i mililitrach i porówna ją z tablicą "akcenty":
 - Każda ilość w krokach, która nie jest jednym z ${ile} składników podstawowych, MUSI mieć pozycję w "akcenty". Woda nie jest produktem i nie liczy się.
 - Suma ilości danego akcentu ze wszystkich kroków MUSI być równa jego gramaturze w "akcenty". Jeśli sól idzie w trzech miejscach po 2 g, 1 g i 1 g, w "akcenty" stoi Sól 4 g. Korekty z punktu kontrolnego smaku („za mało słone → 1 g soli”) też się liczą — kucharz musi mieć tę sól pod ręką.
-- Ta sama liczba przy tym samym akcencie w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”) liczy się raz. Różne liczby się sumują (2 g soli do marynaty + 2 g do sosu + 1 g korekty = 5 g). Jeśli dodajesz coś dwa razy po tyle samo, napisz w akcentach podwojoną ilość albo rozbij ją w krokach na różne liczby.
+- Ta sama liczba przy tym samym akcencie w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”; „posól bakłażan 4 g” → „wrzuć posolony bakłażan”) liczy się raz. Różne liczby się sumują (4 g do bakłażana + 1 g korekty = 5 g). Jeśli dodajesz coś dwa razy po tyle samo naprawdę, rozbij to w krokach na różne liczby (2 g i 3 g), żeby było widać, że to dwa dodania.
 - Akcent, który nie pojawia się z ilością w żadnym kroku, jest błędem.
 Rozjazd w którymkolwiek punkcie oznacza, że odpowiedź wraca do poprawy.
 

@@ -581,10 +581,16 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
   for (const a of akcenty) {
     const ilosci = wKrokach.get(a.produkt);
     const suma = Math.round(ilosci.reduce((s, x) => s + x, 0) * 10) / 10;
-    const jednaPorcja = ilosci.length > 1 && ilosci.every(x => x === ilosci[0]);
+    /* Curry z 5 września: sól 4 + 4 + 1 przy liście 5. Czwórka to jedna porcja wymieniona
+       dwa razy (posolić bakłażan → ten sam bakłażan na patelnię), jedynka to korekta.
+       Model dwa razy obstawał przy 5 i miał rację; za trzecim się poddał i wpisał 9 —
+       czyli sprawdzenie wymusiło złą liczbę. Dlatego przechodzi też suma RÓŻNYCH
+       wartości. Koszt: dwa prawdziwe dodania po tyle samo z listą pojedynczą przejdą. */
+    const sumaRoznych = Math.round([...new Set(ilosci)].reduce((s, x) => s + x, 0) * 10) / 10;
+    const jednaPorcja = ilosci.length > 1 && Math.abs(sumaRoznych - a.gramy) <= 0.05;
     if (!ilosci.length) {
       bledy.push(`Akcent „${a.produkt}” (${a.gramy} g) nie pojawia się z ilością w żadnym kroku. Usuń go z akcentów albo napisz w kroku, ile go użyć.`);
-    } else if (Math.abs(suma - a.gramy) > 0.05 && !(jednaPorcja && Math.abs(ilosci[0] - a.gramy) <= 0.05)) {
+    } else if (Math.abs(suma - a.gramy) > 0.05 && !jednaPorcja) {
       bledy.push(`Akcent „${a.produkt}”: na liście ${a.gramy} g, w krokach razem ${suma} g (${ilosci.join(" + ")}). Obie liczby mają być równe.`);
     }
   }

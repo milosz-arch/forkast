@@ -81,11 +81,13 @@ test("akcent bez żadnego kroku → błąd", () => {
   prawda(b[0].includes("Czosnek") && b[0].includes("żadnym kroku"), b[0]);
 });
 
-test("ilość rozbita na kilka kroków sumuje się (sól 2+1+1 = 4)", () => {
-  const ak = AKCENTY_OK.map(a => a.produkt === "Sól" ? { ...a, gramy: 3 } : a);
-  const b = sprawdzAkcenty(KROKI_OK, FUNDAMENT, ak);
-  rowne(b.length, 1);
-  prawda(b[0].includes("Sól") && b[0].includes("3") && b[0].includes("4"), b[0]);
+test("ilość rozbita na kilka kroków sumuje się (sól 2+1+1 = 4); lista 3 też przechodzi — to ZNANY KOSZT reguły z curry", () => {
+  const przy = (g) => sprawdzAkcenty(KROKI_OK, FUNDAMENT, AKCENTY_OK.map(a => a.produkt === "Sól" ? { ...a, gramy: g } : a));
+  rowne(przy(4), [], "suma wszystkich");
+  rowne(przy(3), [], "suma różnych (2+1) — przepuszczamy, żeby nie odrzucać poprawnych przepisów");
+  const b = przy(5);
+  rowne(b.length, 1, "5 nie jest żadną z sum");
+  prawda(b[0].includes("Sól") && b[0].includes("5") && b[0].includes("4"), b[0]);
 });
 
 test("woda nie jest produktem — 200 ml i 30 ml wody nie robią błędu", () => {
@@ -115,6 +117,13 @@ test("ta sama liczba dwa razy przy liście 7 → błąd z rozbiciem (5 + 5)", ()
   const b = sprawdzAkcenty(["Dodaj 5 g cukru.", "Dodaj 5 g cukru."], FUNDAMENT, [{ produkt: "Cukier", gramy: 7 }]);
   rowne(b.length, 1);
   prawda(b[0].includes("5 + 5"), b[0]);
+});
+
+test("SÓL Z CURRY: 4 + 4 + 1 przy liście 5 przechodzi (4 to jedna porcja, 1 korekta)", () => {
+  const kroki = ["Posól 4 g soli bakłażana.", "Wrzuć bakłażana z 4 g soli.", "Za mało słone → 1 g soli."];
+  rowne(sprawdzAkcenty(kroki, FUNDAMENT, [{ produkt: "Sól", gramy: 5 }]), []);
+  rowne(sprawdzAkcenty(kroki, FUNDAMENT, [{ produkt: "Sól", gramy: 9 }]), [], "suma wszystkich też przechodzi");
+  rowne(sprawdzAkcenty(kroki, FUNDAMENT, [{ produkt: "Sól", gramy: 7 }]).length, 1, "7 nie jest ani sumą, ani sumą różnych");
 });
 
 test("„150 g Papryka pokrojona” idzie do fundamentu „Papryka”, nie do akcentu „Papryka wędzona” — niezależnie od kolejności", () => {
