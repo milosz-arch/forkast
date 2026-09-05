@@ -55,15 +55,25 @@ export function daneRestauracyjne() {
     widok: {},           // id → "podstawowa" | "restauracyjna"; niezapamiętywany (decyzja 111)
     slownik: [],
 
-    /* Wołane z initEkranu PO polaczZBaza(). Czyta gałąź i słownik własnych produktów. */
-    async wczytajRestauracyjne(polaczenie, kod) {
+    /* Wołane z initEkranu PO polaczZBaza(). Słownik własnych produktów czyta raz;
+       gałąź wersji przez NASŁUCH (114) — wersja wygenerowana na drugim telefonie
+       pojawia się od razu. Trzeci argument onValue obowiązkowy (pułapka 9): odmowa
+       odczytu wygląda inaczej niż brak danych. Kończy się po pierwszej odpowiedzi,
+       żeby Promise.all w initEkranu nie wisiał. */
+    wczytajRestauracyjne(polaczenie, kod) {
       fb = polaczenie; kodDomu = kod;
-      const [snapRest, snapProd] = await Promise.all([
-        fb.get(fb.ref(fb.db, `domy/${kodDomu}/restauracyjne`)),
-        fb.get(fb.ref(fb.db, `domy/${kodDomu}/produktyWlasne`)),
-      ]);
-      this.restauracyjne = snapRest.val() || {};
-      this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
+      const produkty = fb.get(fb.ref(fb.db, `domy/${kodDomu}/produktyWlasne`))
+        .then(snap => { this.slownik = [...PRODUKTY, ...Object.values(snap.val() || {})]; });
+      const wersje = new Promise((gotowe) => {
+        fb.onValue(fb.ref(fb.db, `domy/${kodDomu}/restauracyjne`), (snap) => {
+          this.restauracyjne = snap.val() || {};
+          gotowe();
+        }, (blad) => {
+          this.mrugnij?.(`Nie mogę czytać wersji restauracyjnych: ${blad?.message || blad}`);
+          gotowe();
+        });
+      });
+      return Promise.all([produkty, wersje]);
     },
 
     /* Wpisy sprzed decyzji 112 (z `akcenty` zamiast `skladniki`) nie liczą się —

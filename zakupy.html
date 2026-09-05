@@ -861,10 +861,12 @@ Alpine.data("ekranZakupy", () => ({
         get(ref(db, `domy/${kodDomu}/preferencje`)),
         get(ref(db, `domy/${kodDomu}/restauracyjne`)),
       ]);
-      /* Wersje restauracyjne (113): czytane raz przy starcie. Wersja wygenerowana
-         w międzyczasie na drugim telefonie pojawi się tu po odświeżeniu — na razie
-         świadomie, bo nasłuch na drugiej gałęzi to druga warstwa złożoności (99). */
-      const restauracyjne = snapRest.val() || {};
+      /* Wersje restauracyjne (113, 114): pierwszy odczyt razem z resztą, potem nasłuch —
+         wersja wygenerowana na drugim telefonie przelicza listę bez odświeżania.
+         Nasłuch woła to samo przeliczenie, co nasłuch jadłospisu, na ostatnim
+         znanym planie; przed pierwszym planem nie ma czego liczyć. */
+      let restauracyjne = snapRest.val() || {};
+      let ostatniPlan = null;
       this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
       const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
       const wszystkie = [...TALIA_STARTOWA, ...wlasne];
@@ -882,8 +884,8 @@ Alpine.data("ekranZakupy", () => ({
 
       /* onValue zamiast get: dwie osoby przy jednym stole widzą swoje zmiany
          bez odświeżania. */
-      onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => {
-        const zapisany = snap.val();
+      const naPlan = (zapisany) => {
+        ostatniPlan = zapisany;
         if (!zapisany?.siatka?.length) {
           /* Brak jadłospisu NIE znaczy pusta lista. Dopisane ręcznie pozycje żyją
              niezależnie od planu — i to one są całą listą u kogoś, kto planu nie
@@ -918,7 +920,13 @@ Alpine.data("ekranZakupy", () => ({
         localStorage.setItem(this.kluczListy, JSON.stringify({
           okres: start, pozycje: plaskie, pominiete: wynik.pominiete, kiedy: Date.now(),
         }));
-      }, blad => this.nasluchPadl("jadłospisu", blad));
+      };
+      onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => naPlan(snap.val()),
+              blad => this.nasluchPadl("jadłospisu", blad));
+      onValue(ref(db, `domy/${kodDomu}/restauracyjne`), (snap) => {
+        restauracyjne = snap.val() || {};
+        if (ostatniPlan) naPlan(ostatniPlan);
+      }, blad => this.nasluchPadl("wersji restauracyjnych", blad));
     } catch {
       this.laduje = false;
       this.stanSieci = lokalna

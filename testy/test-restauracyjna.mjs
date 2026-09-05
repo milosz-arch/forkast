@@ -363,6 +363,13 @@ test("zapis pod restauracyjne/{id} jako obiekt (pułapka 2), nowe produkty pod p
   prawda(!/this\.fb\b/.test(modul), "połączenie z bazą leży na this — pułapka 25");
 });
 
+test("gałąź restauracyjne jest NASŁUCHIWANA (114) z obsługą odmowy (pułapka 9) — w module i w Zakupach", () => {
+  prawda(/fb\.onValue\(fb\.ref\(fb\.db, `domy\/\$\{kodDomu\}\/restauracyjne`\), \(snap\) => \{[\s\S]*?\}, \(blad\) =>/.test(modul), "moduł czyta wersje bez nasłuchu albo bez obsługi błędu");
+  const zakupy = czytaj("../zakupy.html");
+  prawda(/onValue\(ref\(db, `domy\/\$\{kodDomu\}\/restauracyjne`\), \(snap\) => \{[\s\S]*?\}, blad =>/.test(zakupy), "Zakupy nie nasłuchują wersji albo bez obsługi błędu");
+  prawda(/if \(ostatniPlan\) naPlan\(ostatniPlan\)/.test(zakupy), "nowa wersja nie przelicza listy");
+});
+
 test("komunikat błędu niesie etap i numer wydania", () => {
   prawda(/Nie udało się \(\$\{etap\}\)/.test(modul) && /\$\{WYDANIE\}/.test(modul), "błąd bez etapu albo bez wydania");
 });
