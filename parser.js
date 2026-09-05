@@ -533,7 +533,11 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
     ...fundament.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: false })),
     ...akcenty.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: true })),
   ];
-  const wKrokach = new Map(akcenty.map(a => [a.produkt, 0]));
+  /* Lista ilości per akcent, nie suma — bo ta sama liczba w dwóch krokach
+     („posiekaj 5 g natki” → „posyp 5 g natki”) to przygotowanie i użycie jednej
+     porcji, nie dwa dodania. Pomiar 3 (5 września) odrzucił poprawny przepis
+     właśnie tak. Różne liczby się sumują (2 g do marynaty + 2 g do sosu + 1 g korekty). */
+  const wKrokach = new Map(akcenty.map(a => [a.produkt, []]));
 
   for (const w of ilosciZKrokow(kroki)) {
     if (!w.slowa.length) {
@@ -542,24 +546,34 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
     }
     if (w.slowa.some(s => wspolnyPoczatek(s, "woda") >= 3)) continue;   // woda nie jest produktem
 
-    let naj = null, najWynik = 0;
+    /* Ranking dwustopniowy: najpierw ile liter się zgadza, przy remisie — jaka część
+       nazwy produktu jest pokryta. „150 g Papryka pokrojona” pasuje po równo (7 liter)
+       do „Papryka” i „Papryka wędzona”; wygrywa „Papryka”, bo pokryta w całości.
+       Bez tego wygrywał ten, kto stał pierwszy na liście. */
+    let naj = null, najWynik = 0, najPokrycie = 0;
     for (const k of kandydaci) {
       const wynik = dopasowanie(w.slowa, k.slowa);
-      if (wynik > najWynik) { naj = k; najWynik = wynik; }
+      if (!wynik) continue;
+      const pokrycie = k.slowa.filter(p => w.slowa.some(f => wspolnyPoczatek(f, p))).length / k.slowa.length;
+      if (wynik > najWynik || (wynik === najWynik && pokrycie > najPokrycie)) {
+        naj = k; najWynik = wynik; najPokrycie = pokrycie;
+      }
     }
     if (!naj) {
       bledy.push(`Krok ${w.krok}: „${w.tekst}” — tego składnika nie ma ani w wersji podstawowej, ani w akcentach. Dopisz go do akcentów z gramaturą.`);
       continue;
     }
-    if (naj.akcent) wKrokach.set(naj.nazwa, wKrokach.get(naj.nazwa) + w.ilosc);
+    if (naj.akcent) wKrokach.get(naj.nazwa).push(w.ilosc);
   }
 
   for (const a of akcenty) {
-    const suma = Math.round(wKrokach.get(a.produkt) * 10) / 10;
-    if (suma === 0) {
+    const ilosci = wKrokach.get(a.produkt);
+    const suma = Math.round(ilosci.reduce((s, x) => s + x, 0) * 10) / 10;
+    const jednaPorcja = ilosci.length > 1 && ilosci.every(x => x === ilosci[0]);
+    if (!ilosci.length) {
       bledy.push(`Akcent „${a.produkt}” (${a.gramy} g) nie pojawia się z ilością w żadnym kroku. Usuń go z akcentów albo napisz w kroku, ile go użyć.`);
-    } else if (Math.abs(suma - a.gramy) > 0.05) {
-      bledy.push(`Akcent „${a.produkt}”: na liście ${a.gramy} g, w krokach razem ${suma} g. Obie liczby mają być równe.`);
+    } else if (Math.abs(suma - a.gramy) > 0.05 && !(jednaPorcja && Math.abs(ilosci[0] - a.gramy) <= 0.05)) {
+      bledy.push(`Akcent „${a.produkt}”: na liście ${a.gramy} g, w krokach razem ${suma} g (${ilosci.join(" + ")}). Obie liczby mają być równe.`);
     }
   }
   return bledy;

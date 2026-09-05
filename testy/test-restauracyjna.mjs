@@ -100,6 +100,29 @@ test("ilość bez nazwy składnika → błąd", () => {
   prawda(b[0].includes("bez nazwy"), b[0]);
 });
 
+test("NATKA Z POMIARU 3: „posiekaj 5 g” + „posyp 5 g” = jedna porcja 5 g, nie 10", () => {
+  rowne(sprawdzAkcenty(["Posiekaj 5 g natki pietruszki.", "Posyp 5 g natki pietruszki."], FUNDAMENT,
+    [{ produkt: "Natka pietruszki", gramy: 5 }]), []);
+});
+
+test("ale ta sama liczba dwa razy przy liście 10 też przechodzi (dwa dodania po 5)", () => {
+  rowne(sprawdzAkcenty(["Dodaj 5 g cukru.", "Dodaj 5 g cukru."], FUNDAMENT, [{ produkt: "Cukier", gramy: 10 }]), []);
+});
+
+test("ta sama liczba dwa razy przy liście 7 → błąd z rozbiciem (5 + 5)", () => {
+  const b = sprawdzAkcenty(["Dodaj 5 g cukru.", "Dodaj 5 g cukru."], FUNDAMENT, [{ produkt: "Cukier", gramy: 7 }]);
+  rowne(b.length, 1);
+  prawda(b[0].includes("5 + 5"), b[0]);
+});
+
+test("„150 g Papryka pokrojona” idzie do fundamentu „Papryka”, nie do akcentu „Papryka wędzona” — niezależnie od kolejności", () => {
+  const kroki = ["Wrzuć 150 g Papryka pokrojona w paski.", "Dodaj 5 g Papryka wędzona."];
+  rowne(sprawdzAkcenty(kroki, FUNDAMENT, [{ produkt: "Papryka wędzona", gramy: 5 }]), []);
+  const fundamentPoAkcencie = [{ produkt: "Papryka wędzona", gramy: 5 }];
+  const b = sprawdzAkcenty(kroki, [], [...fundamentPoAkcencie, { produkt: "Papryka", gramy: 150 }]);
+  rowne(b, [], "przy odwróconej kolejności");
+});
+
 console.log("\n— polska odmiana i podobne nazwy —");
 
 test("„1 g pieprzu” idzie do Pieprzu, nie do Piersi z kurczaka", () => {
@@ -150,6 +173,7 @@ test("prompt niesie danie, gramatury fundamentu i regułę sum z 109", () => {
   prawda(/MUSI być równa/.test(p) && /Woda nie jest produktem/.test(p), "brak reguły sum z decyzji 109");
   prawda(p.includes("Sól i pieprz też są akcentami"), "sól nie jest nazwana jako akcent — a właśnie ją model pominął w pomiarze");
   prawda(p.includes("Olej rzepakowy") && p.includes("Cytryny"), "brak listy produktów");
+  prawda(p.includes("liczy się raz") && p.includes("ODMIENIAJ"), "brak reguły „ta sama liczba raz” albo odmiany w krokach (pomiar 3)");
 });
 
 test("cztery zasady head chefa (108) są w prompcie", () => {

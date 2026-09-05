@@ -192,7 +192,7 @@ LICZBY MUSZĄ SIĘ ZGADZAĆ — to jest sprawdzane mechanicznie
 Aplikacja przeczyta z kroków każdą ilość w gramach i mililitrach i porówna ją z tablicą "akcenty":
 - Każda ilość w krokach, która nie jest jednym z ${ile} składników podstawowych, MUSI mieć pozycję w "akcenty". Woda nie jest produktem i nie liczy się.
 - Suma ilości danego akcentu ze wszystkich kroków MUSI być równa jego gramaturze w "akcenty". Jeśli sól idzie w trzech miejscach po 2 g, 1 g i 1 g, w "akcenty" stoi Sól 4 g. Korekty z punktu kontrolnego smaku („za mało słone → 1 g soli”) też się liczą — kucharz musi mieć tę sól pod ręką.
-- Podawaj ilość składnika w kroku, w którym trafia do naczynia. Nie powtarzaj tej samej liczby w kolejnych krokach („wlej marynatę”, nie „wlej marynatę z 15 ml oleju” drugi raz) — powtórzona liczba zostanie policzona dwa razy.
+- Ta sama liczba przy tym samym akcencie w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”) liczy się raz. Różne liczby się sumują (2 g soli do marynaty + 2 g do sosu + 1 g korekty = 5 g). Jeśli dodajesz coś dwa razy po tyle samo, napisz w akcentach podwojoną ilość albo rozbij ją w krokach na różne liczby.
 - Akcent, który nie pojawia się z ilością w żadnym kroku, jest błędem.
 Rozjazd w którymkolwiek punkcie oznacza, że odpowiedź wraca do poprawy.
 
@@ -211,6 +211,7 @@ Nie na dopisaniu uwag do tych samych kroków. Ułóż przepis od nowa, według c
 WYMAGANIA, KTÓRYCH NIE WOLNO POMINĄĆ
 - WSZYSTKIE ilości w gramach albo mililitrach, także w krokach. Zakazane: szklanka, łyżka, łyżeczka, garść, szczypta, odrobina, „do smaku”, „na oko”. Pisz „5 g soli”, nie „szczypta”; „30 g oliwy”, nie „dwie łyżki”.
 - Każdy krok zaczyna się od czasownika i wymienia z nazwy każdy składnik, którego dotyczy.
+- W krokach ODMIENIAJ nazwy jak w zwykłym zdaniu („10 g musztardy Dijon”, „150 g papryki”), nie „10 g Musztarda Dijon”. Nazwy dokładnie z listy obowiązują tylko w "akcenty" i "noweProdukty".
 - Nie ma górnego limitu liczby kroków. Jest dolny: przepis krótszy niż wersja podstawowa nie jest wersją restauracyjną.
 
 LISTA PRODUKTÓW
