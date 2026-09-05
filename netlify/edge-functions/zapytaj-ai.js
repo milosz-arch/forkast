@@ -102,6 +102,12 @@ const BUDZET_MS = 25000;
    wolny model wyczerpuje cały budżet i nigdy się nie dowiemy, czy drugi byłby szybszy. */
 const LIMIT_PROBY_MS = 11000;
 
+/* POMIAR (decyzja 106): strona `pomiar.html` wysyła `pomiar: true`. Wtedy JEDEN model
+   dostaje cały budżet zamiast 11 s — bo mierzymy, ile trwa wersja restauracyjna,
+   a nie który model jest szybszy. Zwykłe dodawanie dania tej flagi nie wysyła
+   i nic się dla niego nie zmienia. Do usunięcia razem ze stroną pomiaru. */
+const limitProby = (pomiar) => pomiar === true ? BUDZET_MS - 1000 : LIMIT_PROBY_MS;
+
 const adresModelu = (m) =>
   `https://generativelanguage.googleapis.com/${m.wersja}/models/${m.nazwa}:generateContent`;
 
@@ -194,7 +200,7 @@ export default async (request) => {
   try { dane = await request.json(); }
   catch { return odpowiedz(400, { blad: "Nieprawidłowe zapytanie." }); }
 
-  const { prompt, obrazy, kodDomu } = dane;
+  const { prompt, obrazy, kodDomu, pomiar } = dane;
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return odpowiedz(400, { blad: "Brak treści promptu." });
   }
@@ -238,7 +244,7 @@ export default async (request) => {
     if (zostalo() < 3000) break;
 
     const stopZegar = new AbortController();
-    const naProbe = Math.min(LIMIT_PROBY_MS, zostalo() - 1000);
+    const naProbe = Math.min(limitProby(pomiar), zostalo() - 1000);
     const budzik = setTimeout(() => stopZegar.abort(), naProbe);
 
     const cialo = { contents: [{ parts }] };
@@ -283,6 +289,9 @@ export default async (request) => {
     const wynik = await odp.json();
     const czasGemini = Date.now() - startModelu;
     const tekst = (wynik?.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+    /* Powód zakończenia jedzie razem z tekstem: „MAX_TOKENS” znaczy, że odpowiedź
+       jest UCIĘTA, a ucięty JSON wygląda jak zepsuty model, nie jak za krótki limit. */
+    const koniec = wynik?.candidates?.[0]?.finishReason || null;
     if (!tekst.trim()) {
       zapisz("pusto");
       ostatniStatus = "pusta odpowiedź";
@@ -296,6 +305,7 @@ export default async (request) => {
     return odpowiedz(200, {
       tekst,
       model: model.nazwa,
+      koniec,
       czasy: { baza: czasBazy, gemini: czasGemini, razem: minelo(), model: model.nazwa, proby },
     });
   }

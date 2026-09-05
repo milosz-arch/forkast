@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pomiar — Forkast</title>
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<script src="lib/tailwind.js"></script>
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+<link rel="stylesheet" href="styl.css">
+</head>
+
+<!-- STRONA TYMCZASOWA — pomiar czasu wersji restauracyjnej (decyzja 106).
+     Nie ma do niej wejścia z apki; otwiera się ją z adresu /pomiar.html.
+     Jedno danie, jeden prompt, liczba z telefonu. Do skasowania po pomiarze
+     razem z flagą `pomiar` w netlify/edge-functions/zapytaj-ai.js. -->
+<body class="h-full bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-100">
+
+<main class="mx-auto max-w-lg space-y-4 p-4">
+  <h1 class="text-xl font-semibold">Pomiar: tortilla, wersja restauracyjna</h1>
+  <p class="text-sm text-stone-600 dark:text-stone-400">
+    Wysyła jeden prompt przez tę samą funkcję co dodawanie dania. Model dostaje cały
+    budżet 24 s zamiast 11 s. Stół: <span id="stol" class="font-mono"></span>
+  </p>
+
+  <button id="start" class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-white disabled:opacity-50">
+    Zmierz
+  </button>
+
+  <p id="zegar" class="font-mono text-3xl tabular-nums">0,0 s</p>
+
+  <section id="wynik" hidden class="space-y-3">
+    <pre id="czasy" class="overflow-x-auto rounded-lg bg-stone-100 p-3 text-xs dark:bg-stone-900"></pre>
+    <p id="ocena" class="text-sm"></p>
+    <textarea id="tekst" readonly rows="18"
+      class="w-full rounded-lg border border-stone-300 bg-white p-2 font-mono text-xs dark:border-stone-700 dark:bg-stone-900"></textarea>
+    <button id="kopiuj" class="w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700">
+      Skopiuj odpowiedź i czasy
+    </button>
+  </section>
+
+  <p id="blad" hidden class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800
+     dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200"></p>
+</main>
+
+<script type="module">
+import { kodStolu } from "./baza.js";
+import { PRODUKTY } from "./produkty.js";
+import { WYDANIE } from "./wersja.js";
+
+const $ = (id) => document.getElementById(id);
+const kodDomu = kodStolu();
+$("stol").textContent = kodDomu || "BRAK — załóż albo wejdź do stołu na ekranie głównym";
+if (!kodDomu) $("start").disabled = true;
+
+/* Lista produktów budowana tak samo jak w prompt.js — działami. */
+const dzialy = {};
+for (const p of PRODUKTY) (dzialy[p.dzial] ||= []).push(p.n);
+const lista = Object.entries(dzialy).map(([d, ns]) => `${d}: ${ns.join(", ")}`).join("\n");
+
+const PROMPT = `Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE obiektem JSON, bez żadnego tekstu przed ani po.
+
+Dostajesz danie w wersji podstawowej — takiej, jaką ktoś gotuje w tygodniu na szybko. Napisz to samo danie w wersji restauracyjnej: tak, jak uczyłbyś kogoś, kto ma zrobić je naprawdę dobrze i ma na to czas.
+
+DANIE W WERSJI PODSTAWOWEJ
+Tortilla z kurczakiem i warzywami, na 2 osoby.
+Składniki: Tortilla pszenna 120 g, Pierś z kurczaka 250 g, Papryka 150 g, Cebula 60 g, Jogurt grecki 80 g.
+Kroki:
+1. Pokrój pierś z kurczaka w paski, a paprykę i cebulę w cienkie plastry.
+2. Podsmaż kurczaka na patelni (7/9) 6 minut do temperatury wewnętrznej 74°C.
+3. Dodaj paprykę i cebulę, smaż razem 4 minuty.
+4. Rozgrzej tortillę pszenną na suchej patelni 20 sekund z każdej strony.
+5. Nałóż nadzienie na tortillę, polej jogurtem greckim i zwiń.
+
+CZEGO NIE WOLNO RUSZYĆ
+To ma być to samo danie w tej samej ilości. Pięć składników powyżej zostaje z DOKŁADNIE tymi gramaturami — nie zmieniasz ich, nie usuwasz, nie zastępujesz. Nie dokładasz drugiego węglowodanu ani drugiego białka. Nie zmieniasz liczby porcji.
+
+CO WOLNO DOŁOŻYĆ
+Akcenty: przyprawy, zioła, kwas, tłuszcz do smażenia, marynatę, dodatkowy krok w rodzaju moczenia cebuli w zimnej wodzie albo marynowania kurczaka. Każdy dołożony składnik wypisz osobno w tablicy "akcenty" z gramaturą — użytkownik dokupi je ręcznie, więc musi wiedzieć co i ile. Bierz nazwy z listy produktów, przepisane DOKŁADNIE tak, jak tam stoją; czego na liście nie ma, dopisz do "noweProdukty" z wartościami odżywczymi na 100 g.
+
+NA CZYM POLEGA WERSJA RESTAURACYJNA
+Nie na dopisaniu uwag do tych samych pięciu kroków. Ułóż przepis od nowa, według czasu:
+- Zacznij od tego, co musi czekać (marynata, odpoczynek, moczenie) i wskaż, co robić w tym czasie — kroki, które biegną równolegle, zapisz jako równoległe: „masz 20 minut — w tym czasie…”.
+- Przy każdym kroku z obróbką cieplną: moc palnika, czas, temperatura, i PO CZYM POZNAĆ, że gotowe — kolor, dźwięk, zapach, konsystencja. Przy kurczaku temperatura w środku.
+- Przy każdej decyzji, która nie jest oczywista, napisz DLACZEGO — co się stanie, jeśli zrobić inaczej.
+- Kolejność wrzucania na patelnię i czas między składnikami są ważniejsze niż lista składników. Powiedz, kiedy patelnia ma być pusta, kiedy pełna, kiedy zdjęta z ognia.
+- Ostatni krok to składanie i podanie: temperatura, w jakiej to trafia na talerz, i co zrobić z tortillą, żeby nie pękała przy zwijaniu.
+
+WYMAGANIA, KTÓRYCH NIE WOLNO POMINĄĆ
+- WSZYSTKIE ilości w gramach albo mililitrach, także w krokach. Zakazane: szklanka, łyżka, łyżeczka, garść, szczypta, odrobina, „do smaku”, „na oko”. Pisz „5 g soli”, nie „szczypta”; „30 g oliwy”, nie „dwie łyżki”.
+- Każdy krok zaczyna się od czasownika i wymienia z nazwy każdy składnik, którego dotyczy. Składnik z "akcenty", który nie pojawia się w żadnym kroku, jest błędem.
+- Nie ma górnego limitu liczby kroków. Jest dolny: przepis krótszy niż wersja podstawowa nie jest wersją restauracyjną.
+
+LISTA PRODUKTÓW
+${lista}
+
+FORMAT ODPOWIEDZI
+{
+  "kroki": ["Pierwszy krok.", "Drugi krok."],
+  "akcenty": [
+    { "produkt": "Nazwa dokładnie z listy", "gramy": 10 }
+  ],
+  "noweProdukty": [
+    { "nazwa": "...", "kcal": 0, "bialko": 0, "wegle": 0, "tluszcz": 0, "dzial": "..." }
+  ],
+  "uwaga": "jedno zdanie, jeśli coś w wersji podstawowej Twoim zdaniem jest błędem — albo puste"
+}
+
+Zwróć sam JSON. Bez wstępu, bez komentarza, bez podsumowania.`;
+
+const sek = (ms) => (ms / 1000).toFixed(1).replace(".", ",") + " s";
+let ostatni = "";
+
+$("start").addEventListener("click", async () => {
+  $("start").disabled = true;
+  $("wynik").hidden = true;
+  $("blad").hidden = true;
+  const start = Date.now();
+  const tyk = setInterval(() => { $("zegar").textContent = sek(Date.now() - start); }, 100);
+
+  try {
+    const odp = await fetch("/api/zapytaj-ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: PROMPT, kodDomu, obrazy: [], pomiar: true }),
+    });
+    const naTelefonie = Date.now() - start;
+    clearInterval(tyk);
+    $("zegar").textContent = sek(naTelefonie);
+
+    let json;
+    try { json = await odp.json(); }
+    catch { throw new Error(`Odpowiedź nie jest JSON-em (HTTP ${odp.status}) — ${WYDANIE}`); }
+    if (!odp.ok) throw new Error(`${json.blad || "Błąd funkcji"} (HTTP ${odp.status}) — ${WYDANIE}`);
+
+    const czasy = { naTelefonie, ...json.czasy, koniec: json.koniec, model: json.model, wydanie: WYDANIE };
+    $("czasy").textContent = JSON.stringify(czasy, null, 2);
+
+    /* Ocena kształtu — nie jakości. Jakość ocenia Miłosz (decyzja 105). */
+    const surowy = json.tekst.replace(/```json|```/g, "").trim();
+    let ocena;
+    try {
+      const d = JSON.parse(surowy);
+      ocena = `JSON poprawny. Kroków: ${d.kroki?.length ?? "?"}, akcentów: ${d.akcenty?.length ?? "?"}, ` +
+              `nowych produktów: ${d.noweProdukty?.length ?? "?"}. Znaków: ${surowy.length}.`;
+    } catch {
+      ocena = `JSON NIEPOPRAWNY (koniec: ${json.koniec}). Znaków: ${surowy.length}.`;
+    }
+    $("ocena").textContent = ocena;
+    $("tekst").value = json.tekst;
+    ostatni = `CZASY\n${JSON.stringify(czasy, null, 2)}\n\n${ocena}\n\nODPOWIEDŹ\n${json.tekst}`;
+    $("wynik").hidden = false;
+  } catch (e) {
+    clearInterval(tyk);
+    $("blad").textContent = e.message;
+    $("blad").hidden = false;
+  } finally {
+    $("start").disabled = false;
+  }
+});
+
+$("kopiuj").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(ostatni); $("kopiuj").textContent = "Skopiowane"; }
+  catch { $("tekst").select(); $("kopiuj").textContent = "Zaznaczone — skopiuj ręcznie"; }
+});
+</script>
+</body>
+</html>

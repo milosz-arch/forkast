@@ -202,4 +202,35 @@ test("tryb „Link” nie wraca bez narzędzia do czytania stron", () => {
     "faktycznie została pobrana — przy zablokowanej stronie wróci zmyślony przepis");
 });
 
+/* ---------- pomiar wersji restauracyjnej (decyzja 106), TYMCZASOWE ---------- */
+
+let pomiar = "";
+try { pomiar = czytaj("../pomiar.html"); } catch { /* strona skasowana — testy niżej same się wyłączą */ }
+
+test("strona pomiaru woła ten sam adres co ekran dodawania i wysyła flagę pomiar", () => {
+  if (!pomiar) return;
+  const wKodzie = funkcja.match(/export const config\s*=\s*\{[^}]*path:\s*["']([^"']+)["']/)[1];
+  const wStronie = pomiar.match(/fetch\(\s*["'](\/[^"']*zapytaj-ai)["']/);
+  prawda(wStronie && wStronie[1] === wKodzie,
+    `pomiar.html woła ${wStronie?.[1] || "nic"}, a funkcja nasłuchuje pod ${wKodzie}`);
+  prawda(/pomiar:\s*true/.test(pomiar),
+    "pomiar.html nie wysyła `pomiar: true` — model dostanie 11 s i pomiar zmierzy limit, nie danie");
+});
+
+test("flaga pomiar naprawdę zmienia limit jednej próby", () => {
+  if (!pomiar) return;
+  prawda(/\bpomiar\b/.test(bezKomentarzy.match(/const \{[^}]*\} = dane;/)?.[0] || ""),
+    "funkcja nie czyta `pomiar` z treści zapytania — flaga ze strony pomiaru leci w próżnię");
+  const naProbe = bezKomentarzy.match(/const naProbe\s*=\s*([^;]+);/);
+  prawda(naProbe && /pomiar/.test(naProbe[1]),
+    "limit jednej próby nie zależy od flagi pomiar — wersja restauracyjna zostanie ucięta po 11 s");
+});
+
+test("powód zakończenia odpowiedzi Gemini jedzie do apki", () => {
+  prawda(/finishReason/.test(bezKomentarzy),
+    "funkcja nie czyta finishReason — ucięty JSON będzie wyglądał jak zepsuty model");
+  prawda(/koniec,/.test(bezKomentarzy.match(/odpowiedz\(200,\s*\{[\s\S]*?\}\)/)?.[0] || ""),
+    "finishReason odczytany, ale nie odesłany w odpowiedzi 200");
+});
+
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}\n`);
