@@ -196,7 +196,7 @@
                              text-emerald-700 dark:text-emerald-400"
                       x-text="`Składniki na ${p.porcje} porcje`"></h3>
                   <ul class="mt-2">
-                    <template x-for="s in p.skladniki" :key="s.produkt">
+                    <template x-for="s in skladDoPokazania(p)" :key="s.produkt">
                       <li class="flex justify-between py-1 text-[1rem] text-stone-600 dark:text-stone-400">
                         <span x-text="s.produkt"></span>
                         <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
@@ -210,7 +210,7 @@
                        podstawowych, więc bez nich nie ma z czego. -->
                   <template x-if="p.kroki?.length">
                     <div class="mt-5">
-                      <template x-if="restauracyjne[p.id]">
+                      <template x-if="maWersje(p)">
                         <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800"
                              role="group" aria-label="Wersja przepisu">
                           <button type="button" @click="widok[p.id] = 'podstawowa'"
@@ -228,7 +228,7 @@
                         </div>
                       </template>
 
-                      <template x-if="!restauracyjne[p.id] && !stanAI[p.id]">
+                      <template x-if="!maWersje(p) && !stanAI[p.id]">
                         <button type="button" @click="ulepsz(p)"
                                 class="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl
                                        border border-emerald-200 bg-emerald-50 px-4 text-[0.95rem] font-semibold
@@ -267,11 +267,11 @@
 
                       <!-- Lista różnicy (decyzja 102): lista zakupów liczy wersję podstawową,
                            więc tu stoi wprost, co trzeba dokupić. Miejsce na liście zakupów — otwarte. -->
-                      <template x-if="widok[p.id] === 'restauracyjna' && restauracyjne[p.id]">
+                      <template x-if="widok[p.id] === 'restauracyjna' && maWersje(p)">
                         <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
                                     dark:bg-amber-400/10 dark:text-amber-200">
-                          <p><span class="font-bold">Dokłada do zakupów:</span>
-                             <span x-text="roznicaZakupow(p)"></span>.</p>
+                          <p><span class="font-bold">Względem podstawowej:</span>
+                             <span x-text="roznicaSkladu(p)"></span>.</p>
                           <p x-show="restauracyjne[p.id].uwaga" class="mt-1.5 italic" x-text="restauracyjne[p.id].uwaga"></p>
                         </div>
                       </template>

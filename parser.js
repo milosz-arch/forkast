@@ -533,23 +533,19 @@ export function ilosciZKrokow(kroki) {
 }
 
 /**
- * @param {string[]} kroki      kroki wersji restauracyjnej
- * @param {Array}    fundament  składniki wersji podstawowej [{produkt, gramy}] — nie sprawdzamy sum
- * @param {Array}    akcenty    [{produkt, gramy}] — sprawdzamy w obie strony
- * @returns {string[]} lista rozjazdów w liczbach, pusta = kształt się zgadza.
- *   Zdania są pisane tak, żeby dało się je odesłać modelowi jako „popraw to”.
+ * Sprawdza w obie strony (decyzja 109, po decyzji 112 dla CAŁEGO składu):
+ * każda ilość w g/ml w krokach ma pozycję w składnikach, a suma z kroków równa
+ * się ilości na liście — z regułą „ta sama liczba raz” (natka, bakłażan).
+ * @param {string[]} kroki
+ * @param {Array}    skladniki  [{produkt, gramy}] — pełny skład wersji sprawdzanej
+ * @returns {string[]} rozjazdy w liczbach, pusta = zgodne. Zdania nadają się do pushbacku.
  */
-export function sprawdzAkcenty(kroki, fundament, akcenty) {
+const MIESZANKA = /^(dip|sos|marynat|mieszank|nadzieni|farsz|mas[aey]|ciast|past[aey]|salsa|dressing|winegret|zalew|pure|bulion|wywar)/;
+
+export function sprawdzSklad(kroki, skladniki) {
   const bledy = [];
-  const kandydaci = [
-    ...fundament.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: false })),
-    ...akcenty.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt), akcent: true })),
-  ];
-  /* Lista ilości per akcent, nie suma — bo ta sama liczba w dwóch krokach
-     („posiekaj 5 g natki” → „posyp 5 g natki”) to przygotowanie i użycie jednej
-     porcji, nie dwa dodania. Pomiar 3 (5 września) odrzucił poprawny przepis
-     właśnie tak. Różne liczby się sumują (2 g do marynaty + 2 g do sosu + 1 g korekty). */
-  const wKrokach = new Map(akcenty.map(a => [a.produkt, []]));
+  const kandydaci = skladniki.map(s => ({ nazwa: s.produkt, slowa: slowaNazwy(s.produkt) }));
+  const wKrokach = new Map(skladniki.map(s => [s.produkt, []]));
 
   for (const w of ilosciZKrokow(kroki)) {
     if (!w.slowa.length) {
@@ -558,10 +554,9 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
     }
     if (w.slowa.some(s => wspolnyPoczatek(s, "woda") >= 3)) continue;   // woda nie jest produktem
 
-    /* Ranking dwustopniowy: najpierw ile liter się zgadza, przy remisie — jaka część
-       nazwy produktu jest pokryta. „150 g Papryka pokrojona” pasuje po równo (7 liter)
-       do „Papryka” i „Papryka wędzona”; wygrywa „Papryka”, bo pokryta w całości.
-       Bez tego wygrywał ten, kto stał pierwszy na liście. */
+    /* Ranking dwustopniowy: ile liter się zgadza, przy remisie — jaka część nazwy
+       produktu jest pokryta. „150 g Papryka pokrojona” pasuje po równo do „Papryka”
+       i „Papryka wędzona”; wygrywa „Papryka”, bo pokryta w całości. */
     let naj = null, najWynik = 0, najPokrycie = 0;
     for (const k of kandydaci) {
       const wynik = dopasowanie(w.slowa, k.slowa);
@@ -571,38 +566,44 @@ export function sprawdzAkcenty(kroki, fundament, akcenty) {
         naj = k; najWynik = wynik; najPokrycie = pokrycie;
       }
     }
+    /* „86 g dipu jogurtowego”, „200 g marynaty”: ilość MIESZANKI, nie składnika.
+       Dopasowuje się przez drugie słowo do jogurtu i psuje mu sumę (pomiar 3, po 112).
+       Poznajemy po pierwszym słowie z listy mieszanek, którego dopasowany produkt
+       nie pokrywa — „10 g sosu sojowego” zostaje, bo „Sos sojowy” pokrywa „sosu”. */
+    const pierwsze = w.slowa[0];
+    const toMieszanka = MIESZANKA.test(pierwsze) && !(naj && naj.slowa.some(s => wspolnyPoczatek(pierwsze, s)));
+    if (toMieszanka) continue;
     if (!naj) {
-      bledy.push(`Krok ${w.krok}: „${w.tekst}” — tego składnika nie ma ani w wersji podstawowej, ani w akcentach. Dopisz go do akcentów z gramaturą.`);
+      bledy.push(`Krok ${w.krok}: „${w.tekst}” — tego składnika nie ma na liście składników. Dopisz go z gramaturą.`);
       continue;
     }
-    if (naj.akcent) wKrokach.get(naj.nazwa).push(w.ilosc);
+    wKrokach.get(naj.nazwa).push(w.ilosc);
   }
 
-  for (const a of akcenty) {
-    const ilosci = wKrokach.get(a.produkt);
-    const suma = Math.round(ilosci.reduce((s, x) => s + x, 0) * 10) / 10;
-    /* Curry z 5 września: sól 4 + 4 + 1 przy liście 5. Czwórka to jedna porcja wymieniona
-       dwa razy (posolić bakłażan → ten sam bakłażan na patelnię), jedynka to korekta.
-       Model dwa razy obstawał przy 5 i miał rację; za trzecim się poddał i wpisał 9 —
-       czyli sprawdzenie wymusiło złą liczbę. Dlatego przechodzi też suma RÓŻNYCH
-       wartości. Koszt: dwa prawdziwe dodania po tyle samo z listą pojedynczą przejdą. */
-    const sumaRoznych = Math.round([...new Set(ilosci)].reduce((s, x) => s + x, 0) * 10) / 10;
-    const jednaPorcja = ilosci.length > 1 && Math.abs(sumaRoznych - a.gramy) <= 0.05;
+  for (const s of skladniki) {
+    const ilosci = wKrokach.get(s.produkt);
+    const suma = Math.round(ilosci.reduce((a, x) => a + x, 0) * 10) / 10;
+    /* Ta sama liczba w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”;
+       „posól 4 g” → „wrzuć posolony”) to jedna porcja, nie dwa dodania — więc
+       przechodzi też suma RÓŻNYCH wartości. Koszt: dwa prawdziwe dodania po tyle
+       samo z listą pojedynczą przejdą. Pomiar 3 i curry z 5 września. */
+    const sumaRoznych = Math.round([...new Set(ilosci)].reduce((a, x) => a + x, 0) * 10) / 10;
     if (!ilosci.length) {
-      bledy.push(`Akcent „${a.produkt}” (${a.gramy} g) nie pojawia się z ilością w żadnym kroku. Usuń go z akcentów albo napisz w kroku, ile go użyć.`);
-    } else if (Math.abs(suma - a.gramy) > 0.05 && !jednaPorcja) {
-      bledy.push(`Akcent „${a.produkt}”: na liście ${a.gramy} g, w krokach razem ${suma} g (${ilosci.join(" + ")}). Obie liczby mają być równe.`);
+      bledy.push(`Składnik „${s.produkt}” (${s.gramy} g) nie pojawia się z ilością w żadnym kroku. Usuń go ze składników albo napisz w kroku, ile go użyć.`);
+    } else if (Math.abs(suma - s.gramy) > 0.05 && Math.abs(sumaRoznych - s.gramy) > 0.05) {
+      bledy.push(`Składnik „${s.produkt}”: na liście ${s.gramy} g, w krokach razem ${suma} g (${ilosci.join(" + ")}). Obie liczby mają być równe.`);
     }
   }
   return bledy;
 }
 
 /**
- * Odpowiedź na prompt wersji restauracyjnej (zbudujPromptRestauracyjny).
+ * Odpowiedź na prompt wersji restauracyjnej (zbudujPromptRestauracyjny), decyzja 112:
+ * pełny własny skład, nie „podstawa + akcenty”.
  * @param {string} tekst    surowa odpowiedź modelu
- * @param {object} danie    wersja podstawowa: { skladniki: [{produkt, gramy}] }
+ * @param {object} danie    wersja podstawowa: { skladniki, kroki, porcje }
  * @param {Array}  slownik  produkty, które apka zna
- * @returns {{ ok, kroki, akcenty, noweProdukty, uwaga, bledy, ostrzezenia }}
+ * @returns {{ ok, skladniki, kroki, noweProdukty, uwaga, bledy, ostrzezenia }}
  *   ok = false → nic nie zapisujemy; `bledy` nadają się do odesłania modelowi (pushback).
  */
 export function parsujWersjeRestauracyjna(tekst, danie, slownik = []) {
@@ -619,27 +620,39 @@ export function parsujWersjeRestauracyjna(tekst, danie, slownik = []) {
     bledy.push(`Wersja restauracyjna ma ${kroki.length} kroków, podstawowa ${danie.kroki?.length || 0} — ma być dłuższa, nie krótsza.`);
   }
 
-  const akcenty = [];
-  for (const s of skladnikiNaListe(surowe.akcenty ?? surowe.dodatki ?? [])) {
+  const porcje = liczba(surowe.porcje);
+  if (porcje != null && porcje !== danie.porcje) {
+    bledy.push(`Liczba porcji zmieniła się z ${danie.porcje} na ${porcje} — ma zostać ${danie.porcje}.`);
+  }
+
+  const skladniki = [];
+  for (const s of skladnikiNaListe(surowe.skladniki ?? surowe.sklad ?? surowe.ingredients ?? [])) {
     const nazwa = oczysc(s.produkt);
     if (!nazwa) continue;
     if (!dlugoscOk(nazwa, LIMITY.nazwaSkladnika)) {
-      bledy.push(`Nazwa akcentu ma ${nazwa.length} znaków, dozwolone do ${LIMITY.nazwaSkladnika.max}.`); continue;
+      bledy.push(`Nazwa składnika ma ${nazwa.length} znaków, dozwolone do ${LIMITY.nazwaSkladnika.max}.`); continue;
     }
     const p = znane.get(normalizuj(nazwa));
-    if (!p) { bledy.push(`Akcent „${nazwa}” nie jest na liście produktów i nie został dopisany do noweProdukty.`); continue; }
-    if (s.gramy == null || s.gramy <= 0) { bledy.push(`Akcent „${nazwa}” nie ma gramatury.`); continue; }
-    if (danie.skladniki.some(f => normalizuj(f.produkt) === normalizuj(p.n))) {
-      bledy.push(`„${p.n}” jest składnikiem podstawowym, nie akcentem — usuń go z akcentów.`); continue;
-    }
-    akcenty.push({ produkt: p.n, gramy: s.gramy });
+    if (!p) { bledy.push(`Składnik „${nazwa}” nie jest na liście produktów i nie został dopisany do noweProdukty.`); continue; }
+    if (s.gramy == null || s.gramy <= 0) { bledy.push(`Składnik „${nazwa}” nie ma gramatury.`); continue; }
+    if (skladniki.some(x => x.produkt === p.n)) { bledy.push(`Składnik „${p.n}” jest na liście dwa razy — połącz w jedną pozycję.`); continue; }
+    skladniki.push({ produkt: p.n, gramy: s.gramy });
   }
-  if (akcenty.length > LIMITY.liczbaSkladnikow.max) {
-    bledy.push(`${akcenty.length} akcentów to za dużo (limit ${LIMITY.liczbaSkladnikow.max}).`);
+  if (!skladniki.length) bledy.push("Wersja restauracyjna nie ma ani jednego czytelnego składnika.");
+  if (skladniki.length > LIMITY.liczbaSkladnikow.max) {
+    bledy.push(`${skladniki.length} składników to za dużo (limit ${LIMITY.liczbaSkladnikow.max}).`);
   }
 
-  if (kroki.length) bledy.push(...sprawdzAkcenty(kroki, danie.skladniki, akcenty));
+  /* Strażnik tożsamości (112): wolno dokładać i zmieniać gramatury, nie wolno
+     zrobić innego dania. Jeśli znika więcej niż połowa produktów podstawy — odrzucamy. */
+  const zostaly = danie.skladniki.filter(f => skladniki.some(s => normalizuj(s.produkt) === normalizuj(f.produkt)));
+  if (danie.skladniki.length && zostaly.length * 2 < danie.skladniki.length) {
+    const brak = danie.skladniki.filter(f => !zostaly.includes(f)).map(f => f.produkt);
+    bledy.push(`To wygląda na inne danie: z wersji podstawowej zniknęły ${brak.join(", ")}. Wolno dokładać i zmieniać ilości, nie zmieniać dania.`);
+  }
+
+  if (kroki.length && skladniki.length) bledy.push(...sprawdzSklad(kroki, skladniki));
 
   const uwaga = oczysc(surowe.uwaga ?? "");
-  return { ok: !bledy.length, kroki, akcenty, noweProdukty, uwaga, bledy, ostrzezenia };
+  return { ok: !bledy.length, skladniki, kroki, noweProdukty, uwaga, bledy, ostrzezenia };
 }

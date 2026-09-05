@@ -43,7 +43,7 @@ export function daneRestauracyjne() {
   let fb = null, kodDomu = null;
 
   return {
-    restauracyjne: {},   // id → { kroki, akcenty, uwaga, kiedy }
+    restauracyjne: {},   // id → { skladniki, kroki, uwaga, kiedy } — pełny skład (112)
     stanAI: {},          // id → "czekam" | "poprawka" | { blad }
     sekundy: {},         // id → licznik na ekranie
     widok: {},           // id → "podstawowa" | "restauracyjna"; niezapamiętywany (decyzja 111)
@@ -60,19 +60,38 @@ export function daneRestauracyjne() {
       this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
     },
 
-    maWersje(p) { return !!this.restauracyjne[p.id]; },
+    /* Wpisy sprzed decyzji 112 (z `akcenty` zamiast `skladniki`) nie liczą się —
+       przycisk wraca i nadpisuje je pełnym składem. Dwa takie leżą w bazie Miłosza. */
+    maWersje(p) { return Array.isArray(this.restauracyjne[p.id]?.skladniki); },
 
     krokiDoPokazania(p) {
-      return this.widok[p.id] === "restauracyjna" && this.restauracyjne[p.id]
+      return this.widok[p.id] === "restauracyjna" && this.maWersje(p)
         ? this.restauracyjne[p.id].kroki : p.kroki;
     },
 
-    /* Lista różnicy (decyzja 102) — z przelicznikiem porcji, bo arkusz w jadłospisie
-       pokazuje gramaturę na tylu ludzi, ilu realnie je. Firebase kasuje puste tablice
-       (pułapka 16), więc brak `akcenty` to „same techniki”, nie błąd. */
-    roznicaZakupow(p, wsp = 1) {
-      const a = this.restauracyjne[p.id]?.akcenty || [];
-      return a.map(x => `${x.produkt} ${Math.round(x.gramy * wsp)} g`).join(", ") || "nic — same techniki";
+    /* Skład do pokazania: restauracyjny, gdy taki widok; podstawowy inaczej.
+       Mnożnik porcji, bo arkusz w jadłospisie pokazuje gramaturę na tylu ludzi,
+       ilu realnie je. */
+    skladDoPokazania(p, wsp = 1) {
+      const zrodlo = this.widok[p.id] === "restauracyjna" && this.restauracyjne[p.id]?.skladniki
+        ? this.restauracyjne[p.id].skladniki : p.skladniki;
+      return wsp === 1 ? zrodlo : zrodlo.map(s => ({ ...s, gramy: Math.round(s.gramy * wsp) }));
+    },
+
+    /* Różnica względem podstawy (decyzja 102 po 112): „+ Kozi ser 60 g, Ziemniaki 350 → 250 g,
+       − Śmietana”. Liczona, nie zapisana — obie listy i tak leżą w bazie. */
+    roznicaSkladu(p, wsp = 1) {
+      const r = this.restauracyjne[p.id]?.skladniki || [];
+      const g = (x) => Math.round(x * wsp);
+      const baza = new Map(p.skladniki.map(s => [s.produkt, s.gramy]));
+      const rest = new Map(r.map(s => [s.produkt, s.gramy]));
+      const out = [];
+      for (const [n, ile] of rest) {
+        if (!baza.has(n)) out.push(`+ ${n} ${g(ile)} g`);
+        else if (baza.get(n) !== ile) out.push(`${n} ${g(baza.get(n))} → ${g(ile)} g`);
+      }
+      for (const [n] of baza) if (!rest.has(n)) out.push(`− ${n}`);
+      return out.join(", ") || "ten sam skład — różnica jest w technice";
     },
 
     ponow(p) { delete this.stanAI[p.id]; return this.ulepsz(p); },
@@ -114,7 +133,7 @@ export function daneRestauracyjne() {
         }
 
         etap = "zapis wersji";
-        const wpis = { kroki: wynik.kroki, akcenty: wynik.akcenty, uwaga: wynik.uwaga || "", kiedy: Date.now() };
+        const wpis = { skladniki: wynik.skladniki, kroki: wynik.kroki, uwaga: wynik.uwaga || "", kiedy: Date.now() };
         await fb.set(fb.ref(fb.db, `domy/${kodDomu}/restauracyjne/${p.id}`), wpis);
         this.restauracyjne[p.id] = wpis;
         this.widok[p.id] = "restauracyjna";

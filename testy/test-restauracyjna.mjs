@@ -1,7 +1,7 @@
 /* Kształt wersji restauracyjnej (decyzja 109): każda ilość w krokach spoza
    fundamentu ma pozycję w akcentach, a sumy się zgadzają. Przypadki wzięte
    z drugiego pomiaru 5 września — sól i cytryna — plus pułapki polskiej odmiany. */
-import { sprawdzAkcenty, ilosciZKrokow, parsujWersjeRestauracyjna } from "../parser.js";
+import { sprawdzSklad, ilosciZKrokow, parsujWersjeRestauracyjna } from "../parser.js";
 import { zbudujPromptRestauracyjny, zbudujPoprawkeRestauracyjna } from "../prompt.js";
 import { readFileSync } from "fs";
 const czytaj = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
@@ -16,6 +16,12 @@ function rowne(a, b, co = "") {
   const x = JSON.stringify(a), y = JSON.stringify(b);
   if (x !== y) throw new Error(`${co} oczekiwano ${y}, jest ${x}`);
 }
+
+/* Po decyzji 112 sprawdzany jest CAŁY skład. Stare testy mówiły „fundament + akcenty”;
+   ten mostek składa je w jedną listę, żeby przypadki z pomiarów zostały jak były. */
+const sprawdzAkcenty = (kroki, fundament, akcenty) =>
+  sprawdzSklad(kroki, [...fundament, ...akcenty])
+    .filter(b => !fundament.some(f => b.includes(`„${f.produkt}” (`) && b.includes("żadnym kroku")));
 
 const FUNDAMENT = [
   { produkt: "Tortilla pszenna", gramy: 120 },
@@ -65,7 +71,7 @@ test("poprawna odpowiedź przechodzi bez uwag", () => {
 test("SÓL Z POMIARU: 3 g soli w krokach, brak w akcentach → błąd z nazwą", () => {
   const b = sprawdzAkcenty(KROKI_OK, FUNDAMENT, AKCENTY_OK.filter(a => a.produkt !== "Sól"));
   prawda(b.length >= 1, "oczekiwano błędu");
-  prawda(b.some(x => x.includes("soli") && x.includes("akcent")), b.join(" | "));
+  prawda(b.some(x => x.includes("soli") && x.includes("Dopisz")), b.join(" | "));
 });
 
 test("CYTRYNA Z POMIARU: 10 g na liście, 2 g w krokach → błąd z obiema liczbami", () => {
@@ -94,7 +100,7 @@ test("woda nie jest produktem — 200 ml i 30 ml wody nie robią błędu", () =>
   rowne(sprawdzAkcenty(["Zalej 200 ml wody. Wlej 30 ml zimnej wody."], FUNDAMENT, []), []);
 });
 
-test("gramatury fundamentu nie są sumowane (250 g piersi dwa razy — bez uwag)", () => {
+test("250 g piersi w dwóch krokach to jedna porcja, nie 500 (po 112 fundament też jest sprawdzany)", () => {
   rowne(sprawdzAkcenty(["Pokrój 250 g piersi z kurczaka.", "Smaż 250 g piersi z kurczaka."], FUNDAMENT, []), []);
 });
 
@@ -117,6 +123,14 @@ test("ta sama liczba dwa razy przy liście 7 → błąd z rozbiciem (5 + 5)", ()
   const b = sprawdzAkcenty(["Dodaj 5 g cukru.", "Dodaj 5 g cukru."], FUNDAMENT, [{ produkt: "Cukier", gramy: 7 }]);
   rowne(b.length, 1);
   prawda(b[0].includes("5 + 5"), b[0]);
+});
+
+test("MIESZANKA: „86 g dipu jogurtowego” nie liczy się do jogurtu, ale „10 g sosu sojowego” liczy się do Sosu sojowego", () => {
+  rowne(sprawdzSklad(["Wymieszaj 80 g jogurtu greckiego z 5 g soku z cytryny.", "Polej 86 g dipu jogurtowego."],
+    [{ produkt: "Jogurt grecki", gramy: 80 }, { produkt: "Cytryny", gramy: 5 }]), []);
+  rowne(sprawdzSklad(["Wlej 10 g sosu sojowego."], [{ produkt: "Sos sojowy", gramy: 10 }]), []);
+  rowne(sprawdzSklad(["Wlej 10 g sosu sojowego."], [{ produkt: "Sos sojowy", gramy: 20 }]).length, 1, "sos sojowy nadal jest sprawdzany");
+  rowne(sprawdzSklad(["Zalej 20 g zalewy z ciecierzycy."], [{ produkt: "Zalewa z ciecierzycy", gramy: 20 }]), [], "zalewa jako produkt zostaje (Miłosz, 5 września)");
 });
 
 test("SÓL Z CURRY: 4 + 4 + 1 przy liście 5 przechodzi (4 to jedna porcja, 1 korekta)", () => {
@@ -187,7 +201,9 @@ const ODPOWIEDZ_V75 = {
     "Rozgrzej 120 g tortilli pszennej na suchej patelni na mocy 6/9 przez 20 sekund z każdej strony.",
     "Nałóż nadzienie na ciepłą tortillę, polej 86 g dipu jogurtowego, posyp 10 g natki pietruszki i zwiń, podając w temperaturze około 60°C.",
   ],
-  akcenty: [
+  porcje: 2,
+  skladniki: [
+    ...FUNDAMENT,
     { produkt: "Oliwa extra virgin", gramy: 10 }, { produkt: "Kmin rzymski", gramy: 2 },
     { produkt: "Papryka wędzona", gramy: 2 },    { produkt: "Sól", gramy: 4 },
     { produkt: "Pieprz czarny", gramy: 1 },      { produkt: "Cytryny", gramy: 16 },
@@ -205,25 +221,39 @@ const SLOWNIK_V75 = ["Tortilla pszenna","Pierś z kurczaka","Papryka","Cebula","
 const TORTILLA = { nazwa: "Tortilla", porcje: 2, skladniki: FUNDAMENT, kroki: ["1","2","3","4","5"] };
 const zTekstem = (o) => "```json\n" + JSON.stringify(o) + "\n```";
 
-test("prawdziwa odpowiedź v75 przechodzi: 9 kroków, 8 akcentów, sól i pieprz jako nowe produkty", () => {
+test("prawdziwa odpowiedź v75 (jako pełny skład) przechodzi: 9 kroków, 13 składników, sól i pieprz jako nowe produkty", () => {
   const w = parsujWersjeRestauracyjna(zTekstem(ODPOWIEDZ_V75), TORTILLA, SLOWNIK_V75);
   rowne(w.bledy, [], "błędy");
   prawda(w.ok, "ok");
-  rowne(w.kroki.length, 9); rowne(w.akcenty.length, 8);
+  rowne(w.kroki.length, 9); rowne(w.skladniki.length, 13);
   rowne(w.noweProdukty.map(p => p.n), ["Pieprz czarny", "Sól"]);
   prawda(w.uwaga.startsWith("Smażenie"), "uwaga");
 });
 
-test("akcent spoza słownika i bez wpisu w noweProdukty → nie ok", () => {
+test("składnik spoza słownika i bez wpisu w noweProdukty → nie ok", () => {
   const o = { ...ODPOWIEDZ_V75, noweProdukty: [ODPOWIEDZ_V75.noweProdukty[1]] };   // bez pieprzu
   const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
   prawda(!w.ok && w.bledy.some(b => b.includes("Pieprz czarny") && b.includes("noweProdukty")), w.bledy.join(" | "));
 });
 
-test("składnik fundamentu wpisany do akcentów → nie ok", () => {
-  const o = { ...ODPOWIEDZ_V75, akcenty: [...ODPOWIEDZ_V75.akcenty, { produkt: "Cebula", gramy: 20 }] };
+test("STRAŻNIK TOŻSAMOŚCI (112): zniknęło 3 z 5 produktów podstawy → inne danie, nie ok", () => {
+  const o = { ...ODPOWIEDZ_V75, skladniki: ODPOWIEDZ_V75.skladniki.filter(s => !["Tortilla pszenna", "Papryka", "Cebula"].includes(s.produkt)),
+              kroki: ODPOWIEDZ_V75.kroki.filter(k => !/tortill|papryk|cebul/i.test(k)) };
   const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
-  prawda(!w.ok && w.bledy.some(b => b.includes("Cebula") && b.includes("podstawowym")), w.bledy.join(" | "));
+  prawda(!w.ok && w.bledy.some(b => b.includes("inne danie") && b.includes("Tortilla pszenna")), w.bledy.join(" | "));
+});
+
+test("zmiana gramatury podstawy jest DOZWOLONA (112): papryka 150 → 100 przechodzi", () => {
+  const o = { ...ODPOWIEDZ_V75,
+    skladniki: ODPOWIEDZ_V75.skladniki.map(s => s.produkt === "Papryka" ? { ...s, gramy: 100 } : s),
+    kroki: ODPOWIEDZ_V75.kroki.map(k => k.replace(/150 g papryki/g, "100 g papryki")) };
+  const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
+  rowne(w.bledy, []);
+});
+
+test("zmiana liczby porcji → nie ok", () => {
+  const w = parsujWersjeRestauracyjna(zTekstem({ ...ODPOWIEDZ_V75, porcje: 4 }), TORTILLA, SLOWNIK_V75);
+  prawda(!w.ok && w.bledy.some(b => b.includes("porcji")), w.bledy.join(" | "));
 });
 
 test("mniej kroków niż wersja podstawowa → nie ok", () => {
@@ -233,7 +263,7 @@ test("mniej kroków niż wersja podstawowa → nie ok", () => {
 });
 
 test("rozjazd sum z 109 przechodzi przez parser jako błąd, nie ostrzeżenie", () => {
-  const o = { ...ODPOWIEDZ_V75, akcenty: ODPOWIEDZ_V75.akcenty.map(a => a.produkt === "Sól" ? { ...a, gramy: 9 } : a) };
+  const o = { ...ODPOWIEDZ_V75, skladniki: ODPOWIEDZ_V75.skladniki.map(a => a.produkt === "Sól" ? { ...a, gramy: 9 } : a) };
   const w = parsujWersjeRestauracyjna(zTekstem(o), TORTILLA, SLOWNIK_V75);
   prawda(!w.ok && w.bledy.some(b => b.includes("Sól") && b.includes("9")), w.bledy.join(" | "));
 });
@@ -248,7 +278,8 @@ test("prompt niesie danie, gramatury fundamentu i regułę sum z 109", () => {
   prawda(p.includes("Tortilla z kurczakiem") && p.includes("Pierś z kurczaka 250 g"), "brak dania albo gramatur");
   prawda(p.includes("1. Pokrój kurczaka."), "brak kroków wersji podstawowej");
   prawda(/MUSI być równa/.test(p) && /Woda nie jest produktem/.test(p), "brak reguły sum z decyzji 109");
-  prawda(p.includes("Sól i pieprz też są akcentami"), "sól nie jest nazwana jako akcent — a właśnie ją model pominął w pomiarze");
+  prawda(p.includes("Sól i pieprz to składniki jak każde inne"), "sól nie jest nazwana jako składnik — a właśnie ją model pominął w pomiarze");
+  prawda(p.includes("CAŁY skład") && p.includes("Wolno zmienić gramatury podstawy") && p.includes("\"porcje\": 2"), "brak reguł pełnego składu z decyzji 112");
   prawda(p.includes("Olej rzepakowy") && p.includes("Cytryny"), "brak listy produktów");
   prawda(p.includes("liczy się raz") && p.includes("ODMIENIAJ"), "brak reguły „ta sama liczba raz” albo odmiany w krokach (pomiar 3)");
 });
@@ -279,7 +310,7 @@ test("moduł czyta odpowiedź przez parsujWersjeRestauracyjna i robi dokładnie 
 
 test("zapis pod restauracyjne/{id} jako obiekt (pułapka 2), nowe produkty pod produktyWlasne, przez lokalne fb (pułapka 25)", () => {
   prawda(/fb\.set\(fb\.ref\(fb\.db, `domy\/\$\{kodDomu\}\/restauracyjne\/\$\{p\.id\}`\), wpis\)/.test(modul), "zły kształt lub ścieżka zapisu");
-  prawda(/const wpis = \{ kroki:/.test(modul), "wpis nie jest obiektem");
+  prawda(/const wpis = \{ skladniki: wynik\.skladniki, kroki:/.test(modul), "wpis nie jest obiektem z pełnym składem (112)");
   prawda(/fb\.update\(fb\.ref\(fb\.db, `domy\/\$\{kodDomu\}\/produktyWlasne`\), zmiany\)/.test(modul), "nowe produkty nie trafiają do produktyWlasne");
   prawda(!/this\.fb\b/.test(modul), "połączenie z bazą leży na this — pułapka 25");
 });

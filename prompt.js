@@ -154,27 +154,25 @@ Zwróć sam JSON. Bez wstępu, bez komentarza, bez podsumowania.`;
 }
 
 /* =====================================================================
-   WERSJA RESTAURACYJNA (decyzje 101–109).
+   WERSJA RESTAURACYJNA (decyzje 101–112).
 
-   To samo danie, te same gramatury fundamentu, ta sama liczba porcji; wolno dołożyć
-   akcenty. Przepis ułożony od nowa według czasu. Cztery zasady zatwierdzone przez
-   head chefa (108). Reguła kształtu z decyzji 109 — każda ilość w krokach spoza
-   fundamentu ma pozycję w akcentach, sumy równe — jest tu zapisana słowami,
-   a w parser.js sprawdzana liczbami. Prompt bez sprawdzenia to zaufanie; sprawdzenie
-   bez promptu to loteria.
+   To samo danie, ta sama liczba porcji — ale własny, pełny skład (112): wolno
+   dokładać składniki i zmieniać gramatury, nie wolno zmienić tożsamości dania.
+   Przepis ułożony od nowa według czasu. Cztery zasady head chefa (108).
+   Reguła kształtu (109): każda ilość w krokach ma pozycję w składnikach, sumy
+   równe — słowami tutaj, liczbami w parser.js.
 
-   Zmierzone 5 września: 7–8 s na telefonie, 2,4 tys. znaków odpowiedzi (107).
+   Zmierzone 5 września: 5–8 s na telefonie (107).
    ===================================================================== */
 
 // danie: { nazwa, porcje, skladniki: [{produkt, gramy}], kroki: [] } — wersja podstawowa
 export function zbudujPromptRestauracyjny(danie, slownik) {
   const skladniki = danie.skladniki.map(s => `${s.produkt} ${s.gramy} g`).join(", ");
   const kroki = danie.kroki.map((k, i) => `${i + 1}. ${k}`).join("\n");
-  const ile = danie.skladniki.length;
 
   return `Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE obiektem JSON, bez żadnego tekstu przed ani po.
 
-Dostajesz danie w wersji podstawowej — takiej, jaką ktoś gotuje w tygodniu na szybko. Napisz to samo danie w wersji restauracyjnej: tak, jak uczyłbyś kogoś, kto ma zrobić je naprawdę dobrze i ma na to czas.
+Dostajesz danie w wersji podstawowej — takiej, jaką ktoś gotuje w tygodniu na szybko. Napisz to samo danie w wersji restauracyjnej: tak, jak trafiłoby na kartę dobrej restauracji, i tak, jak uczyłbyś kogoś, kto ma na to czas.
 
 DANIE W WERSJI PODSTAWOWEJ
 ${danie.nazwa}, na ${danie.porcje} ${danie.porcje === 1 ? "osobę" : "osoby"}.
@@ -182,18 +180,21 @@ Składniki: ${skladniki}.
 Kroki:
 ${kroki}
 
-CZEGO NIE WOLNO RUSZYĆ
-To ma być to samo danie w tej samej ilości. ${ile} składników powyżej zostaje z DOKŁADNIE tymi gramaturami — nie zmieniasz ich, nie usuwasz, nie zastępujesz. Nie dokładasz drugiego węglowodanu ani drugiego białka. Nie zmieniasz liczby porcji.
+CO MA ZOSTAĆ
+To ma być to samo danie — ktoś, kto zamówił krem z buraków, dostaje krem z buraków, nie sałatkę. Liczba porcji zostaje: ${danie.porcje}. Główne składniki podstawy zostają na liście.
 
-CO WOLNO DOŁOŻYĆ
-Akcenty: przyprawy, zioła, kwas, tłuszcz do smażenia, marynatę, dodatkowy krok w rodzaju moczenia cebuli w zimnej wodzie albo marynowania. Każdy dołożony składnik wypisz osobno w tablicy "akcenty" z gramaturą — użytkownik dokupi je ręcznie, więc musi wiedzieć co i ile. Bierz nazwy z listy produktów, przepisane DOKŁADNIE tak, jak tam stoją; czego na liście nie ma, dopisz do "noweProdukty" z wartościami odżywczymi na 100 g. Sól i pieprz też są akcentami — jeśli nie ma ich na liście, dopisujesz je do "noweProdukty" jak każdy inny produkt.
+CO WOLNO ZMIENIĆ — i tego oczekujemy
+Wersja restauracyjna ma własny, pełny skład. Wolno dołożyć wszystko, co robi z tego dania danie z karty: przyprawy, tłuszcz, kwas, marynatę — ale też składniki, których w podstawie nie ma: coś chrupiącego, coś świeżego, coś kremowego, kontrast temperatury albo tekstury. Wolno zmienić gramatury podstawy, jeśli nowy składnik tego wymaga (mniej ziemniaków, gdy dochodzi purée z selera). Krem z buraków z solą i pieprzem jest lepszym kremem z buraków; z kozim serem, prażonymi orzechami laskowymi i grzanką jest daniem z karty. Celuj w to drugie. Każdy dodatek ma mieć powód napisany w kroku — nic dla samej ilości.
+
+SKŁADNIKI
+Wypisz w "skladniki" CAŁY skład wersji restauracyjnej — także to, co zostało z podstawy — każdy z gramaturą. Z tej listy aplikacja liczy zakupy na ten posiłek. Bierz nazwy z listy produktów, przepisane DOKŁADNIE tak, jak tam stoją; czego na liście nie ma, dopisz do "noweProdukty" z wartościami odżywczymi na 100 g. Sól i pieprz to składniki jak każde inne — jeśli nie ma ich na liście, dopisujesz je do "noweProdukty".
 
 LICZBY MUSZĄ SIĘ ZGADZAĆ — to jest sprawdzane mechanicznie
-Aplikacja przeczyta z kroków każdą ilość w gramach i mililitrach i porówna ją z tablicą "akcenty":
-- Każda ilość w krokach, która nie jest jednym z ${ile} składników podstawowych, MUSI mieć pozycję w "akcenty". Woda nie jest produktem i nie liczy się.
-- Suma ilości danego akcentu ze wszystkich kroków MUSI być równa jego gramaturze w "akcenty". Jeśli sól idzie w trzech miejscach po 2 g, 1 g i 1 g, w "akcenty" stoi Sól 4 g. Korekty z punktu kontrolnego smaku („za mało słone → 1 g soli”) też się liczą — kucharz musi mieć tę sól pod ręką.
-- Ta sama liczba przy tym samym akcencie w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”; „posól bakłażan 4 g” → „wrzuć posolony bakłażan”) liczy się raz. Różne liczby się sumują (4 g do bakłażana + 1 g korekty = 5 g). Jeśli dodajesz coś dwa razy po tyle samo naprawdę, rozbij to w krokach na różne liczby (2 g i 3 g), żeby było widać, że to dwa dodania.
-- Akcent, który nie pojawia się z ilością w żadnym kroku, jest błędem.
+Aplikacja przeczyta z kroków każdą ilość w gramach i mililitrach i porówna ją z "skladniki":
+- Każda ilość w krokach MUSI mieć pozycję w "skladniki". Woda nie jest produktem i nie liczy się.
+- Suma ilości danego składnika ze wszystkich kroków MUSI być równa jego gramaturze w "skladniki". Jeśli sól idzie w trzech miejscach po 2 g, 1 g i 1 g, w "skladniki" stoi Sól 4 g. Korekty z punktu kontrolnego smaku („za mało słone → 1 g soli”) też się liczą.
+- Ta sama liczba przy tym samym składniku w dwóch krokach („posiekaj 5 g natki” → „posyp 5 g natki”; „posól bakłażan 4 g” → „wrzuć posolony bakłażan”) liczy się raz. Różne liczby się sumują. Jeśli dodajesz coś dwa razy po tyle samo naprawdę, rozbij to w krokach na różne liczby (2 g i 3 g).
+- Składnik, który nie pojawia się z ilością w żadnym kroku, jest błędem.
 Rozjazd w którymkolwiek punkcie oznacza, że odpowiedź wraca do poprawy.
 
 NA CZYM POLEGA WERSJA RESTAURACYJNA
@@ -206,12 +207,12 @@ Nie na dopisaniu uwag do tych samych kroków. Ułóż przepis od nowa, według c
 - Sól idzie w co najmniej dwóch momentach przepisu, nie raz na końcu — i przy każdym z nich napisz ile.
 - Jeśli po smażeniu na patelni zostały przypieczone resztki, użyj ich: deglasuj podaną ilością płynu (woda, sok z cytryny, wino) i włącz to do sosu albo do warzyw. Ten krok wypisz z nazwy.
 - W jednym miejscu przepisu każ spróbować i powiedz, CZEGO szukać i czym korygować, z liczbami: „za płasko → 2 g soku z cytryny; za mało słone → 1 g soli”. Liczby zostają, decyzja idzie do kucharza.
-- Ostatni krok to składanie i podanie: temperatura, w jakiej to trafia na talerz.
+- Ostatni krok to składanie i podanie: temperatura, w jakiej to trafia na talerz, i jak to leży na talerzu.
 
 WYMAGANIA, KTÓRYCH NIE WOLNO POMINĄĆ
 - WSZYSTKIE ilości w gramach albo mililitrach, także w krokach. Zakazane: szklanka, łyżka, łyżeczka, garść, szczypta, odrobina, „do smaku”, „na oko”. Pisz „5 g soli”, nie „szczypta”; „30 g oliwy”, nie „dwie łyżki”.
 - Każdy krok zaczyna się od czasownika i wymienia z nazwy każdy składnik, którego dotyczy.
-- W krokach ODMIENIAJ nazwy jak w zwykłym zdaniu („10 g musztardy Dijon”, „150 g papryki”), nie „10 g Musztarda Dijon”. Nazwy dokładnie z listy obowiązują tylko w "akcenty" i "noweProdukty".
+- W krokach ODMIENIAJ nazwy jak w zwykłym zdaniu („10 g musztardy Dijon”, „150 g papryki”), nie „10 g Musztarda Dijon”. Nazwy dokładnie z listy obowiązują tylko w "skladniki" i "noweProdukty".
 - Nie ma górnego limitu liczby kroków. Jest dolny: przepis krótszy niż wersja podstawowa nie jest wersją restauracyjną.
 
 LISTA PRODUKTÓW
@@ -219,10 +220,11 @@ ${listaProduktow(slownik)}
 
 FORMAT ODPOWIEDZI
 {
-  "kroki": ["Pierwszy krok.", "Drugi krok."],
-  "akcenty": [
-    { "produkt": "Nazwa dokładnie z listy", "gramy": 10 }
+  "porcje": ${danie.porcje},
+  "skladniki": [
+    { "produkt": "Nazwa dokładnie z listy", "gramy": 150 }
   ],
+  "kroki": ["Pierwszy krok.", "Drugi krok."],
   "noweProdukty": [
     { "nazwa": "...", "kcal": 0, "bialko": 0, "wegle": 0, "tluszcz": 0, "dzial": "..." }
   ],
