@@ -399,12 +399,13 @@ Alpine.data("ekranAI", () => ({
     }
 
 
-    const [snapProd, snapUst, snapPref] = await Promise.all([
+    const [snapProd, snapUst, snapPref, snapWykl] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
       get(ref(db, `domy/${kodDomu}/preferencje`)),
+      get(ref(db, `domy/${kodDomu}/wykluczenia`)),
     ]);
-    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}, snapWykl.val() || []));
     this.slownik = [...PRODUKTY, ...Object.values(snapProd.val() || {})];
     this.kuchniaTekst = opisKuchni((snapUst.val() || {}).kuchnia);
   },

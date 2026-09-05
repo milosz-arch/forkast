@@ -404,6 +404,20 @@
              x-text="stanEksportu"></p>
         </section>
 
+        <!-- ============ DANIA (gdy karta zniknęła z paska, decyzja 115) ============ -->
+        <section x-show="daniaDoOceny === 0"
+                 class="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm
+                        dark:border-stone-800 dark:bg-stone-900">
+          <p class="text-[0.82rem] text-stone-500 dark:text-stone-400">
+            Przejrzeliście wszystkie dania, więc karta Dań zeszła z paska. Wróci, gdy dojdą nowe.
+          </p>
+          <a href="talia.html"
+             class="mt-3 flex min-h-[2.5rem] items-center justify-center rounded-xl border-2
+                    border-stone-200 text-[0.82rem] font-bold no-underline dark:border-stone-700">
+            Przejrzyj dania jeszcze raz
+          </a>
+        </section>
+
         <!-- ============ WERSJA ============
              Widoczna, żeby dało się zapytać kogoś „co masz na dole Ustawień”
              i wiedzieć, czy patrzy na to samo co my. Przycisk obok wymusza
@@ -556,12 +570,13 @@ Alpine.data("ekranUstawienia", () => ({
     }
 
 
-    const [snapDom, snapUst, snapPref] = await Promise.all([
+    const [snapDom, snapUst, snapPref, snapWykl] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/domownicy`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
       get(ref(db, `domy/${kodDomu}/preferencje`)),
+      get(ref(db, `domy/${kodDomu}/wykluczenia`)),
     ]);
-    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}, snapWykl.val() || []));
     this.domownicy = Object.entries(snapDom.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
     this.ja = ktoJestemWsrod(this.domownicy);
 

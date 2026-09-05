@@ -644,11 +644,12 @@ Alpine.data("ekranJadlospis", () => ({
 
 
 
-    const [snapDom, snapPref, snapWlasne, snapUst] = await Promise.all([
+    const [snapDom, snapPref, snapWlasne, snapUst, snapWykl] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/domownicy`)),
       get(ref(db, `domy/${kodDomu}/preferencje`)),
       get(ref(db, `domy/${kodDomu}/wlasneDania`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      get(ref(db, `domy/${kodDomu}/wykluczenia`)),
       this.wczytajRestauracyjne(fb, kodDomu),
     ]);
 
@@ -663,7 +664,7 @@ Alpine.data("ekranJadlospis", () => ({
     this.polubione = this.wszystkieDania.filter(d => preferencje[d.id] === "lubie");
     this.ustawienia = snapUst.val() || {};
     this.sprzet = this.ustawienia.kuchnia || null;
-    this.ustawOdblokowanie(stanPoczatkowy(preferencje));
+    this.ustawOdblokowanie(stanPoczatkowy(preferencje, snapWykl.val() || []));
 
     /* onValue, nie get: gdy ktoś przy tym samym stole zmieni plan na swoim
        telefonie, ten ekran zobaczy to bez odświeżania. */

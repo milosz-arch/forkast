@@ -398,15 +398,16 @@ Alpine.data("ekranPrzepisy", () => ({
     }
 
 
-    const [snapPref, snapWlasne, snapUst] = await Promise.all([
+    const [snapPref, snapWlasne, snapUst, snapWykl] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/preferencje`)),
       get(ref(db, `domy/${kodDomu}/wlasneDania`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      get(ref(db, `domy/${kodDomu}/wykluczenia`)),
       this.wczytajRestauracyjne(fb, kodDomu),
     ]);
     this.sprzet = (snapUst.val() || {}).kuchnia || null;
     const preferencje = snapPref.val() || {};
-    this.ustawOdblokowanie(stanPoczatkowy(preferencje));
+    this.ustawOdblokowanie(stanPoczatkowy(preferencje, snapWykl.val() || []));
     const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
     this.polubione = [...TALIA_STARTOWA, ...wlasne]
       .filter(d => preferencje[d.id] === "lubie")

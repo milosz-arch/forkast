@@ -322,11 +322,12 @@ Alpine.data("ekranFormularz", () => ({
     }
 
 
-    const [snap, snapPref] = await Promise.all([
+    const [snap, snapPref, snapWykl] = await Promise.all([
       get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
       get(ref(db, `domy/${kodDomu}/preferencje`)),
+      get(ref(db, `domy/${kodDomu}/wykluczenia`)),
     ]);
-    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+    this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}, snapWykl.val() || []));
     this.slownik = [...PRODUKTY, ...Object.values(snap.val() || {})]
       .sort((a, b) => a.n.localeCompare(b.n, "pl"));
   },

@@ -70,7 +70,14 @@ export function danePowloki({ ekran, tytul, opis }) {
          w jednym miejscu — dlatego nie ma tego w ośmiu plikach osobno. */
       ekran, tytul: bezSierot(tytul), opis: bezSierot(opis),
       bezSierot,
-      zakladki: ZAKLADKI,
+      /* Karta Dań znika z paska, gdy nie ma już czego oceniać (decyzja 115) —
+         wraca sama, gdy dojdą nowe dania startowe. Na samym ekranie Dań zostaje,
+         bo wejście z Ustawień bez podświetlonej karty wyglądałoby na błąd.
+         null = jeszcze nie wiadomo → pokazujemy. */
+      get zakladki() {
+        return ZAKLADKI.filter(z => z.id !== "talia" || this.daniaDoOceny !== 0 || this.ekran === "talia");
+      },
+      daniaDoOceny: null,
       ciemny: startowe.ciemny,
       skala: startowe.skala,
       skale: SKALE,
@@ -87,6 +94,7 @@ export function danePowloki({ ekran, tytul, opis }) {
       ustawOdblokowanie(stan) {
         this.odblokowane = stan.odblokowane;
         this.brakujeDan = stan.brakuje;
+        this.daniaDoOceny = stan.doOceny ?? null;
       },
 
       zamknieta(id) {

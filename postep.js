@@ -26,6 +26,9 @@
    czy to za dużo, czy za mało.
    ===================================================================== */
 
+import { TALIA_STARTOWA } from "./talia-startowa.js";
+import { filtrujTalie } from "./wykluczenia.js";
+
 export const POTRZEBA_DAN = 10;
 export const OTWORZ_PO_PRZEJRZANYCH = 40;
 
@@ -33,7 +36,7 @@ export const OTWORZ_PO_PRZEJRZANYCH = 40;
  * @param {object} preferencje – zawartość domy/<kod>/preferencje
  * @returns {{polubione:number, przejrzane:number, odblokowane:boolean, brakuje:number}}
  */
-export function stanPoczatkowy(preferencje = {}) {
+export function stanPoczatkowy(preferencje = {}, wykluczenia = null) {
   const wartosci = Object.values(preferencje || {});
   const polubione = wartosci.filter(v => v === "lubie").length;
   const przejrzane = wartosci.length;
@@ -42,7 +45,19 @@ export function stanPoczatkowy(preferencje = {}) {
     przejrzane,
     odblokowane: polubione >= POTRZEBA_DAN || przejrzane >= OTWORZ_PO_PRZEJRZANYCH,
     brakuje: Math.max(0, POTRZEBA_DAN - polubione),
+    doOceny: daniaDoOceny(preferencje, wykluczenia),
   };
+}
+
+/* Ile dań startowych czeka na ocenę — liczone po wykluczeniach, tak samo jak talia
+   na ekranie Dań: dom bez mięsa nigdy nie „przejrzy” schabowego, więc schabowy
+   nie może trzymać karty Dań na pasku (decyzja 115). `wykluczenia` w kształcie
+   z bazy ({ ustawione, lista }) albo goła lista; null = nie wiadomo → null,
+   a pasek pokazuje wtedy kartę (bezpieczniej pokazać niż schować). */
+export function daniaDoOceny(preferencje = {}, wykluczenia = null) {
+  if (wykluczenia == null) return null;
+  const lista = Array.isArray(wykluczenia) ? wykluczenia : (wykluczenia?.lista || []);
+  return filtrujTalie(TALIA_STARTOWA, lista).filter(d => !(preferencje || {})[d.id]).length;
 }
 
 /** Tekst zachęty pod paskiem postępu. Ma mówić, PO CO to robimy. */

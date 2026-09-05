@@ -336,6 +336,13 @@
                       bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600">
               Ułóż jadłospis
             </a>
+            <!-- Zmiana zdania (decyzja 115): gdy wszystko ocenione, karta Dań znika z paska,
+                 a to jest jedyna droga, żeby odlubić danie. Ocena nadpisuje poprzednią. -->
+            <button type="button" x-show="lubiane" @click="przejrzyjOdNowa()"
+                    class="mt-2.5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
+                           border-2 border-stone-200 font-bold dark:border-stone-700">
+              Przejrzyj jeszcze raz
+            </button>
             <div x-show="!lubiane" class="mt-5 grid gap-2.5">
               <a href="dodaj-z-ai.html"
                  class="flex min-h-[2.9rem] items-center justify-center gap-2 rounded-xl bg-emerald-700
@@ -482,7 +489,7 @@ Alpine.data("ekranDania", () => ({
   /* Licznik pierwszych dań — osobny od paska postępu talii. Pasek mówi, ile
      zostało do przejrzenia; ten mówi, ile brakuje do otwarcia reszty apki. */
   odswiezPostep() {
-    const stan = stanPoczatkowy(this.preferencje);
+    const stan = stanPoczatkowy(this.preferencje, this.wybraneWykluczenia);
     this.ustawOdblokowanie(stan);
     this.zachetaTekst = zachetaPoczatkowa(stan);
     this.zachetaKrotka = zachetaKrotka(stan);
@@ -580,6 +587,13 @@ Alpine.data("ekranDania", () => ({
     this.tytul = "Dania";
     this.opis = "Przesuwaj: to, co polubicie, trafi do jadłospisu.";
     this.laduje = false;
+  },
+
+  /* Wszystkie dania od nowa, także ocenione — do zmiany zdania. Ocena nadpisuje. */
+  przejrzyjOdNowa() {
+    this.talia = filtrujTalie([...TALIA_STARTOWA, ...this.wlasne], this.wybraneWykluczenia);
+    this.indeks = 0;
+    this.mrugnij("Od początku. Przesuwaj tak, jak myślisz dziś.");
   },
 
   async zdecyduj(wybor) {

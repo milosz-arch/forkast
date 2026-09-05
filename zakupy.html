@@ -855,11 +855,12 @@ Alpine.data("ekranZakupy", () => ({
     const { db, ref, get, onValue } = fb;
 
     try {
-      const [snapWlasne, snapProdukty, snapPref, snapRest] = await Promise.all([
+      const [snapWlasne, snapProdukty, snapPref, snapRest, snapWykl] = await Promise.all([
         get(ref(db, `domy/${kodDomu}/wlasneDania`)),
         get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
         get(ref(db, `domy/${kodDomu}/preferencje`)),
         get(ref(db, `domy/${kodDomu}/restauracyjne`)),
+        get(ref(db, `domy/${kodDomu}/wykluczenia`)),
       ]);
       /* Wersje restauracyjne (113, 114): pierwszy odczyt razem z resztą, potem nasłuch —
          wersja wygenerowana na drugim telefonie przelicza listę bez odświeżania.
@@ -867,7 +868,7 @@ Alpine.data("ekranZakupy", () => ({
          znanym planie; przed pierwszym planem nie ma czego liczyć. */
       let restauracyjne = snapRest.val() || {};
       let ostatniPlan = null;
-      this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
+      this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}, snapWykl.val() || []));
       const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
       const wszystkie = [...TALIA_STARTOWA, ...wlasne];
       const slownik = [...PRODUKTY, ...Object.values(snapProdukty.val() || {})];
