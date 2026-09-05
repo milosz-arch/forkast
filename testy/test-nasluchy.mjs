@@ -25,7 +25,7 @@ function test(n, fn) {
 function prawda(w, co) { if (!w) throw new Error(co); }
 
 const EKRANY = readdirSync(KORZEN)
-  .filter(p => p.endsWith(".html"))
+  .filter(p => p.endsWith(".html") || (p.endsWith(".js") && !p.startsWith("lib")))   /* od 114 nasłuchy żyją też w modułach */
   .filter(p => readFileSync(new URL(p, KORZEN), "utf8").includes("onValue("));
 
 prawda(EKRANY.length >= 3, `spodziewałem się co najmniej trzech ekranów z nasłuchem, jest ${EKRANY.length}`);
