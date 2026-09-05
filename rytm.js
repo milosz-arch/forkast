@@ -140,6 +140,18 @@ export function przypiszDanie(siatka, data, typ, idDania) {
   });
 }
 
+/** Wersja restauracyjna to decyzja o POSIŁKU, nie o daniu (decyzja 113): to samo
+ *  chili w sobotę może być podstawowe. `restauracyjna: true` zapisuje się przy
+ *  wpisie posiłku; lista zakupów liczy wtedy z restauracyjnego składu. Pole
+ *  opcjonalne — starsze wersje apki je ignorują, więc WERSJA_DANYCH bez zmian. */
+export function ustawWersje(siatka, data, typ, restauracyjna) {
+  const dzien = znajdzDzien(siatka, data);
+  if (!dzien.posilki[typ]?.danie) throw new Error(`W dniu ${data} na „${typ}” nie ma dania — nie ma czego ulepszać.`);
+  return siatka.map(d => d.data !== data ? d : {
+    ...d, posilki: { ...d.posilki, [typ]: { ...d.posilki[typ], restauracyjna: !!restauracyjna } }
+  });
+}
+
 /** Ile porcji danego dania potrzeba na ten posiłek — długość listy `kto`.
  *  Zastępuje ILE_OSOB z Dietki: tam było zaszyte { wspolne: 2 } na sztywno,
  *  tutaj to się po prostu liczy z tego, kogo tam wpisano. */

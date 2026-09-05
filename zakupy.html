@@ -855,11 +855,16 @@ Alpine.data("ekranZakupy", () => ({
     const { db, ref, get, onValue } = fb;
 
     try {
-      const [snapWlasne, snapProdukty, snapPref] = await Promise.all([
+      const [snapWlasne, snapProdukty, snapPref, snapRest] = await Promise.all([
         get(ref(db, `domy/${kodDomu}/wlasneDania`)),
         get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
         get(ref(db, `domy/${kodDomu}/preferencje`)),
+        get(ref(db, `domy/${kodDomu}/restauracyjne`)),
       ]);
+      /* Wersje restauracyjne (113): czytane raz przy starcie. Wersja wygenerowana
+         w międzyczasie na drugim telefonie pojawi się tu po odświeżeniu — na razie
+         świadomie, bo nasłuch na drugiej gałęzi to druga warstwa złożoności (99). */
+      const restauracyjne = snapRest.val() || {};
       this.ustawOdblokowanie(stanPoczatkowy(snapPref.val() || {}));
       const wlasne = Object.entries(snapWlasne.val() || {}).map(([id, d]) => ({ id, ...d }));
       const wszystkie = [...TALIA_STARTOWA, ...wlasne];
@@ -893,7 +898,7 @@ Alpine.data("ekranZakupy", () => ({
         const start = zapisany.okres?.start || "brak";
         if (this.kluczOdhaczen !== PREFIKS_ODHACZEN + start) this.ustawOkres(start);
 
-        const wynik = policzZakupy(zapisany.siatka, wszystkie);
+        const wynik = policzZakupy(zapisany.siatka, wszystkie, restauracyjne);
         const grupy = pogrupujDzialami(wynik.pozycje, slownik);
         const plaskie = grupy.flatMap(g => g.pozycje.map(p => ({
           produkt: p.produkt,

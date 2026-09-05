@@ -237,6 +237,12 @@
                       <span x-show="czasPosilku(d, typ)"
                             class="ml-1.5 text-[0.82rem] font-semibold text-stone-400"
                             x-text="czasPosilku(d, typ)"></span>
+                      <!-- Posiłek zaplanowany w wersji restauracyjnej (113) — lista zakupów liczy z niej. -->
+                      <span x-show="d.posilki[typ].restauracyjna && !d.posilki[typ].bezSkladnikow"
+                            class="ml-1 rounded-full bg-emerald-50 px-1.5 text-[0.68rem] font-bold
+                                   text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300">
+                        restauracyjna
+                      </span>
                       <!-- Danie w planie, którego tym sprzętem nie da się zrobić.
                            Lepiej powiedzieć teraz niż przy garnku. -->
                       <span x-show="niewykonalnePosilku(d, typ)"
@@ -384,13 +390,13 @@
             <template x-if="maWersje(przepis.danie)">
               <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1 dark:bg-stone-800"
                    role="group" aria-label="Wersja przepisu">
-                <button type="button" @click="widok[przepis.danie.id] = 'podstawowa'"
+                <button type="button" @click="wybierzWersje(false)"
                         :aria-pressed="(widok[przepis.danie.id] !== 'restauracyjna').toString()"
                         class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                         :class="widok[przepis.danie.id] !== 'restauracyjna'
                           ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100'
                           : 'text-stone-500 dark:text-stone-400'">Podstawowa</button>
-                <button type="button" @click="widok[przepis.danie.id] = 'restauracyjna'"
+                <button type="button" @click="wybierzWersje(true)"
                         :aria-pressed="(widok[przepis.danie.id] === 'restauracyjna').toString()"
                         class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
                         :class="widok[przepis.danie.id] === 'restauracyjna'
@@ -399,7 +405,7 @@
               </div>
             </template>
             <template x-if="!maWersje(przepis.danie) && !stanAI[przepis.danie.id]">
-              <button type="button" @click="ulepsz(przepis.danie)"
+              <button type="button" @click="ulepszNaPosilek()"
                       class="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl
                              border border-emerald-200 bg-emerald-50 px-4 text-[0.95rem] font-semibold
                              text-emerald-800 transition active:bg-emerald-100
@@ -438,6 +444,7 @@
                         dark:bg-amber-400/10 dark:text-amber-200">
               <p><span class="font-bold">Względem podstawowej:</span>
                  <span x-text="roznicaSkladu(przepis.danie, przepis.wsp)"></span>.</p>
+              <p class="mt-1.5 font-semibold">Ten posiłek jest zaplanowany w wersji restauracyjnej — lista zakupów liczy z tego składu.</p>
               <p x-show="restauracyjne[przepis.danie.id].uwaga" class="mt-1.5 italic"
                  x-text="restauracyjne[przepis.danie.id].uwaga"></p>
             </div>
@@ -528,6 +535,7 @@ import { stanPoczatkowy } from "./postep.js";
 import { POMOC } from "./pomoc.js";
 import { danePowloki , zarejestrujPrzeciaganie } from "./powloka.js";
 import { WERSJA_DANYCH, sprawdzWersje } from "./wersja.js";
+import { ustawWersje } from "./rytm.js";
 import { nowyOkres, dniOkresu, domyslnyRytm, pustaSiatka, wylaczPosilek,
          oznaczBezSkladnikow, przypiszDanie, porcjePotrzebne, planKompletny,
          wlaczPosilek, wyczyscDanie, posilekPusty } from "./rytm.js";
@@ -980,6 +988,8 @@ Alpine.data("ekranJadlospis", () => ({
        oni siadają do stołu, a nie liczba z przepisu. Zaokrąglamy do grama. */
     const ileOsob = porcjePotrzebne(dzien, typ) || danie.porcje;
     const wsp = ileOsob / danie.porcje;
+    /* Widok w arkuszu = zapisana decyzja o tym posiłku (113), nie ostatnie kliknięcie. */
+    this.widok[danie.id] = wpis.restauracyjna && this.maWersje(danie) ? "restauracyjna" : "podstawowa";
     this.przepis = {
       danie, typ, data: dzien.data, ileOsob,
       przeliczone: Math.abs(wsp - 1) > 0.01,
@@ -987,6 +997,27 @@ Alpine.data("ekranJadlospis", () => ({
       skladniki: danie.skladniki.map(s => ({ ...s, gramy: Math.round(s.gramy * wsp) })),
       _dzien: dzien,
     };
+  },
+
+  /* Ulepszenie z arkusza = chcę tę wersję NA TEN POSIŁEK — po udanym wygenerowaniu
+     zapisujemy wybór od razu, bez drugiego kliknięcia. */
+  async ulepszNaPosilek() {
+    const { danie } = this.przepis;
+    await this.ulepsz(danie);
+    if (this.maWersje(danie) && this.przepis?.danie === danie) await this.wybierzWersje(true);
+  },
+
+  /* Przełącznik w arkuszu to decyzja o posiłku (113): zapis przy wpisie, lista zakupów
+     przelicza się sama. Ekran Przepisów ma ten sam przełącznik tylko jako podgląd. */
+  async wybierzWersje(restauracyjna) {
+    const { danie, data, typ } = this.przepis;
+    this.widok[danie.id] = restauracyjna ? "restauracyjna" : "podstawowa";
+    try {
+      this.siatka = ustawWersje(this.siatka, data, typ, restauracyjna);
+      await this.zapiszPosilek(data, typ);
+    } catch (e) {
+      this.mrugnij(`Nie udało się zapisać wersji: ${e.message}`);
+    }
   },
 
   zmienZPrzepisu() {

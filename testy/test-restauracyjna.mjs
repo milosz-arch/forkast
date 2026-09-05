@@ -4,6 +4,9 @@
 import { sprawdzSklad, ilosciZKrokow, parsujWersjeRestauracyjna } from "../parser.js";
 import { zbudujPromptRestauracyjny, zbudujPoprawkeRestauracyjna } from "../prompt.js";
 import { readFileSync } from "fs";
+import { policzZakupy } from "../zakupy.js";
+import { ustawWersje, przypiszDanie, nowyOkres, domyslnyRytm, pustaSiatka } from "../rytm.js";
+import { gramyPoPrzeliczeniu } from "../restauracyjna.js";
 const czytaj = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 
 let zdane = 0, oblane = 0;
@@ -297,6 +300,51 @@ test("pushback niesie poprzednią odpowiedź i każdy rozjazd", () => {
   prawda(p.includes("{\"kroki\":[]}") && p.includes("- Sól: brak") && p.includes("- Cytryny: 10 vs 2"), p);
 });
 
+console.log("\n— wersja restauracyjna jako decyzja o posiłku (113): zapis i lista zakupów —");
+
+const DANIA = [{ id: "a", nazwa: "Krem z buraków", porcje: 2,
+  skladniki: [{ produkt: "Buraki", gramy: 400 }, { produkt: "Śmietana", gramy: 100 }] }];
+const REST = { a: { skladniki: [{ produkt: "Buraki", gramy: 400 }, { produkt: "Kozi ser", gramy: 80 }, { produkt: "Orzechy laskowe", gramy: 30 }], kroki: ["x"] } };
+const siatkaZ = () => pustaSiatka(nowyOkres("2026-09-05", 1), domyslnyRytm([{ id: "m", imie: "M" }, { id: "b", imie: "B" }], ["obiad"]));
+
+test("ustawWersje zapisuje flagę przy posiłku, nie przy daniu; bez dania — błąd", () => {
+  let s = przypiszDanie(siatkaZ(), "2026-09-05", "obiad", "a");
+  s = ustawWersje(s, "2026-09-05", "obiad", true);
+  rowne(s[0].posilki.obiad.restauracyjna, true);
+  rowne(s[0].posilki.obiad.danie, "a", "danie zostaje");
+  let padlo = false;
+  try { ustawWersje(siatkaZ(), "2026-09-05", "obiad", true); } catch { padlo = true; }
+  prawda(padlo, "posiłek bez dania nie ma czego ulepszać");
+});
+
+test("lista zakupów: posiłek restauracyjny liczy się z restauracyjnego składu (kozi ser wchodzi, śmietana wypada)", () => {
+  let s = ustawWersje(przypiszDanie(siatkaZ(), "2026-09-05", "obiad", "a"), "2026-09-05", "obiad", true);
+  const { pozycje, pominiete } = policzZakupy(s, DANIA, REST);
+  rowne(pominiete, []);
+  rowne(pozycje.map(p => `${p.produkt} ${p.gramy}`), ["Buraki 400", "Kozi ser 80", "Orzechy laskowe 30"]);
+  prawda(pozycje[1].wDaniach[0].includes("(restauracyjna)"), "etykieta nie mówi, że to wersja restauracyjna");
+});
+
+test("lista zakupów: bez flagi — skład podstawowy, nawet gdy wersja istnieje", () => {
+  const s = przypiszDanie(siatkaZ(), "2026-09-05", "obiad", "a");
+  const { pozycje } = policzZakupy(s, DANIA, REST);
+  rowne(pozycje.map(p => p.produkt), ["Buraki", "Śmietana"]);
+});
+
+test("lista zakupów: flaga jest, wersji nie ma → podstawowy skład i wpis w pominiete, nie cisza", () => {
+  const s = ustawWersje(przypiszDanie(siatkaZ(), "2026-09-05", "obiad", "a"), "2026-09-05", "obiad", true);
+  const { pozycje, pominiete } = policzZakupy(s, DANIA, {});
+  rowne(pozycje.map(p => p.produkt), ["Buraki", "Śmietana"]);
+  rowne(pominiete.length, 1); prawda(pominiete[0].includes("restauracyjnej"), pominiete[0]);
+  const stary = policzZakupy(s, DANIA, { a: { akcenty: [] } });
+  rowne(stary.pominiete.length, 1, "stary kształt (akcenty) też liczy się jako brak wersji");
+});
+
+test("małe ilości po przeliczeniu: 1 g na ⅓ osoby to 0,3 g, nie 0", () => {
+  rowne(gramyPoPrzeliczeniu(1 / 3), 0.3);
+  rowne(gramyPoPrzeliczeniu(33.4), 33);
+});
+
 console.log("\n— moduł restauracyjna.js i drzwi na obu ekranach (pułapka 22, decyzja 111) —");
 
 const modul = czytaj("../restauracyjna.js");
@@ -323,7 +371,8 @@ for (const [nazwa, html] of Object.entries(ekrany)) {
   const szablon = html.slice(0, html.indexOf('<script type="module">'));
   const skrypt = html.slice(html.indexOf('<script type="module">'));
   test(`${nazwa}.html: przyciski ulepsz/ponow w szablonie, ...daneRestauracyjne() i wczytanie gałęzi przy starcie`, () => {
-    prawda(/@click="ulepsz\((p|przepis\.danie)\)"/.test(szablon), "brak przycisku wołającego ulepsz()");
+    prawda(/@click="(ulepsz\((p|przepis\.danie)\)|ulepszNaPosilek\(\))"/.test(szablon), "brak przycisku wołającego ulepsz()");
+    if (nazwa === "jadlospis") prawda(/await this\.ulepsz\(danie\)/.test(skrypt), "ulepszNaPosilek() nie woła ulepsz()");
     prawda(/@click="ponow\((p|przepis\.danie)\)"/.test(szablon), "brak przycisku wołającego ponow()");
     prawda(/\.\.\.daneRestauracyjne\(\)/.test(skrypt), "komponent nie rozkłada daneRestauracyjne()");
     prawda(/this\.wczytajRestauracyjne\(fb, kodDomu\)/.test(skrypt), "gałąź restauracyjne nie jest czytana przy starcie — przełącznik zniknie po odświeżeniu");

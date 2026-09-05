@@ -39,6 +39,12 @@ export async function zapytajAI(prompt, kodDomu) {
   return json.tekst;
 }
 
+/* 1 g płatków chili na ⅓ osoby to 0,3 g, nie „0 g” (zrzut Miłosza, 5 września).
+   Poniżej 10 g jedno miejsce po przecinku, wyżej pełne gramy. */
+export function gramyPoPrzeliczeniu(g) {
+  return g < 10 ? Math.round(g * 10) / 10 : Math.round(g);
+}
+
 export function daneRestauracyjne() {
   let fb = null, kodDomu = null;
 
@@ -75,14 +81,14 @@ export function daneRestauracyjne() {
     skladDoPokazania(p, wsp = 1) {
       const zrodlo = this.widok[p.id] === "restauracyjna" && this.restauracyjne[p.id]?.skladniki
         ? this.restauracyjne[p.id].skladniki : p.skladniki;
-      return wsp === 1 ? zrodlo : zrodlo.map(s => ({ ...s, gramy: Math.round(s.gramy * wsp) }));
+      return wsp === 1 ? zrodlo : zrodlo.map(s => ({ ...s, gramy: gramyPoPrzeliczeniu(s.gramy * wsp) }));
     },
 
     /* Różnica względem podstawy (decyzja 102 po 112): „+ Kozi ser 60 g, Ziemniaki 350 → 250 g,
        − Śmietana”. Liczona, nie zapisana — obie listy i tak leżą w bazie. */
     roznicaSkladu(p, wsp = 1) {
       const r = this.restauracyjne[p.id]?.skladniki || [];
-      const g = (x) => Math.round(x * wsp);
+      const g = (x) => gramyPoPrzeliczeniu(x * wsp);
       const baza = new Map(p.skladniki.map(s => [s.produkt, s.gramy]));
       const rest = new Map(r.map(s => [s.produkt, s.gramy]));
       const out = [];
