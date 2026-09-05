@@ -377,14 +377,71 @@
              x-text="`Przeliczone z przepisu na ${przepis.danie.porcje} os.`"></p>
         </div>
 
+        <!-- Wersja restauracyjna (decyzja 111): ta sama logika co na ekranie Przepisów,
+             z restauracyjna.js. Tylko przy daniach z krokami. -->
+        <template x-if="przepis.danie.kroki?.length">
+          <div class="mt-3">
+            <template x-if="maWersje(przepis.danie)">
+              <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1 dark:bg-stone-800"
+                   role="group" aria-label="Wersja przepisu">
+                <button type="button" @click="widok[przepis.danie.id] = 'podstawowa'"
+                        :aria-pressed="(widok[przepis.danie.id] !== 'restauracyjna').toString()"
+                        class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
+                        :class="widok[przepis.danie.id] !== 'restauracyjna'
+                          ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100'
+                          : 'text-stone-500 dark:text-stone-400'">Podstawowa</button>
+                <button type="button" @click="widok[przepis.danie.id] = 'restauracyjna'"
+                        :aria-pressed="(widok[przepis.danie.id] === 'restauracyjna').toString()"
+                        class="min-h-[2.6rem] rounded-lg text-[0.9rem] font-semibold transition"
+                        :class="widok[przepis.danie.id] === 'restauracyjna'
+                          ? 'bg-white text-emerald-700 shadow-sm dark:bg-stone-900 dark:text-emerald-400'
+                          : 'text-stone-500 dark:text-stone-400'">Restauracyjna</button>
+              </div>
+            </template>
+            <template x-if="!maWersje(przepis.danie) && !stanAI[przepis.danie.id]">
+              <button type="button" @click="ulepsz(przepis.danie)"
+                      class="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl
+                             border border-emerald-200 bg-emerald-50 px-4 text-[0.95rem] font-semibold
+                             text-emerald-800 transition active:bg-emerald-100
+                             dark:border-emerald-800/50 dark:bg-emerald-400/10 dark:text-emerald-300">
+                <svg class="ikona ikona-sm"><use href="#i-iskra"/></svg>
+                Wersja restauracyjna — AI, ok. 10 s
+              </button>
+            </template>
+            <template x-if="typeof stanAI[przepis.danie.id] === 'string'">
+              <p class="rounded-xl bg-stone-100 px-4 py-3 text-[0.9rem] text-stone-600
+                        dark:bg-stone-800/60 dark:text-stone-300" aria-live="polite"
+                 x-text="(stanAI[przepis.danie.id] === 'poprawka' ? 'AI poprawia liczby… ' : 'AI układa wersję restauracyjną… ') + sekundy[przepis.danie.id] + ' s'"></p>
+            </template>
+            <template x-if="stanAI[przepis.danie.id]?.blad">
+              <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.85rem] text-red-800
+                          dark:border-red-800/50 dark:bg-red-900/25 dark:text-red-200">
+                <p x-text="stanAI[przepis.danie.id].blad"></p>
+                <button type="button" @click="ponow(przepis.danie)"
+                        class="mt-2 min-h-[2.4rem] font-semibold underline">Spróbuj jeszcze raz</button>
+              </div>
+            </template>
+          </div>
+        </template>
+
         <div x-show="przepis.danie.kroki?.length"
              class="mt-3 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
           <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
-                    text-emerald-700 dark:text-emerald-400">Jak to zrobić</p>
+                    text-emerald-700 dark:text-emerald-400"
+             x-text="widok[przepis.danie.id] === 'restauracyjna' ? 'Jak to zrobić — wersja restauracyjna' : 'Jak to zrobić'"></p>
           <ol class="mt-2 list-decimal space-y-2.5 pl-5 text-[1rem] leading-relaxed">
-            <template x-for="k in przepis.danie.kroki" :key="k"><li x-text="k"></li></template>
+            <template x-for="(k, i) in krokiDoPokazania(przepis.danie)" :key="i"><li x-text="k"></li></template>
           </ol>
+          <template x-if="widok[przepis.danie.id] === 'restauracyjna' && maWersje(przepis.danie)">
+            <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[0.85rem] text-amber-900
+                        dark:bg-amber-400/10 dark:text-amber-200">
+              <p><span class="font-bold">Dokłada do zakupów:</span>
+                 <span x-text="roznicaZakupow(przepis.danie, przepis.wsp)"></span>.</p>
+              <p x-show="restauracyjne[przepis.danie.id].uwaga" class="mt-1.5 italic"
+                 x-text="restauracyjne[przepis.danie.id].uwaga"></p>
+            </div>
+          </template>
         </div>
 
         <p x-show="!przepis.danie.kroki?.length"
@@ -480,6 +537,7 @@ import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
 import { TYPY_POSILKOW } from "./prompt.js";
 import { PRODUKTY } from "./produkty.js";
 import { ktoJestemWsrod } from "./dom.js";
+import { daneRestauracyjne } from "./restauracyjna.js";
 import { poZuzyciu, kluczProduktu } from "./spizarnia.js";
 import { porcjaDania, zuzycieJednejOsoby, kluczPosilku,
          dzienOsoby, czyZjadlem, ileOdhaczylo, opisDnia } from "./licznik.js";
@@ -583,6 +641,7 @@ Alpine.data("ekranJadlospis", () => ({
       get(ref(db, `domy/${kodDomu}/preferencje`)),
       get(ref(db, `domy/${kodDomu}/wlasneDania`)),
       get(ref(db, `domy/${kodDomu}/ustawienia`)),
+      this.wczytajRestauracyjne(fb, kodDomu),
     ]);
 
     this.domownicy = Object.entries(snapDom.val() || {}).map(([id, d]) => ({ id, imie: d.imie }));
@@ -907,6 +966,7 @@ Alpine.data("ekranJadlospis", () => ({
   },
 
   przepis: null,
+  ...daneRestauracyjne(),
 
   /* Dotknięcie posiłku: przepis, jeśli danie jest wybrane; wybór, jeśli nie ma
      czego pokazać albo to pozycja bez składników („na mieście”). */
@@ -923,6 +983,7 @@ Alpine.data("ekranJadlospis", () => ({
     this.przepis = {
       danie, typ, data: dzien.data, ileOsob,
       przeliczone: Math.abs(wsp - 1) > 0.01,
+      wsp,
       skladniki: danie.skladniki.map(s => ({ ...s, gramy: Math.round(s.gramy * wsp) })),
       _dzien: dzien,
     };

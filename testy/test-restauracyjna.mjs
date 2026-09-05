@@ -266,37 +266,39 @@ test("pushback niesie poprzednią odpowiedź i każdy rozjazd", () => {
   prawda(p.includes("{\"kroki\":[]}") && p.includes("- Sól: brak") && p.includes("- Cytryny: 10 vs 2"), p);
 });
 
-console.log("\n— drzwi na ekranie przepisów (pułapka 22) —");
+console.log("\n— moduł restauracyjna.js i drzwi na obu ekranach (pułapka 22, decyzja 111) —");
 
-const przepisy = czytaj("../przepisy.html");
-const skrypt = przepisy.slice(przepisy.indexOf('<script type="module">'));
-const szablon = przepisy.slice(0, przepisy.indexOf('<script type="module">'));
+const modul = czytaj("../restauracyjna.js");
+const ekrany = { przepisy: czytaj("../przepisy.html"), jadlospis: czytaj("../jadlospis.html") };
 
-test("ulepsz() i ponow() mają przycisk w szablonie", () => {
-  prawda(/@click="ulepsz\(p\)"/.test(szablon), "brak przycisku wołającego ulepsz(p)");
-  prawda(/@click="ponow\(p\)"/.test(szablon), "brak przycisku wołającego ponow(p)");
+test("moduł czyta odpowiedź przez parsujWersjeRestauracyjna i robi dokładnie jedną rundę poprawki", () => {
+  prawda(/import \{[^}]*parsujWersjeRestauracyjna[^}]*\} from "\.\/parser\.js"/.test(modul), "brak importu parsera");
+  prawda((modul.match(/parsujWersjeRestauracyjna\(/g) || []).length === 2, "ma być dokładnie: próba + poprawka");
+  prawda(/zbudujPoprawkeRestauracyjna\(prompt, tekst, wynik\.bledy\)/.test(modul), "pushback nie dostaje rozjazdów");
 });
 
-test("ekran czyta odpowiedź przez parsujWersjeRestauracyjna i robi jedną rundę poprawki", () => {
-  prawda(/import \{[^}]*parsujWersjeRestauracyjna[^}]*\} from "\.\/parser\.js"/.test(skrypt), "brak importu parsera");
-  prawda((skrypt.match(/parsujWersjeRestauracyjna\(/g) || []).length === 2, "ma być dokładnie: próba + poprawka");
-  prawda(/zbudujPoprawkeRestauracyjna\(prompt, tekst, wynik\.bledy\)/.test(skrypt), "pushback nie dostaje rozjazdów");
-});
-
-test("zapis idzie pod restauracyjne/{id} jako obiekt (pułapka 2), a nowe produkty pod produktyWlasne", () => {
-  prawda(/set\(ref\(db, `domy\/\$\{kodDomu\}\/restauracyjne\/\$\{p\.id\}`\), wpis\)/.test(skrypt), "zły kształt lub ścieżka zapisu");
-  prawda(/const wpis = \{ kroki:/.test(skrypt), "wpis nie jest obiektem");
-  prawda(/update\(ref\(db, `domy\/\$\{kodDomu\}\/produktyWlasne`\), zmiany\)/.test(skrypt), "nowe produkty nie trafiają do produktyWlasne");
-});
-
-test("gałąź restauracyjne jest czytana przy starcie — inaczej przełącznik znika po odświeżeniu", () => {
-  prawda(/get\(ref\(db, `domy\/\$\{kodDomu\}\/restauracyjne`\)\)/.test(skrypt), "brak odczytu restauracyjne w initEkranu");
-  prawda(/this\.restauracyjne = snapRest\.val\(\) \|\| \{\}/.test(skrypt), "odczyt jest, ale nie ląduje w stanie");
+test("zapis pod restauracyjne/{id} jako obiekt (pułapka 2), nowe produkty pod produktyWlasne, przez lokalne fb (pułapka 25)", () => {
+  prawda(/fb\.set\(fb\.ref\(fb\.db, `domy\/\$\{kodDomu\}\/restauracyjne\/\$\{p\.id\}`\), wpis\)/.test(modul), "zły kształt lub ścieżka zapisu");
+  prawda(/const wpis = \{ kroki:/.test(modul), "wpis nie jest obiektem");
+  prawda(/fb\.update\(fb\.ref\(fb\.db, `domy\/\$\{kodDomu\}\/produktyWlasne`\), zmiany\)/.test(modul), "nowe produkty nie trafiają do produktyWlasne");
+  prawda(!/this\.fb\b/.test(modul), "połączenie z bazą leży na this — pułapka 25");
 });
 
 test("komunikat błędu niesie etap i numer wydania", () => {
-  prawda(/Nie udało się \(\$\{etap\}\)/.test(skrypt) && /\$\{WYDANIE\}/.test(skrypt), "błąd bez etapu albo bez wydania");
+  prawda(/Nie udało się \(\$\{etap\}\)/.test(modul) && /\$\{WYDANIE\}/.test(modul), "błąd bez etapu albo bez wydania");
 });
+
+for (const [nazwa, html] of Object.entries(ekrany)) {
+  const szablon = html.slice(0, html.indexOf('<script type="module">'));
+  const skrypt = html.slice(html.indexOf('<script type="module">'));
+  test(`${nazwa}.html: przyciski ulepsz/ponow w szablonie, ...daneRestauracyjne() i wczytanie gałęzi przy starcie`, () => {
+    prawda(/@click="ulepsz\((p|przepis\.danie)\)"/.test(szablon), "brak przycisku wołającego ulepsz()");
+    prawda(/@click="ponow\((p|przepis\.danie)\)"/.test(szablon), "brak przycisku wołającego ponow()");
+    prawda(/\.\.\.daneRestauracyjne\(\)/.test(skrypt), "komponent nie rozkłada daneRestauracyjne()");
+    prawda(/this\.wczytajRestauracyjne\(fb, kodDomu\)/.test(skrypt), "gałąź restauracyjne nie jest czytana przy starcie — przełącznik zniknie po odświeżeniu");
+    prawda(!/parsujWersjeRestauracyjna|zbudujPromptRestauracyjny/.test(skrypt), "ekran ma własną kopię logiki zamiast modułu");
+  });
+}
 
 console.log(`\nzdane: ${zdane}, oblane: ${oblane}`);
 process.exit(oblane ? 1 : 0);

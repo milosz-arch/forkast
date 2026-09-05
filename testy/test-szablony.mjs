@@ -163,6 +163,16 @@ const POWLOKA = nazwyPierwszegoPoziomu(
                  POWLOKA_CZYSTA.indexOf("export function danePowloki"))),
 );
 
+/* To samo dla ...daneRestauracyjne() z restauracyjna.js (decyzja 111): jeden moduł,
+   dwa ekrany. Gdy przybędzie trzecia fabryka, dopisujemy ją TU, nie w liście nazw. */
+const REST_CZYSTA = bezNapisow(readFileSync(new URL("restauracyjna.js", KORZEN), "utf8"));
+const RESTAURACYJNA = nazwyPierwszegoPoziomu(
+  ciałoObiektu(REST_CZYSTA,
+               REST_CZYSTA.indexOf("return {",
+                 REST_CZYSTA.indexOf("export function daneRestauracyjne"))),
+);
+if (!RESTAURACYJNA.size) throw new Error("restauracyjna.js: nie odczytano ani jednej nazwy z daneRestauracyjne()");
+
 /* Powłoka rejestruje też własne, małe komponenty — `pasek`, `przeciagany`,
    `licznik`. W HTML-u siedzą jako x-data="pasek", więc ich pola są w szablonie
    równie prawdziwe jak pola ekranu. Bierzemy je hurtem, bez pilnowania,
@@ -226,6 +236,7 @@ for (const plik of EKRANY) {
 
     const znane = new Set([...nazwyPierwszegoPoziomu(ciało), ...OD_PRZEGLADARKI, ...MALE_KOMPONENTY]);
     if (ciało.includes("...danePowloki(")) for (const n of POWLOKA) znane.add(n);
+    if (ciało.includes("...daneRestauracyjne(")) for (const n of RESTAURACYJNA) znane.add(n);
 
     const szablon = surowy.slice(0, surowy.indexOf("<script type=\"module\">"));
 
