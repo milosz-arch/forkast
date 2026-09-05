@@ -205,10 +205,11 @@
             <ul role="list" class="overflow-hidden rounded-2xl border border-stone-100 bg-white
                                    shadow-sm dark:border-stone-800 dark:bg-stone-900">
               <template x-for="p in g.pozycje" :key="p.produkt">
-                <li class="border-b border-stone-100 last:border-0 dark:border-stone-800">
+                <li class="flex items-stretch border-b border-stone-100 last:border-0
+                           dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
                           :aria-label="p.dopisek
-                            ? `${p.produkt}, dopisane ręcznie. Odhacz, żeby skreślić z listy.`
+                            ? `${p.produkt}, dopisane ręcznie. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`
                             : p.wDomu
                               ? `${p.produkt}. Macie w domu ${p.ileWDomu}, nie trzeba kupować.`
                               : `${p.produkt}, do kupienia ${p.ileDoKupienia}${p.masz > 0 ? `, w domu ${p.ileWDomu}` : ''}. ${p.wKoszyku ? 'W koszyku' : 'Do kupienia'}.`"
@@ -245,6 +246,23 @@
                             class="block text-[0.68rem] tabular-nums text-stone-400 dark:text-stone-500"
                             x-text="p.wDomu ? `${p.ileWDomu} w domu` : `${p.ileWDomu} jest w domu`"></span>
                     </span>
+                  </button>
+
+                  <!-- KRZYŻYK, TYLKO PRZY DOPISANYCH RĘCZNIE.
+
+                       29 sierpnia ustaliliśmy, że odhaczenie takiej pozycji ją KASUJE
+                       (decyzja 90). Miłosz zmienił zdanie następnego dnia i słusznie:
+                       odhaczenie w sklepie znaczy „mam to w koszyku”, a nie „usuń
+                       z listy”, i po pomyłce nie było jak wrócić. Rozdzielone tak samo
+                       jak w jadłospisie — po lewej odhaczasz, po prawej usuwasz.
+
+                       Przycisk stoi OBOK tamtego, nie w środku: przycisk w przycisku
+                       to nieprawidłowy HTML i na iPhonie potrafi zjeść dotknięcie. -->
+                  <button x-show="p.dopisek" type="button" @click="skreslDopisek(p)"
+                          :aria-label="`Usuń ${p.produkt} z listy`"
+                          class="flex w-12 shrink-0 items-center justify-center text-stone-300
+                                 transition active:scale-90 dark:text-stone-600">
+                    <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
                   </button>
                 </li>
               </template>
@@ -992,6 +1010,30 @@ Alpine.data("ekranZakupy", () => ({
     }
   },
 
+  async odhaczDopisek(p) {
+    const wpis = this.dopisane[p.dopisek];
+    if (!wpis) return;
+
+    const poprzednie = this.dopisane;
+    const zmienione = { ...this.dopisane,
+                        [p.dopisek]: { ...wpis, odhaczone: !wpis.odhaczone } };
+    this.dopisane = zmienione;
+    this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+    navigator.vibrate?.(10);
+    this.komunikat = `${p.produkt}: ${wpis.odhaczone ? "z powrotem na liście" : "w koszyku"}`;
+
+    if (!this.fb) return;
+    try {
+      const { db, ref, set } = this.fb;
+      await set(ref(db, `domy/${kodDomu}/dopisane`), zmienione);
+    } catch (e) {
+      console.error("Nie udało się odhaczyć dopisanej pozycji:", e);
+      this.dopisane = poprzednie;
+      this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
+      this.mrugnij?.(`[${WYDANIE}] Nie udało się zapisać: ${e?.code || e?.message || e}`);
+    }
+  },
+
   async skreslDopisek(p) {
     /* Optymistycznie, jak przy odhaczaniu: człowiek przy kasie nie czeka na sieć.
        Gdy zapis padnie, pozycja wraca na listę i mówimy dlaczego. */
@@ -1120,7 +1162,8 @@ Alpine.data("ekranZakupy", () => ({
      wpisuje w treść: „2 pasty do zębów”. */
   get pozycjeDopisane() {
     return Object.entries(this.dopisane)
-      .map(([id, w]) => ({ id, tekst: normalizujDopisek(w?.tekst), ile: normalizujMiare(w?.ile) }))
+      .map(([id, w]) => ({ id, tekst: normalizujDopisek(w?.tekst), ile: normalizujMiare(w?.ile),
+                           odhaczone: !!w?.odhaczone }))
       .filter(w => w.tekst)
       .sort((a, b) => a.tekst.localeCompare(b.tekst, "pl"))
       .map(w => ({
@@ -1134,7 +1177,7 @@ Alpine.data("ekranZakupy", () => ({
            jest człowiek przed półką. Przy jednej sztuce nie pokazujemy nic. */
         ileDoKupienia: opisMiary(w.ile),
         ileWDomu: "",
-        wKoszyku: false,
+        wKoszyku: w.odhaczone,
       }));
   },
 
@@ -1180,6 +1223,11 @@ Alpine.data("ekranZakupy", () => ({
   },
 
   async odhacz(p) {
+    /* Dopisana ręcznie pozycja zaznacza się na SOBIE, nie w gałęzi odhaczeń.
+       Tamte są przypięte do okresu planowania, a ta z okresem nie ma nic wspólnego —
+       pasta do zębów nie odznacza się dlatego, że zaczął się nowy tydzień. */
+    if (p.dopisek) return this.odhaczDopisek(p);
+
     const k = klucz(p.produkt);
 
     // Ściśnięcie natychmiast — dotknięcie ma mieć odpowiedź, zanim ruszy kolejność.

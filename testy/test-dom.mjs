@@ -168,9 +168,22 @@ const ekranyHTML = czytajKatalog(KORZEN_EKRANOW)
   .map(f => bezKomentarzyHTML(czytajPlik(new URL(f, KORZEN_EKRANOW), "utf8")))
   .join("\n");
 
-for (const nazwa of ["zmienImie", "wlaczPosilek"]) {
+/* `skreslDopisek` dopisane 30 sierpnia: napisałem ją 29 sierpnia razem z funkcją
+   dopisywania i NIE PODPIĄŁEM do żadnego przycisku. Piąta taka rzecz w tej apce
+   i pierwsza moja własna — objaw był taki, że odhaczenie dopisanej pozycji miało
+   ją kasować i nie kasowało nigdy. */
+/* Wycinamy DEFINICJE metod, zanim poszukamy wywołań.
+
+   Pierwsza wersja tego testu szukała po prostu „nazwa(" w plikach HTML — i dla
+   funkcji zdefiniowanych WEWNĄTRZ ekranu znajdowała ich własną definicję. Czyli
+   test pilnujący martwych funkcji był sam martwy dokładnie tam, gdzie najbardziej
+   był potrzebny. Wyszło przy sabotażu 30 sierpnia: odpięcie krzyżyka od
+   `skreslDopisek()` niczego nie obaliło. */
+const bezDefinicji = ekranyHTML.replace(/^\s*(async\s+)?[A-Za-z_$][\w$]*\s*\(/gm, " ");
+
+for (const nazwa of ["zmienImie", "wlaczPosilek", "skreslDopisek", "odhaczDopisek"]) {
   test(`${nazwa}() jest wołana przez któryś ekran`, () => {
-    rowne(new RegExp(`\\b${nazwa}\\s*\\(`).test(ekranyHTML), true,
+    rowne(new RegExp(`\\b${nazwa}\\s*\\(`).test(bezDefinicji), true,
       `${nazwa}() istnieje w kodzie i żaden ekran jej nie woła — gotowa funkcja bez drzwi`);
   });
 }
