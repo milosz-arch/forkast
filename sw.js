@@ -10,7 +10,7 @@
    dane na żywo nie mają czego szukać w pamięci podręcznej, a odpowiedź AI
    zapisana z poprzedniego razu byłaby wręcz szkodliwa.
    ===================================================================== */
-const CACHE = "forkast-v87";
+const CACHE = "forkast-v88";
 const SZKIELET = [
   "./index.html", "./talia.html", "./jadlospis.html", "./zakupy.html",
   "./przepisy.html", "./ustawienia.html", "./formularz.html", "./dodaj-z-ai.html",

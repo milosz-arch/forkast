@@ -115,6 +115,28 @@ for (const p of PLIKI.filter(f => f.endsWith(".html"))) {
   }
 }
 
+/* NAPISY W GNIAZDACH EKRANOWYCH — `opisZdjec: "…"`, `reakcja: "…"`, `nazwa: "…"`.
+   Idą na ekran przez zmienną (`t(opisZdjec)`, `this.t(p.reakcja)`), więc dosłownego
+   `t("…")` tu nie ma i bez tej pętli wyglądałyby na martwe pozycje słownika.
+   Wartość zostaje w danych po polsku CELOWO: obiekt komponentu powstaje raz, przy
+   starcie, zanim stół poda język — przetłumaczona w tym miejscu zamarzłaby na zawsze
+   (pułapka 34). Tłumaczy się ją dopiero przy wyświetleniu.
+   Ten sam wzorzec pilnuje test-napisy-moduly.mjs od drugiej strony. */
+{
+  const GNIAZDA = /\bmrugnij\(\s*"([^"\\\n]*)"|\b(?:nazwa|etykieta|tytul|opis|reakcja|blad|bladOsoby|bladKodu|bladImienia|stanSieci|stanEksportu|podpowiedzCzekania|opisZdjec)\s*[:=]\s*"([^"\\\n]*)"|\bkomunikat\s*=\s*"([^"\\\n]*)"/g;
+  for (const p of PLIKI) {
+    let tekst = readFileSync(new URL(p, KORZEN), "utf8");
+    if (p.endsWith(".html")) tekst = (tekst.match(/<script[^>]*>[\s\S]*?<\/script>/g) || []).join("\n");
+    for (const m of bezKomentarzy(tekst, false).matchAll(GNIAZDA)) {
+      const napis = m[1] ?? m[2] ?? m[3];
+      if (!napis || !napis.trim() || NIE_TLUMACZYMY.has(napis)) continue;
+      if (!(napis in SLOWNIK)) continue;   /* nieprzetłumaczone pilnuje tamten test */
+      if (!uzyte.has(napis)) uzyte.set(napis, new Set());
+      uzyte.get(napis).add(p);
+    }
+  }
+}
+
 /* Tytuły kart są wołane nie przez t(), tylko przez powłokę (document.title),
    więc dla sprawdzenia „martwych pozycji” liczą się jako używane. */
 for (const p of PLIKI.filter(f => f.endsWith(".html"))) {

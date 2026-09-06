@@ -370,7 +370,7 @@ Alpine.data("ekranPrzepisy", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
     }
   },
@@ -385,7 +385,7 @@ Alpine.data("ekranPrzepisy", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }

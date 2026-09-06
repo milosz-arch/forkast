@@ -120,7 +120,7 @@
                           rounded-2xl border-2 border-dashed border-stone-300 px-4 text-center
                           dark:border-stone-700">
               <input type="file" accept="image/*" multiple class="hidden" @change="wczytajZdjecia($event)">
-              <span class="font-semibold" x-text="opisZdjec"></span>
+              <span class="font-semibold" x-text="t(opisZdjec)"></span>
               <span class="mt-1 text-[0.82rem] text-stone-400" x-text="t('Strona z książki, kartka z zeszytu, zrzut ekranu — albo sam talerz z jedzeniem.')"></span>
               <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="t('Najlepiej 1–2 zdjęcia. Przy większej liczbie AI może nie zdążyć.')"></span>
             </label>
@@ -367,7 +367,7 @@ Alpine.data("ekranAI", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
     }
   },
@@ -382,7 +382,7 @@ Alpine.data("ekranAI", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -441,7 +441,7 @@ Alpine.data("ekranAI", () => ({
     let i = 0;
     const dalej = () => {
       if (i >= this.ETAPY.length - 1) {
-        this.podpowiedzCzekania = "Trwa dłużej niż zwykle, ale jeszcze liczy.";
+        this.podpowiedzCzekania = this.t("Trwa dłużej niż zwykle, ale jeszcze liczy.");
         return;
       }
       this._etapy = setTimeout(() => { this.etap = ++i; dalej(); }, this.ETAPY[i].ms);
@@ -501,7 +501,7 @@ Alpine.data("ekranAI", () => ({
       this.krok = "podglad";
     } catch {
       this.zatrzymajEtapy();
-      this.blad = "Nie udało się połączyć — sprawdź internet i spróbuj ponownie.";
+      this.blad = this.t("Nie udało się połączyć — sprawdź internet i spróbuj ponownie.");
       this.krok = "blad";
     }
   },
@@ -529,7 +529,7 @@ Alpine.data("ekranAI", () => ({
         : `${this.wynik.dania.length} ${this.wynik.dania.length === 1 ? "danie trafiło" : "dania trafiły"} do Waszych dań.`;
       this.krok = "zapisane";
     } catch {
-      this.blad = "Nie udało się zapisać — sprawdź internet i spróbuj ponownie.";
+      this.blad = this.t("Nie udało się zapisać — sprawdź internet i spróbuj ponownie.");
       this.zatrzymajEtapy();
       this.krok = "blad";
     }

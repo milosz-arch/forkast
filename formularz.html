@@ -290,7 +290,7 @@ Alpine.data("ekranFormularz", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
     }
   },
@@ -305,7 +305,7 @@ Alpine.data("ekranFormularz", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -349,12 +349,12 @@ Alpine.data("ekranFormularz", () => ({
          czego nie chce jeść. */
       await set(ref(db, `domy/${kodDomu}/preferencje/${nowyRef.key}`), "lubie");
       this.zapisane = true;
-      this.komunikat = "Danie dodane";
+      this.komunikat = this.t("Danie dodane");
       /* Jeden składnik. Czasem to naprawdę wszystko, czego trzeba. */
       if (wynik.danie.skladniki.length === 1)
-        this.mrugnij("Jeden składnik. Szanujemy minimalizm.");
+        this.mrugnij(this.t("Jeden składnik. Szanujemy minimalizm."));
     } catch {
-      this.bledy = ["Nie udało się zapisać — sprawdź internet i spróbuj ponownie."];
+      this.bledy = [this.t("Nie udało się zapisać — sprawdź internet i spróbuj ponownie.")];
     } finally {
       this.zapisywanie = false;
     }

@@ -308,7 +308,7 @@ Alpine.data("ekranWejscie", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
 
          „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
@@ -333,7 +333,7 @@ Alpine.data("ekranWejscie", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -391,7 +391,7 @@ Alpine.data("ekranWejscie", () => ({
          dziesięciu domach jest znikome, ale skutkiem jest pokazanie komuś
          cudzych danych, więc ta ścieżka nie może zostać nieosłonięta. */
       if (!wolny) {
-        this.mrugnij("Nie udało się wylosować wolnego kodu — spróbuj jeszcze raz.");
+        this.mrugnij(this.t("Nie udało się wylosować wolnego kodu — spróbuj jeszcze raz."));
         return;
       }
       await set(ref(db, `domy/${kod}/utworzono`), Date.now());
@@ -401,7 +401,7 @@ Alpine.data("ekranWejscie", () => ({
       localStorage.setItem("forkast-dom", kod);
       this.wejdz(kod);
     } catch {
-      this.mrugnij("Nie udało się założyć stołu — sprawdź internet.");
+      this.mrugnij(this.t("Nie udało się założyć stołu — sprawdź internet."));
     } finally {
       this.zajety = false;
     }
@@ -442,7 +442,7 @@ Alpine.data("ekranWejscie", () => ({
       localStorage.setItem("forkast-dom", kod);
       this.wejdz(kod);
     } catch {
-      this.bladKodu = "Nie udało się sprawdzić — sprawdź internet.";
+      this.bladKodu = this.t("Nie udało się sprawdzić — sprawdź internet.");
     } finally {
       this.sprawdzam = false;
     }
@@ -455,18 +455,17 @@ Alpine.data("ekranWejscie", () => ({
     const udalo = ustawKimJestem(id);
     this.ja = id;
     const kto = this.domownicy.find(d => d.id === id);
-    this.mrugnij?.(udalo
-      ? `Ten telefon to ${kto?.imie || "Ty"}.`
-      : `Ten telefon to ${kto?.imie || "Ty"} — ale ta przeglądarka tego nie zapamięta.`);
+    this.mrugnij?.(this.t("Ten telefon to ") + (kto?.imie || this.t("Ty"))
+      + (udalo ? "." : this.t(" — ale ta przeglądarka tego nie zapamięta.")));
   },
 
   async dodaj() {
     const imie = this.noweImie.trim();
     this.bladOsoby = "";
-    if (!imie) { this.bladOsoby = "Wpisz imię albo pseudonim."; return; }
-    if (imie.length > 30) { this.bladOsoby = "Za długie — maksymalnie 30 znaków."; return; }
+    if (!imie) { this.bladOsoby = this.t("Wpisz imię albo pseudonim."); return; }
+    if (imie.length > 30) { this.bladOsoby = this.t("Za długie — maksymalnie 30 znaków."); return; }
     if (this.domownicy.some(d => d.imie.toLowerCase() === imie.toLowerCase())) {
-      this.bladOsoby = "Ktoś taki już siedzi przy stole."; return;
+      this.bladOsoby = this.t("Ktoś taki już siedzi przy stole."); return;
     }
     try {
       const nowyRef = push(ref(db, `domy/${this.kodDomu}/domownicy`));
@@ -474,7 +473,7 @@ Alpine.data("ekranWejscie", () => ({
       this.noweImie = "";
       this.komunikat = `${imie} dołącza do stołu`;
     } catch {
-      this.bladOsoby = "Nie udało się dodać — sprawdź internet.";
+      this.bladOsoby = this.t("Nie udało się dodać — sprawdź internet.");
     }
   },
 
@@ -490,11 +489,11 @@ Alpine.data("ekranWejscie", () => ({
     if (!imie || imie === d.imie) { this.domownicy = [...this.domownicy]; return; }
 
     if (imie.length > 30) {
-      this.bladOsoby = "Za długie — maksymalnie 30 znaków.";
+      this.bladOsoby = this.t("Za długie — maksymalnie 30 znaków.");
       this.domownicy = [...this.domownicy]; return;
     }
     if (this.domownicy.some(x => x.id !== d.id && x.imie.toLowerCase() === imie.toLowerCase())) {
-      this.bladOsoby = "Ktoś taki już siedzi przy stole.";
+      this.bladOsoby = this.t("Ktoś taki już siedzi przy stole.");
       this.domownicy = [...this.domownicy]; return;
     }
 
@@ -531,12 +530,12 @@ Alpine.data("ekranWejscie", () => ({
 
   async usun(d) {
     try { await remove(ref(db, `domy/${this.kodDomu}/domownicy/${d.id}`)); }
-    catch { this.mrugnij("Nie udało się usunąć — sprawdź internet."); }
+    catch { this.mrugnij(this.t("Nie udało się usunąć — sprawdź internet.")); }
   },
 
   async kopiuj() {
-    try { await navigator.clipboard.writeText(this.kodDomu); this.mrugnij("Kod skopiowany"); }
-    catch { this.mrugnij("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie."); }
+    try { await navigator.clipboard.writeText(this.kodDomu); this.mrugnij(this.t("Kod skopiowany")); }
+    catch { this.mrugnij(this.t("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie.")); }
   },
 
   /* Moje imię ze stołu. Wybór osoby jest własnością telefonu (decyzja 78),

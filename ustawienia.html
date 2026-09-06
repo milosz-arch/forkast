@@ -527,7 +527,7 @@ Alpine.data("ekranUstawienia", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
     }
   },
@@ -542,7 +542,7 @@ Alpine.data("ekranUstawienia", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -588,7 +588,7 @@ Alpine.data("ekranUstawienia", () => ({
     /* Puste pole to omsknięcie, nie polecenie „skasuj imię”. */
     if (!imie || imie === d.imie) { this.domownicy = [...this.domownicy]; return; }
     if (this.domownicy.some(x => x.id !== d.id && x.imie.toLowerCase() === imie.toLowerCase())) {
-      this.bladImienia = "Ktoś taki już siedzi przy stole.";
+      this.bladImienia = this.t("Ktoś taki już siedzi przy stole.");
       this.domownicy = [...this.domownicy]; return;
     }
 
@@ -624,7 +624,7 @@ Alpine.data("ekranUstawienia", () => ({
         kuchnia: this.kuchnia,
         jezyk: this.jezyk,
       });
-      this.komunikat = "Zapisane";
+      this.komunikat = this.t("Zapisane");
     }, 400);
   },
 
@@ -634,7 +634,7 @@ Alpine.data("ekranUstawienia", () => ({
     /* Wszystkie posiłki wyłączone — technicznie dozwolone, ale wtedy apka
        nie ma co robić i lepiej to powiedzieć niż udawać, że wszystko gra. */
     if (TYPY_POSILKOW.every(t => !this.rytm[t]?.wlaczony))
-      this.mrugnij("Wyłączyliście wszystko. Post czy pomyłka?");
+      this.mrugnij(this.t("Wyłączyliście wszystko. Post czy pomyłka?"));
   },
 
   przelaczOsobe(typ, id) {
@@ -663,29 +663,29 @@ Alpine.data("ekranUstawienia", () => ({
     const udalo = ustawKimJestem(nowe);
     this.ja = nowe;
     const kto = this.domownicy.find(d => d.id === nowe);
-    if (!nowe) { this.mrugnij("Nikt nie wybrany — licznik schowany."); return; }
-    this.mrugnij(udalo ? `Ten telefon to ${kto?.imie || "Ty"}.`
-                       : "Ta przeglądarka tego nie zapamięta — licznik zniknie po zamknięciu.");
+    if (!nowe) { this.mrugnij(this.t("Nikt nie wybrany — licznik schowany.")); return; }
+    this.mrugnij(udalo ? this.t("Ten telefon to ") + (kto?.imie || this.t("Ty")) + "."
+                       : this.t("Ta przeglądarka tego nie zapamięta — licznik zniknie po zamknięciu."));
   },
 
   async kopiujKod() {
     try {
       await navigator.clipboard.writeText(this.kod);
-      this.mrugnij("Kod skopiowany");
+      this.mrugnij(this.t("Kod skopiowany"));
     } catch {
-      this.mrugnij("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie.");
+      this.mrugnij(this.t("Nie udało się skopiować — zaznacz kod i skopiuj ręcznie."));
     }
   },
 
   async eksportuj() {
-    this.stanEksportu = "Zbieram…";
+    this.stanEksportu = this.t("Zbieram…");
     try {
       const [snapW, snapP] = await Promise.all([
         get(ref(db, `domy/${kodDomu}/wlasneDania`)),
         get(ref(db, `domy/${kodDomu}/produktyWlasne`)),
       ]);
       const dania = Object.values(snapW.val() || {});
-      if (!dania.length) { this.stanEksportu = "Nie dodaliście jeszcze żadnego własnego dania."; return; }
+      if (!dania.length) { this.stanEksportu = this.t("Nie dodaliście jeszcze żadnego własnego dania."); return; }
       const paczka = {
         apka: "Forkast",
         pobrano: new Date().toISOString().slice(0, 10),
@@ -700,7 +700,7 @@ Alpine.data("ekranUstawienia", () => ({
       URL.revokeObjectURL(a.href);
       this.stanEksportu = `Pobrano ${dania.length} dań.`;
     } catch {
-      this.stanEksportu = "Nie udało się pobrać — sprawdź internet i spróbuj ponownie.";
+      this.stanEksportu = this.t("Nie udało się pobrać — sprawdź internet i spróbuj ponownie.");
     }
   },
 
@@ -744,7 +744,7 @@ Alpine.data("ekranUstawienia", () => ({
       localStorage.removeItem("forkast-dom");
       location.href = "index.html";
     } catch {
-      this.mrugnij("Nie udało się usunąć — sprawdź internet i spróbuj ponownie.");
+      this.mrugnij(this.t("Nie udało się usunąć — sprawdź internet i spróbuj ponownie."));
     }
   },
 }));

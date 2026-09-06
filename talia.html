@@ -319,7 +319,7 @@
             <h2 class="mt-4 text-xl font-bold" x-text="lubiane ? t('To wszystko na teraz') : t('Nic nie trafiło?')"></h2>
             <p class="mt-2 text-[1rem] text-stone-500 dark:text-stone-400"
                x-text="lubiane
-                 ? `Polubiliście ${lubiane} dań. Wystarczy, żeby ułożyć jadłospis.`
+                 ? t('Polubiliście ') + lubiane + t(' dań. Wystarczy, żeby ułożyć jadłospis.')
                  : t('W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.')"></p>
             <a x-show="lubiane" href="jadlospis.html"
                class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
@@ -493,7 +493,7 @@ Alpine.data("ekranDania", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
 
          „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
@@ -519,7 +519,7 @@ Alpine.data("ekranDania", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -580,7 +580,7 @@ Alpine.data("ekranDania", () => ({
   przejrzyjOdNowa() {
     this.talia = filtrujTalie([...TALIA_STARTOWA, ...this.wlasne], this.wybraneWykluczenia);
     this.indeks = 0;
-    this.mrugnij("Od początku. Przesuwaj tak, jak myślisz dziś.");
+    this.mrugnij(this.t("Od początku. Przesuwaj tak, jak myślisz dziś."));
   },
 
   async zdecyduj(wybor) {
@@ -592,24 +592,24 @@ Alpine.data("ekranDania", () => ({
       this.lubiane++;
       this.seriaOdrzucen = 0;
       /* Pierwsze polubione danie — od tego momentu jadłospis ma z czego powstać. */
-      if (this.lubiane === 1) this.mrugnij("Pierwsze danie na liście. Już się da z tego coś ułożyć.");
-      if (this.lubiane === 25) this.mrugnij("Dwadzieścia pięć dań. Miesiąc bez powtórek.");
+      if (this.lubiane === 1) this.mrugnij(this.t("Pierwsze danie na liście. Już się da z tego coś ułożyć."));
+      if (this.lubiane === 25) this.mrugnij(this.t("Dwadzieścia pięć dań. Miesiąc bez powtórek."));
     }
     else {
       this.seriaOdrzucen++;
       /* Dziesięć odrzuceń z rzędu: mrugnięcie, nie wyrzut. Kto odrzuca dziesiąte
          danie, prawdopodobnie już się zastanawia, czy coś robi źle. */
-      if (this.seriaOdrzucen === 10) this.mrugnij("Wybredny dziś jesteś.");
+      if (this.seriaOdrzucen === 10) this.mrugnij(this.t("Wybredny dziś jesteś."));
       /* Dwadzieścia pod rząd to już nie wybredność, tylko sygnał, że talia
          nie pasuje do tego domu — i lepiej powiedzieć to wprost. */
-      if (this.seriaOdrzucen === 20) this.mrugnij("Może po prostu gotujecie inaczej. Dodaj swoje dania.");
+      if (this.seriaOdrzucen === 20) this.mrugnij(this.t("Może po prostu gotujecie inaczej. Dodaj swoje dania."));
     }
     navigator.vibrate?.(12);
     this.preferencje[d.id] = wybor === "tak" ? "lubie" : "nielubie";
     const bylZamkniety = !this.odblokowane;
     this.odswiezPostep();
     if (bylZamkniety && this.odblokowane)
-      this.mrugnij("Jadłospis otwarty. Możesz układać plan albo przeglądać dalej.");
+      this.mrugnij(this.t("Jadłospis otwarty. Możesz układać plan albo przeglądać dalej."));
     set(ref(db, `domy/${kodDomu}/preferencje/${d.id}`), wybor === "tak" ? "lubie" : "nielubie");
 
     await new Promise(r => setTimeout(r, 300));
@@ -623,7 +623,7 @@ Alpine.data("ekranDania", () => ({
     this.komunikat = wybor === "tak" ? "Polubione" : "Pominięte";
     // Półmetek: jedyne miejsce, gdzie warto powiedzieć „jeszcze trochę”.
     if (this.indeks === Math.floor(this.talia.length / 2) && this.talia.length >= 20)
-      this.mrugnij("Połowa za Wami.");
+      this.mrugnij(this.t("Połowa za Wami."));
 
     if (this.indeks >= this.talia.length) ding();
   },
@@ -637,14 +637,14 @@ Alpine.data("ekranDania", () => ({
     delete this.preferencje[o.id];
     this.odswiezPostep();
     set(ref(db, `domy/${kodDomu}/preferencje/${o.id}`), null);
-    this.komunikat = "Cofnięto";
+    this.komunikat = this.t("Cofnięto");
   },
 
   ukryjInstalacje() { odrzuc(); this.instalacja = null; },
 
   async zainstalujTeraz() {
     const zgoda = await zainstaluj();
-    if (zgoda) { this.instalacja = null; this.mrugnij("Gotowe — Forkast jest na ekranie."); }
+    if (zgoda) { this.instalacja = null; this.mrugnij(this.t("Gotowe — Forkast jest na ekranie.")); }
   },
 
   /* Barwa kubełka — jedno źródło prawdy dla paska, stempla i kropek

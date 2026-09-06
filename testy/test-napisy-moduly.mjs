@@ -47,7 +47,19 @@ const DANE = new Set(["talia-startowa.js", "produkty.js", "tlumaczenia.js", "sw.
 /* Miejsca, przez które napis trafia na ekran nie przechodząc przez t():
    komunikat z mrugnij(), pole etykiety/nazwy/nagłówka w strukturze danych,
    przypisanie do `komunikat` (linia dla czytnika ekranu). */
-const MIEJSCA = /\bmrugnij\(\s*"([^"\\\n]*)"|\b(?:nazwa|etykieta|tytul|opis)\s*:\s*"([^"\\\n]*)"|\bkomunikat\s*=\s*"([^"\\\n]*)"/g;
+/* Sinki dopisane po sesji komunikatów: ekran pokazuje napis nie tylko przez
+   mrugnij(). `blad`, `bladOsoby`, `bladKodu`, `bladImienia` to czerwone linijki
+   pod polami, `stanSieci` i `stanEksportu` to szare linijki stanu, `podpowiedzCzekania`
+   i `opisZdjec` to teksty w trakcie czekania na AI, `reakcja` to odzew przy pozycji
+   bez składników. Każdy z nich widzi człowiek — więc każdy tu należy.
+
+   Czego tu NIE ma, świadomie: nazw produktów w `wykluczenia.js` (to KLUCZE do
+   dopasowania, nie napisy), tekstu promptu w `prompt.js` (rozmawiamy z AI po polsku
+   i to osobna decyzja), nazw dni i miesięcy w jadłospisie (formatowanie daty, punkt 6
+   sesji A) oraz nazw etapów diagnostycznych. Sprawdzenie za surowe jest gorsze niż
+   brak sprawdzenia (pułapka 33): lista, w której połowa pozycji nie ma prawa być
+   przetłumaczona, przestaje być czytana. */
+const MIEJSCA = /\bmrugnij\(\s*"([^"\\\n]*)"|\b(?:nazwa|etykieta|tytul|opis|reakcja|blad|bladOsoby|bladKodu|bladImienia|stanSieci|stanEksportu|podpowiedzCzekania|opisZdjec)\s*[:=]\s*"([^"\\\n]*)"|\bkomunikat\s*=\s*"([^"\\\n]*)"/g;
 
 /* CO ZOSTAŁO PO POLSKU — świadomie, na sesję komunikatów i modułów.
    Ta lista ma maleć. Dopisanie tu czegoś jest decyzją, nie przypadkiem. */
@@ -59,19 +71,7 @@ const JESZCZE_PO_POLSKU = new Set([
 
   /* dodaj-z-ai.html */
   "Zdjęcia",
-  "Coś nie zadziałało przy wczytywaniu.",
-  "Brak połączenia z bazą.",
 
-  /* formularz.html */
-  "Danie dodane",
-  "Jeden składnik. Szanujemy minimalizm.",
-
-  /* index.html */
-  "Nie udało się wylosować wolnego kodu — spróbuj jeszcze raz.",
-  "Nie udało się założyć stołu — sprawdź internet.",
-  "Nie udało się usunąć — sprawdź internet.",
-  "Kod skopiowany",
-  "Nie udało się skopiować — zaznacz kod i skopiuj ręcznie.",
 
   /* instalacja.js */
   "Dodaj Forkast do ekranu",
@@ -81,14 +81,6 @@ const JESZCZE_PO_POLSKU = new Set([
   "na mieście",
   "co się nawinie",
   "coś z paczki",
-  "Najpierw powiedz w Ustawieniach, kim jesteś przy tym stole.",
-  "Ten posiłek nie jest zaplanowany dla Ciebie.",
-  "O tej porze to już nawet nie kolacja.",
-  "Plan gotowy. Lista zakupów policzy się sama.",
-  "Jadłospis wyczyszczony",
-  "Cały okres zaplanowany. Nic tu po mnie.",
-  "Trzeci raz na mieście. Restauracje Cię lubią.",
-  "Najpierw dodaj kogoś do stołu",
 
   /* kuchnia.js */
   "Indukcja",
@@ -140,25 +132,11 @@ const JESZCZE_PO_POLSKU = new Set([
   "Duży",
   "Bardzo duży",
 
-  /* talia.html */
-  "Od początku. Przesuwaj tak, jak myślisz dziś.",
-  "Pierwsze danie na liście. Już się da z tego coś ułożyć.",
-  "Dwadzieścia pięć dań. Miesiąc bez powtórek.",
-  "Wybredny dziś jesteś.",
-  "Może po prostu gotujecie inaczej. Dodaj swoje dania.",
-  "Jadłospis otwarty. Możesz układać plan albo przeglądać dalej.",
-  "Połowa za Wami.",
-  "Cofnięto",
-  "Gotowe — Forkast jest na ekranie.",
-
   /* ustawienia.html */
   "bez limitu",
   "raz",
   "do 2×",
   "do 3×",
-  "Wyłączyliście wszystko. Post czy pomyłka?",
-  "Nikt nie wybrany — licznik schowany.",
-  "Nie udało się usunąć — sprawdź internet i spróbuj ponownie.",
 
   /* wykluczenia.js */
   "Mięso",

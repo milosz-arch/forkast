@@ -600,7 +600,7 @@ Alpine.data("ekranJadlospis", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
 
          „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
@@ -626,7 +626,7 @@ Alpine.data("ekranJadlospis", () => ({
     if (fb) ({ db, ref, get, set, remove, push, update, onValue } = fb);
     else {
       this.laduje = false;
-      this.komunikat = "Brak połączenia z bazą.";
+      this.komunikat = this.t("Brak połączenia z bazą.");
       this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
       return;
     }
@@ -736,8 +736,8 @@ Alpine.data("ekranJadlospis", () => ({
 
   async przelaczPtaszek(d, typ) {
     if (!this.mogeOdhaczyc(d, typ)) {
-      if (!this.ja) this.mrugnij("Najpierw powiedz w Ustawieniach, kim jesteś przy tym stole.");
-      else if (!d.posilki[typ]?.kto?.includes(this.ja)) this.mrugnij("Ten posiłek nie jest zaplanowany dla Ciebie.");
+      if (!this.ja) this.mrugnij(this.t("Najpierw powiedz w Ustawieniach, kim jesteś przy tym stole."));
+      else if (!d.posilki[typ]?.kto?.includes(this.ja)) this.mrugnij(this.t("Ten posiłek nie jest zaplanowany dla Ciebie."));
       return;
     }
     const danie = this.wszystkieDania.find(x => x.id === d.posilki[typ].danie);
@@ -773,8 +773,8 @@ Alpine.data("ekranJadlospis", () => ({
     const p = porcjaDania(danie, PRODUKTY);
     if (!bylo) {
       this.mrugnij(p.nieznane.length
-        ? `Odhaczone. ${p.kcal} kcal — bez ${p.nieznane.join(", ")}, tego nie ma w słowniku.`
-        : `Odhaczone. ${p.kcal} kcal.`);
+        ? this.t("Odhaczone. ") + p.kcal + this.t(" kcal — bez ") + p.nieznane.join(", ") + this.t(", tego nie ma w słowniku.")
+        : this.t("Odhaczone. ") + p.kcal + this.t(" kcal."));
     }
 
     if (!db) return;
@@ -909,7 +909,7 @@ Alpine.data("ekranJadlospis", () => ({
   async ulozPlan() {
     /* Easter egg: planowanie posiłków między drugą a piątą nad ranem. */
     const g = new Date().getHours();
-    if (g >= 2 && g < 5) this.mrugnij("O tej porze to już nawet nie kolacja.");
+    if (g >= 2 && g < 5) this.mrugnij(this.t("O tej porze to już nawet nie kolacja."));
 
     const { siatka, bledy } = ulozAutomatem(this.siatka, this.polubione,
                                             this.ustawienia.limitPowtorzen ?? null);
@@ -929,7 +929,7 @@ Alpine.data("ekranJadlospis", () => ({
       ? `Jednego dnia zabrakło dania na ${typ}.`
       : `W ${ile} dniach nie ma czego wstawić na ${typ} — polub więcej takich dań albo wyłącz ten posiłek w Ustawieniach.`);
 
-    if (!bledy.length) this.mrugnij("Plan gotowy. Lista zakupów policzy się sama.");
+    if (!bledy.length) this.mrugnij(this.t("Plan gotowy. Lista zakupów policzy się sama."));
   },
 
   async wyczysc() {
@@ -938,7 +938,7 @@ Alpine.data("ekranJadlospis", () => ({
     this.uwagi = [];
     await remove(ref(db, `domy/${kodDomu}/jadlospis`));
     this.planWBazie = false;
-    this.komunikat = "Jadłospis wyczyszczony";
+    this.komunikat = this.t("Jadłospis wyczyszczony");
   },
 
   zastosujZdalne(zapisany) {
@@ -1039,7 +1039,7 @@ Alpine.data("ekranJadlospis", () => ({
        odnotowanie — automat robi to w sekundę, człowiek nie. */
     const wszystkie = this.siatka.flatMap(dz => Object.values(dz.posilki));
     if (wszystkie.length >= 5 && wszystkie.every(w => w.danie || w.bezSkladnikow))
-      this.mrugnij("Cały okres zaplanowany. Nic tu po mnie.");
+      this.mrugnij(this.t("Cały okres zaplanowany. Nic tu po mnie."));
   },
 
   async wybierzBez(p) {
@@ -1053,10 +1053,10 @@ Alpine.data("ekranJadlospis", () => ({
     const ileNaMiescie = this.siatka.flatMap(d => Object.values(d.posilki))
       .filter(w => w.bezSkladnikow === "na mieście").length;
     if (p.etykieta === "na mieście" && ileNaMiescie === 3) {
-      this.mrugnij("Trzeci raz na mieście. Restauracje Cię lubią.");
+      this.mrugnij(this.t("Trzeci raz na mieście. Restauracje Cię lubią."));
       return;
     }
-    this.mrugnij(p.reakcja);
+    this.mrugnij(this.t(p.reakcja));
   },
 
   /* Udostępnione szablonowi, żeby podpis przycisku mówił to samo, co on zrobi. */
@@ -1079,7 +1079,7 @@ Alpine.data("ekranJadlospis", () => ({
     const kto = this.rytm()[typ]?.kto?.length
       ? this.rytm()[typ].kto
       : this.domownicy.map(o => o.id);
-    if (!kto.length) { this.komunikat = "Najpierw dodaj kogoś do stołu"; return; }
+    if (!kto.length) { this.komunikat = this.t("Najpierw dodaj kogoś do stołu"); return; }
     this.siatka = wlaczPosilek(this.siatka, dzien.data, typ, kto);
     await this.zapiszPosilek(dzien.data, typ);
     this.komunikat = `Włączono ${typ}`;

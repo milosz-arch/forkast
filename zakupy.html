@@ -757,7 +757,7 @@ Alpine.data("ekranZakupy", () => ({
          init(), a wraz z nim znikało wszystko, co miało się wydarzyć niżej. */
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
-      this.komunikat = "Coś nie zadziałało przy wczytywaniu.";
+      this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
       /* KOMUNIKAT MÓWI, CO SIĘ STAŁO — nie tylko, ŻE się stało.
 
          „Coś nie zadziałało. Spróbuj odświeżyć.” to zdanie, z którym nie da się
@@ -808,7 +808,7 @@ Alpine.data("ekranZakupy", () => ({
           this.pozycje = this.zOdhaczeniami(d.pozycje);
           this.pominiete = d.pominiete || [];
           this.laduje = false;
-          this.stanSieci = "Pokazuję ostatnią zapisaną listę — sprawdzam, czy jest nowsza…";
+          this.stanSieci = this.t("Pokazuję ostatnią zapisaną listę — sprawdzam, czy jest nowsza…");
         }
       } catch {
         /* Uszkodzona kopia nic nie psuje — ale musi też zniknąć, inaczej ten sam
@@ -1113,8 +1113,8 @@ Alpine.data("ekranZakupy", () => ({
       console.error("Zapis do spiżarni nie przeszedł:", e);
       const powod = e?.code || e?.message || String(e);
       this.mrugnij(/permission|PERMISSION/i.test(powod)
-        ? "Baza nie pozwala zapisać spiżarni — to reguły dostępu, nie internet."
-        : `Nie udało się zapisać: ${powod}`);
+        ? this.t("Baza nie pozwala zapisać spiżarni — to reguły dostępu, nie internet.")
+        : this.t("Nie udało się zapisać: ") + powod);
     }
   },
 
@@ -1255,8 +1255,8 @@ Alpine.data("ekranZakupy", () => ({
       const ile = Number(localStorage.getItem("forkast-kompletow") || 0) + 1;
       localStorage.setItem("forkast-kompletow", String(ile));
       ding();
-      this.mrugnij(ile >= 10 ? "Wszystko w koszyku. yeah yeah 🎵"
-                             : "Wszystko w koszyku. Możesz iść do domu.");
+      this.mrugnij(ile >= 10 ? this.t("Wszystko w koszyku. yeah yeah 🎵")
+                             : this.t("Wszystko w koszyku. Możesz iść do domu."));
     } else if (this.pozycje.filter(x => !x.wKoszyku).length === 1 && p.wKoszyku) {
       const ostatni = this.pozycje.find(x => !x.wKoszyku);
       if (ostatni) this.mrugnij(`Został tylko ${ostatni.produkt.toLowerCase()}. Dasz radę.`);
@@ -1282,7 +1282,7 @@ Alpine.data("ekranZakupy", () => ({
     } catch {
       /* Nie cofamy stanu: człowiek widzi, że odhaczył, i tak ma być.
          Zapis dogoni bazę przy następnym wejściu z zasięgiem. */
-      this.stanSieci = "Odhaczone zapisane na tym telefonie — zsynchronizuje się, gdy wróci internet.";
+      this.stanSieci = this.t("Odhaczone zapisane na tym telefonie — zsynchronizuje się, gdy wróci internet.");
     }
   },
 }));
