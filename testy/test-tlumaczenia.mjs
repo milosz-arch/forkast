@@ -157,6 +157,11 @@ function goleNapisy(zrodlo) {
   let t = bezKomentarzy(zrodlo, true)
     .replace(/<script[\s\S]*?<\/script>/g, " ")
     .replace(/<style[\s\S]*?<\/style>/g, " ")
+    /* Napis zapasowy w <span x-text … data-zapas>. Stoi tam CELOWO po polsku:
+       x-text nadpisuje go, gdy działa, a gdy wyrażenie się wywali, człowiek widzi
+       napis zamiast pustego prostokąta (v87). Tłumaczenie i tak jest wymuszone —
+       to samo t() siedzi w atrybucie i przechodzi przez sprawdzenie pierwsze. */
+    .replace(/<span[^>]*\bdata-zapas\b[^>]*>[\s\S]*?<\/span>/g, " ")
     /* <title> sprawdzamy osobno niżej — leży w <head>, poza zasięgiem Alpine,
        więc nie ma jak go owinąć w t() i nie ma sensu tu o to pytać. */
     .replace(/<title>[\s\S]*?<\/title>/g, " ");

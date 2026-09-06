@@ -323,7 +323,7 @@
                  : t('W porządku — te dania miały wystarczyć na start, nie być kompletne. Dodaj swoje.')"></p>
             <a x-show="lubiane" href="jadlospis.html"
                class="mt-5 flex min-h-[2.9rem] w-full items-center justify-center rounded-xl
-                      bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600" x-text="t('Ułóż jadłospis')"></a>
+                      bg-emerald-700 font-bold text-white no-underline dark:bg-emerald-600"><span x-text="t('Ułóż jadłospis')" data-zapas>Ułóż jadłospis</span></a>
             <!-- Zmiana zdania (decyzja 115): gdy wszystko ocenione, karta Dań znika z paska,
                  a to jest jedyna droga, żeby odlubić danie. Ocena nadpisuje poprzednią. -->
             <button type="button" x-show="lubiane" @click="przejrzyjOdNowa()"

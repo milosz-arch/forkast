@@ -87,7 +87,7 @@
         <p class="pt-3 text-[0.82rem] italic leading-relaxed text-stone-500 dark:text-stone-400">
           <span x-text="t('Forkast zapisuje tylko to, co sam wpiszesz: imiona albo pseudonimy osób przy stole, czego nie jecie i jakie dania lubicie. Dane leżą w bazie Google (Firebase) i możesz je skasować jednym przyciskiem w każdej chwili.')"></span>
           <a href="mailto:buskomilosz@gmail.com?subject=Forkast%20%E2%80%94%20co%C5%9B%20nie%20dzia%C5%82a"
-             class="text-emerald-700 underline underline-offset-2 dark:text-emerald-400" x-text="t('Coś nie działa? Napisz do mnie')"></a>
+             class="text-emerald-700 underline underline-offset-2 dark:text-emerald-400"><span x-text="t('Coś nie działa? Napisz do mnie')" data-zapas>Coś nie działa? Napisz do mnie</span></a>
         </p>
       </section>
 
@@ -128,7 +128,7 @@
           <a href="talia.html"
              class="flex min-h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl
                     bg-emerald-700 text-[1.1rem] font-bold text-white no-underline
-                    transition active:scale-[0.98] dark:bg-emerald-600" x-text="t('Przejdź do aplikacji')"></a>
+                    transition active:scale-[0.98] dark:bg-emerald-600"><span x-text="t('Przejdź do aplikacji')" data-zapas>Przejdź do aplikacji</span></a>
           <button type="button" @click="pokazUstawieniaStolu = !pokazUstawieniaStolu"
                   :aria-expanded="pokazUstawieniaStolu.toString()"
                   class="flex min-h-[2.5rem] w-full items-center justify-center text-[0.82rem]
@@ -239,7 +239,7 @@
 
         <a href="talia.html" x-show="domownicy.length && !wraca"
            class="flex min-h-[3.15rem] w-full items-center justify-center rounded-xl bg-emerald-700
-                  text-[1rem] font-bold text-white no-underline dark:bg-emerald-600" x-text="t('Dalej — wybierz dania')"></a>
+                  text-[1rem] font-bold text-white no-underline dark:bg-emerald-600"><span x-text="t('Dalej — wybierz dania')" data-zapas>Dalej — wybierz dania</span></a>
         <p x-show="!domownicy.length" class="text-center text-[0.82rem] text-stone-400" x-text="t('Dodaj przynajmniej jedną osobę, żeby ruszyć dalej.')"></p>
 
         <div class="pt-2">

@@ -229,5 +229,52 @@ test("pasek nawigacji idzie przez t() na każdym ekranie", () => {
   prawda(bez.length === 0, `etykiety zakładek poza t(): ${bez.join(", ")}`);
 });
 
+/* --------------------------------------------------------------------
+   PUSTY PRZYCISK
+
+   14 września na iPhonie trzy przyciski renderowały się jako gołe kolorowe
+   prostokąty: „Przejdź do aplikacji" na wejściu, „Ułóż jadłospis" na Daniach
+   i „Przejrzyj dania jeszcze raz" w Ustawieniach. Wszystkie trzy to odnośniki
+   z `x-text` powieszonym WPROST na <a>. Wszystko obok — te same napisy w <button>
+   i w <span> wewnątrz <a> — rysowało się normalnie, na tym samym ekranie,
+   w tym samym wydaniu. W Chromium na komputerze wszystkie trzy działały.
+
+   Mechanizmu po stronie Safari nie znam i tego nie udaję. Znam wzorzec: trzy
+   trafienia, zero wyjątków, i drugi wzorzec, który u tego samego człowieka
+   działa. Więc napis wchodzi do <span> w środku odnośnika, dokładnie tak jak
+   w pasku nawigacji — a w środku tego <span> stoi polski tekst jako zapas.
+   x-text nadpisuje go, kiedy działa; kiedy się wywali, człowiek czyta napis
+   zamiast patrzeć na pusty prostokąt.
+
+   Pusty przycisk na PIERWSZYM ekranie to jedyna usterka, po której ktoś
+   zamyka apkę i nie wraca. Dlatego to jest test, nie notatka.
+   -------------------------------------------------------------------- */
+const EKRANY = PLIKI.filter(f => f.endsWith(".html"));
+
+test("żaden <a> nie nosi x-text bezpośrednio", () => {
+  const winne = [];
+  for (const p of EKRANY) {
+    const tekst = readFileSync(new URL(p, KORZEN), "utf8");
+    for (const m of tekst.matchAll(/<a\b[^>]*?\sx-text\s*=[^>]*>/gs))
+      winne.push(`${p}:${tekst.slice(0, m.index).split("\n").length}`);
+  }
+  prawda(winne.length === 0,
+    `x-text wprost na <a> (na iOS renderuje się pusto — daj <span x-text> w środku): ${winne.join(", ")}`);
+});
+
+test("każdy napis zapasowy faktycznie coś mówi", () => {
+  let ile = 0;
+  const puste = [];
+  for (const p of EKRANY) {
+    const tekst = readFileSync(new URL(p, KORZEN), "utf8");
+    for (const m of tekst.matchAll(/<span[^>]*\bdata-zapas\b[^>]*>([\s\S]*?)<\/span>/g)) {
+      ile++;
+      if (!m[1].trim()) puste.push(`${p}:${tekst.slice(0, m.index).split("\n").length}`);
+    }
+  }
+  prawda(ile >= 8, `spodziewałem się kilkunastu napisów zapasowych, jest ${ile}`);
+  prawda(puste.length === 0, `pusty napis zapasowy — siatka bez siatki: ${puste.join(", ")}`);
+});
+
 console.log(`\n  zdane: ${zdane}, oblane: ${oblane}`);
 process.exit(oblane ? 1 : 0);
