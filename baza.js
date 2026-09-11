@@ -17,6 +17,8 @@
    nie ma prawa być warunkiem uruchomienia ekranu.
    ===================================================================== */
 
+import { naStart } from "./jezyk.js";
+import { tlumacz } from "./tlumaczenia.js";
 const USTAWIENIA = {
   databaseURL: "https://forkast-37ffd-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "forkast-37ffd",
@@ -72,20 +74,24 @@ export function kodStolu() {
    do konkretnego ekranu albo otworzył apkę w innej przeglądarce, gdzie pamięć
    jest osobna. */
 export function pokazBrakStolu() {
+  /* Ten ekran rysuje się, zanim wstanie powłoka — więc nie ma jeszcze t().
+     Język bierzemy z kopii w pamięci telefonu, tak jak pierwsza klatka każdego ekranu. */
+  const jezyk = naStart();
+  const t = napis => tlumacz(napis, jezyk);
   document.body.removeAttribute("x-cloak");
+  document.documentElement.lang = jezyk;
   document.body.innerHTML = `
     <div class="flex h-dvh flex-col items-center justify-center gap-5 px-8 text-center">
       <p class="text-[0.6rem] font-extrabold uppercase tracking-[0.24em] text-emerald-700
                 dark:text-emerald-400">Forkast</p>
-      <h1 class="text-2xl font-bold">Najpierw usiądź do stołu</h1>
+      <h1 class="text-2xl font-bold">${t("Najpierw usiądź do stołu")}</h1>
       <p class="max-w-[34ch] text-stone-500 dark:text-stone-400">
-        Ta przeglądarka nie wie jeszcze, do którego stołu należysz. Załóż nowy
-        albo wpisz kod, który ktoś Ci wysłał.
+        ${t("Ta przeglądarka nie wie jeszcze, do którego stołu należysz. Załóż nowy albo wpisz kod, który ktoś Ci wysłał.")}
       </p>
       <a href="index.html"
          class="flex min-h-[52px] w-full max-w-xs items-center justify-center rounded-xl
                 bg-emerald-700 px-5 font-bold text-white no-underline dark:bg-emerald-600">
-        Przejdź do stołu
+        ${t("Przejdź do stołu")}
       </a>
     </div>`;
 }

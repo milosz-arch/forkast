@@ -9,41 +9,43 @@
 
 import { KUCHNIE } from "./kuchnie.js";
 import { TYPY_POSILKOW } from "./prompt.js";
+import { PO_POLSKU } from "./tlumaczenia.js";
 
 /**
  * @param dane           { nazwa, typy:[...], porcje, skladniki:[{produkt,gramy}] }
  * @param znaneProdukty  słownik — [{ n: "Nazwa", ... }]
+ * @param t              tłumacz ekranu; bez niego komunikaty są po polsku
  * @returns { ok:true, danie } albo { ok:false, bledy:string[] }
  */
-export function walidujDanie(dane, znaneProdukty) {
+export function walidujDanie(dane, znaneProdukty, t = PO_POLSKU) {
   const bledy = [];
 
   const nazwa = String(dane?.nazwa ?? "").trim();
-  if (!nazwa) bledy.push("Podaj nazwę dania.");
+  if (!nazwa) bledy.push(t("Podaj nazwę dania."));
 
-  const typy = Array.isArray(dane?.typy) ? dane.typy.filter(t => TYPY_POSILKOW.includes(t)) : [];
-  if (!typy.length) bledy.push(`Wybierz przynajmniej jeden typ posiłku spośród: ${TYPY_POSILKOW.join(", ")}.`);
+  const typy = Array.isArray(dane?.typy) ? dane.typy.filter(typ => TYPY_POSILKOW.includes(typ)) : [];
+  if (!typy.length) bledy.push(t("Wybierz przynajmniej jeden typ posiłku spośród: {typy}.", { typy: TYPY_POSILKOW.map(typ => t(typ)).join(", ") }));
 
   const porcje = Number(dane?.porcje);
   if (!Number.isInteger(porcje) || porcje < 1 || porcje > 12) {
-    bledy.push("Porcje muszą być liczbą całkowitą od 1 do 12.");
+    bledy.push(t("Porcje muszą być liczbą całkowitą od 1 do 12."));
   }
 
   const znane = new Set(znaneProdukty.map(p => p.n));
   const wejscioweSkladniki = Array.isArray(dane?.skladniki) ? dane.skladniki : [];
-  if (!wejscioweSkladniki.length) bledy.push("Dodaj przynajmniej jeden składnik.");
+  if (!wejscioweSkladniki.length) bledy.push(t("Dodaj przynajmniej jeden składnik."));
 
   const skladniki = [];
   for (const s of wejscioweSkladniki) {
     const nazwaProduktu = String(s?.produkt ?? "").trim();
-    if (!nazwaProduktu) { bledy.push("Jeden ze składników nie ma wybranego produktu."); continue; }
+    if (!nazwaProduktu) { bledy.push(t("Jeden ze składników nie ma wybranego produktu.")); continue; }
     if (!znane.has(nazwaProduktu)) {
-      bledy.push(`„${nazwaProduktu}” nie jest w słowniku produktów — wybierz z podpowiedzi.`);
+      bledy.push(t("„{produkt}” nie jest w słowniku produktów — wybierz z podpowiedzi.", { produkt: nazwaProduktu }));
       continue;
     }
     const gramy = Number(s?.gramy);
     if (!Number.isFinite(gramy) || gramy <= 0) {
-      bledy.push(`Podaj poprawną gramaturę dla „${nazwaProduktu}”.`);
+      bledy.push(t("Podaj poprawną gramaturę dla „{produkt}”.", { produkt: nazwaProduktu }));
       continue;
     }
     skladniki.push({ produkt: nazwaProduktu, gramy });

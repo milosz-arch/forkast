@@ -35,118 +35,6 @@ import { SLOWNIK } from "../tlumaczenia.js";
 
 const KORZEN = new URL("../", import.meta.url);
 
-/* Nazwy własne i nazwy języków (decyzja 118): marka brzmi tak samo w obu
-   wersjach, a „Polski" i „English" mają z założenia stać w swoim własnym
-   języku — po to, żeby dało się je rozpoznać, nie znając drugiego. */
-const NIE_TLUMACZYMY = new Set(["Forkast", "Polski", "English"]);
-
-/* Pliki z danymi, nie z interfejsem: 113 dań, 147 produktów, sam słownik
-   i lista offline. Skanowanie ich zalałoby wynik nazwami dań. */
-const DANE = new Set(["talia-startowa.js", "produkty.js", "tlumaczenia.js", "sw.js"]);
-
-/* Miejsca, przez które napis trafia na ekran nie przechodząc przez t():
-   komunikat z mrugnij(), pole etykiety/nazwy/nagłówka w strukturze danych,
-   przypisanie do `komunikat` (linia dla czytnika ekranu). */
-/* Sinki dopisane po sesji komunikatów: ekran pokazuje napis nie tylko przez
-   mrugnij(). `blad`, `bladOsoby`, `bladKodu`, `bladImienia` to czerwone linijki
-   pod polami, `stanSieci` i `stanEksportu` to szare linijki stanu, `podpowiedzCzekania`
-   i `opisZdjec` to teksty w trakcie czekania na AI, `reakcja` to odzew przy pozycji
-   bez składników. Każdy z nich widzi człowiek — więc każdy tu należy.
-
-   Czego tu NIE ma, świadomie: nazw produktów w `wykluczenia.js` (to KLUCZE do
-   dopasowania, nie napisy), tekstu promptu w `prompt.js` (rozmawiamy z AI po polsku
-   i to osobna decyzja), nazw dni i miesięcy w jadłospisie (formatowanie daty, punkt 6
-   sesji A) oraz nazw etapów diagnostycznych. Sprawdzenie za surowe jest gorsze niż
-   brak sprawdzenia (pułapka 33): lista, w której połowa pozycji nie ma prawa być
-   przetłumaczona, przestaje być czytana. */
-const MIEJSCA = /\bmrugnij\(\s*"([^"\\\n]*)"|\b(?:nazwa|etykieta|tytul|opis|reakcja|blad|bladOsoby|bladKodu|bladImienia|stanSieci|stanEksportu|podpowiedzCzekania|opisZdjec)\s*[:=]\s*"([^"\\\n]*)"|\bkomunikat\s*=\s*"([^"\\\n]*)"/g;
-
-/* CO ZOSTAŁO PO POLSKU — świadomie, na sesję komunikatów i modułów.
-   Ta lista ma maleć. Dopisanie tu czegoś jest decyzją, nie przypadkiem. */
-const JESZCZE_PO_POLSKU = new Set([
-  /* czas.js */
-  "do 20 min",
-  "do 45 min",
-  "ponad 45 min",
-
-  /* dodaj-z-ai.html */
-  "Zdjęcia",
-
-
-  /* instalacja.js */
-  "Dodaj Forkast do ekranu",
-  "Otwórz w Safari",
-
-  /* jadlospis.html */
-  "na mieście",
-  "co się nawinie",
-  "coś z paczki",
-
-  /* kuchnia.js */
-  "Indukcja",
-  "moc w stopniach, szybko reaguje",
-  "Gaz",
-  "płomień, natychmiastowa zmiana",
-  "Płyta elektryczna",
-  "wolno się nagrzewa i stygnie",
-  "Z termoobiegiem",
-  "Góra-dół",
-  "Nie mam piekarnika",
-  "Patelnia",
-  "Patelnia żeliwna",
-  "Duży garnek",
-  "Garnek żeliwny / brytfanna",
-  "Wok",
-  "Blender",
-  "Mikser",
-
-  /* kuchnie.js */
-  "polska",
-  "włoska",
-  "japońska",
-  "koreańska",
-  "chińska",
-  "tajska",
-  "indyjska",
-  "meksykańska",
-  "hiszpańska",
-  "grecka",
-  "francuska",
-  "gruzińska",
-  "peruwiańska",
-  "bliskowschodnia",
-  "uniwersalna",
-
-  /* pomoc.js */
-  "Po co zaznaczać dania",
-  "Jak działa jadłospis",
-  "Skąd bierze się ta lista",
-  "Trzy sposoby na własne dania",
-  "Skąd tu się biorą przepisy",
-
-  /* postep.js */
-  "Dziesięć to minimum, nie cel",
-
-  /* powloka.js */
-  "Normalny",
-  "Duży",
-  "Bardzo duży",
-
-  /* ustawienia.html */
-  "bez limitu",
-  "raz",
-  "do 2×",
-  "do 3×",
-
-  /* wykluczenia.js */
-  "Mięso",
-  "Ryby i owoce morza",
-  "Nabiał",
-  "Jajka",
-  "Gluten",
-  "Orzechy",
-]);
-
 let zdane = 0, oblane = 0;
 function test(n, fn) {
   try { fn(); console.log(`  ok   ${n}`); zdane++; }
@@ -154,40 +42,138 @@ function test(n, fn) {
 }
 function prawda(w, co) { if (!w) throw new Error(co); }
 
-function bezKomentarzy(t) {
-  return t.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+/* Nazwy własne i nazwy języków (decyzja 118): marka brzmi tak samo w obu
+   wersjach, a „Polski" i „English" mają z założenia stać w swoim własnym
+   języku — po to, żeby dało się je rozpoznać, nie znając drugiego. */
+const NIE_TLUMACZYMY = new Set(["Forkast", "Polski", "English"]);
+
+/* PLIKI, KTÓRYCH NIE SKANUJEMY — każdy z nazwanego powodu. Dopisanie pliku tutaj
+   jest decyzją, więc powód stoi obok, a nie w pamięci. */
+const POMIJANE = new Map([
+  ["talia-startowa.js", "dane: dania startowe — sesja B"],
+  ["produkty.js", "dane: słownik produktów — sesja B"],
+  ["tlumaczenia.js", "sam słownik"],
+  ["sw.js", "lista plików offline, nie tekst"],
+  ["prompt.js", "rozmowa z AI jest po polsku — sesja C"],
+  ["parser.js", "uwagi o odpowiedzi AI wracają do AI jako poprawka — sesja C"],
+]);
+
+/* SKAN OD 11 WRZEŚNIA: KAŻDY NAPIS, NIE TYLKO TEN W ZNANYM GNIEŹDZIE.
+
+   Do v88 ten test szukał napisów w kilku znanych miejscach (`mrugnij("…")`,
+   `etykieta: "…"`, `komunikat = "…"`). Przepuszczał wszystko, co szło na ekran
+   inną drogą: szablony z liczbą (`Pobrano ${n} dań.`), trójargumentowe
+   przypisania (`stanSieci = x ? "…" : "…"`), teksty sklejane z kilku linijek
+   (okienka pomocy), zwracane z funkcji (zachęta pod paskiem, stany spiżarni).
+   11 września takich napisów było ponad trzysta, a lista „jeszcze po polsku”
+   pokazywała 88 — czyli trzy razy mniej niż prawda.
+
+   Teraz liczy się każdy napis w kodzie, który ma w sobie słowo. Z góry i z nazwy
+   wypadają tylko: komentarze, `console.*`, treść `new Error(…)` (to diagnostyka
+   dla dewelopera — na ekran trafia co najwyżej jako {powod}), pierwszy argument
+   t()/tb()/napis() (ten pilnuje test-tlumaczenia), porównania (`=== "poprawka"`
+   to wartość, nie tekst), klucze obiektów, klasy CSS i bloki opisane niżej.
+   Klasyczne <script> na ekranach też wypadają: to bezpiecznik białego ekranu,
+   który działa właśnie wtedy, gdy moduły nie wstały, i ma własną parę PL/EN. */
+const LITERA_PL = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
+const DWA_SLOWA = /[A-Za-z]{2,}\s+[A-Za-z]{2,}/;
+const TOKEN_KODU = /^[a-z0-9\-:\/\[\]\.%#()_=,>*!@'"&;+?]+$/;
+
+function wymaz(t) { return t.replace(/[^\n]/g, " "); }
+
+/* Bloki, które są tekstem, ale nie dla człowieka przy tej apce. */
+const BLOKI = [
+  ["kuchnia.js", /export function opisKuchni[\s\S]*$/, "opis kuchni idzie do promptu AI — sesja C"],
+  ["wykluczenia.js", /export const TAGI_PRODUKTOW\s*=\s*\{[\s\S]*?\n\};/, "nazwy produktów to klucze dopasowania, nie napisy"],
+  ["jadlospis.html", /const DNI_PL = \[[\s\S]*?\];\s*const MIES_PL = \[[\s\S]*?\];/, "polska ścieżka daty; angielską składa przeglądarka (Intl)"],
+];
+
+function oczysc(tekst, plik) {
+  let t = tekst
+    .replace(/\/\*[\s\S]*?\*\//g, wymaz)
+    .replace(/(^|[\s;{}(,])\/\/[^\n]*/gm, (m, p) => p + wymaz(m.slice(p.length)));
+  for (const [p, wzor] of BLOKI) if (p === plik) t = t.replace(wzor, wymaz);
+  return t
+    .replace(/console\.\w+\([\s\S]*?\);/g, wymaz)
+    .replace(/new \w*Error\(\s*(?:`[^`]*`|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/g, wymaz)
+    .replace(/\b(?:t|tb|napis)\(\s*(?:"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/g, wymaz)
+    .replace(/(?:===|!==|==|!=)\s*(?:"[^"\n]*"|'[^'\n]*')/g, wymaz)
+    .replace(/(?:"[^"\n]*"|'[^'\n]*')\s*(?:===|!==)/g, wymaz)
+    .replace(/([{,]\s*)("[^"\n]*"|'[^'\n]*')(\s*:)/g, (m, a, b, c) => a + wymaz(b) + c);
+}
+
+function napisyWKodzie(tekst, plik) {
+  const czysty = oczysc(tekst, plik);
+  const wynik = [];
+  for (const m of czysty.matchAll(/"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`([^`]*)`/g)) {
+    const surowy = m[1] ?? m[2] ?? m[3];
+    const tresc = surowy.replace(/\$\{[^}]*\}/g, " ").replace(/<[^>]*>/g, " ");
+    if (!LITERA_PL.test(tresc) && !DWA_SLOWA.test(tresc)) continue;
+    /* Klasy CSS i selektory: same małe litery, cyfry i znaki kodu, a wśród nich
+       choć jeden myślnik, dwukropek albo nawias. „czytanie odpowiedzi” też jest
+       z samych małych liter — ale bez znaku kodu, więc to tekst. */
+    if (!LITERA_PL.test(tresc) && /[-:\[\]=\/]/.test(tresc) &&
+        tresc.trim().split(/\s+/).every(s => TOKEN_KODU.test(s))) continue;
+    const napis = surowy.replace(/\$\{[^}]*\}/g, "{…}").trim();
+    if (napis in SLOWNIK || NIE_TLUMACZYMY.has(napis)) continue;
+    wynik.push({ napis, linia: czysty.slice(0, m.index).split("\n").length });
+  }
+  return wynik;
 }
 
 const PLIKI = readdirSync(KORZEN)
-  .filter(p => (p.endsWith(".js") && !DANE.has(p)) || p.endsWith(".html"))
+  .filter(p => (p.endsWith(".js") && !POMIJANE.has(p)) || p.endsWith(".html"))
   .sort();
 
 /* Pusty albo zawężony zbiór to najczęstszy sposób, w jaki test w tym projekcie
    przestawał cokolwiek sprawdzać (decyzje 64, 72, 96). Twardy próg zamiast ciszy. */
 prawda(PLIKI.length > 20, `spodziewałem się kilkudziesięciu plików, jest ${PLIKI.length}`);
 
-const znalezione = new Map();   // napis → pliki
+const znalezione = new Map();   // napis → pliki z liniami
+let wszystkichNapisow = 0;
 for (const p of PLIKI) {
   let tekst = readFileSync(new URL(p, KORZEN), "utf8");
-  /* W ekranach interesują nas wyłącznie bloki <script> — resztę HTML-a
-     pokrywa test-tlumaczenia.mjs i to on jest tam właściwym strażnikiem. */
-  if (p.endsWith(".html")) tekst = (tekst.match(/<script[^>]*>[\s\S]*?<\/script>/g) || []).join("\n");
-  for (const m of bezKomentarzy(tekst).matchAll(MIEJSCA)) {
-    const napis = m[1] ?? m[2] ?? m[3];
-    if (!napis || napis.trim().length < 2) continue;
-    if (!znalezione.has(napis)) znalezione.set(napis, new Set());
-    znalezione.get(napis).add(p);
+  if (p.endsWith(".html"))
+    tekst = tekst.replace(/<script type="module">([\s\S]*?)<\/script>|[^\n]/g, (m, kod) => kod !== undefined ? `                        ${kod}         ` : " ");
+  for (const m of tekst.matchAll(/"(?:[^"\\\n]|\\.)*"|`[^`]*`/g)) if (LITERA_PL.test(m[0])) wszystkichNapisow++;
+  for (const { napis, linia } of napisyWKodzie(tekst, p)) {
+    if (!znalezione.has(napis)) znalezione.set(napis, []);
+    znalezione.get(napis).push(`${p}:${linia}`);
   }
 }
 
-prawda(znalezione.size > 50, `spodziewałem się kilkudziesięciu napisów, jest ${znalezione.size}`);
+/* Sam skaner też musi coś widzieć — inaczej zero znalezisk znaczyłoby tylko,
+   że wzorzec przestał pasować do czegokolwiek. */
+prawda(wszystkichNapisow > 300, `skaner widzi podejrzanie mało napisów z polskimi literami: ${wszystkichNapisow}`);
 
-test("każdy napis z modułu jest w słowniku albo na liście", () => {
-  const nieznane = [...znalezione.keys()].filter(
-    n => !(n in SLOWNIK) && !NIE_TLUMACZYMY.has(n) && !JESZCZE_PO_POLSKU.has(n));
+/* CO ZOSTAŁO PO POLSKU — świadomie, każda grupa z powodem.
+   Ta lista ma maleć. Dopisanie tu czegoś jest decyzją, nie przypadkiem. */
+const JESZCZE_PO_POLSKU = new Set([
+  /* automat.js — wewnętrzny opis braku dania. Ekran jadłospisu wyciąga z niego
+     typ posiłku i składa własny, przetłumaczony komunikat; tego tekstu nikt nie czyta. */
+  "Brak dania na \"{…}\" w dniu {…} —",
+  "wszystkie pasujące dania wyczerpały limit powtórzeń.",
+  "nic polubionego nie pasuje do tego typu posiłku.",
+
+  /* Nazwy etapów diagnostycznych (pułapka 26). Na ekran trafiają tylko w nawiasie
+     przy błędzie — po to, żeby zrzut ekranu wysłany Miłoszowi mówił, gdzie padło.
+     Czytelnikiem jest ten, kto naprawia, nie ten, kto gotuje. */
+  "pytanie AI",
+  "czytanie odpowiedzi",
+  "poprawka AI",
+  "czytanie poprawki",
+  "zapis nowych produktów",
+  "zapis wersji",
+  "wypakowanie funkcji bazy",
+  "budowanie ścieżki",
+  "zakładanie nasłuchu",
+]);
+
+test("każdy napis w kodzie jest w słowniku albo na liście", () => {
+  const nieznane = [...znalezione.keys()].filter(n => !JESZCZE_PO_POLSKU.has(n));
   prawda(nieznane.length === 0,
     `${nieznane.length} napisów spoza słownika i spoza listy:\n       ` +
-    nieznane.slice(0, 12).map(n => `„${n.slice(0, 60)}” (${[...znalezione.get(n)].join(", ")})`).join("\n       "));
+    nieznane.slice(0, 15).map(n => `„${n.slice(0, 70)}” (${znalezione.get(n).slice(0, 3).join(", ")})`).join("\n       "));
 });
 
 test("lista „jeszcze po polsku” nie trzyma pozycji, których nie ma w kodzie", () => {

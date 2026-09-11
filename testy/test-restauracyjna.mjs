@@ -371,7 +371,9 @@ test("gałąź restauracyjne jest NASŁUCHIWANA (114) z obsługą odmowy (pułap
 });
 
 test("komunikat błędu niesie etap i numer wydania", () => {
-  prawda(/Nie udało się \(\$\{etap\}\)/.test(modul) && /\$\{WYDANIE\}/.test(modul), "błąd bez etapu albo bez wydania");
+  /* Od 11 września komunikat idzie przez t() ze wstawką `{etap}` — etap musi
+     być w szablonie ORAZ w wartościach, inaczej na ekranie zostaje goły nawias. */
+  prawda(/Nie udało się \(\{etap\}\): \{powod\}", \{ etap,/.test(modul) && /\$\{WYDANIE\}/.test(modul), "błąd bez etapu albo bez wydania");
 });
 
 for (const [nazwa, html] of Object.entries(ekrany)) {

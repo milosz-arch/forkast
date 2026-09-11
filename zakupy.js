@@ -14,6 +14,11 @@
    osoby i gramatura zgadzała się z definicji. Tutaj zgadzać się nie może.
    ===================================================================== */
 
+import { napis, PO_POLSKU } from "./tlumaczenia.js";
+
+/* Dział dla produktu bez działu. Po polsku w danych, na ekranie przez t(g.dzial). */
+const INNE = napis("Inne");
+
 /**
  * @param siatka  z rytm.js — [{data, posilki:{typ:{kto,danie,bezSkladnikow,restauracyjna}}}]
  * @param dania   wszystkie znane dania (talia + własne), każde z {id, porcje, skladniki}
@@ -25,7 +30,7 @@
  *   pozycje   — [{ produkt, gramy, wDaniach:[nazwy] }] posortowane wg nazwy
  *   pominiete — opis miejsc, których nie dało się policzyć (brakujące danie, zły przepis)
  */
-export function policzZakupy(siatka, dania, restauracyjne = {}) {
+export function policzZakupy(siatka, dania, restauracyjne = {}, t = PO_POLSKU) {
   const wgProduktu = new Map();
   const pominiete = [];
 
@@ -39,19 +44,19 @@ export function policzZakupy(siatka, dania, restauracyjne = {}) {
 
       const danie = dania.find(d => d.id === wpis.danie);
       if (!danie) {
-        pominiete.push(`${dzien.data}, ${typ}: danie zniknęło z bazy — nie wliczam go do zakupów.`);
+        pominiete.push(t("{data}, {posilek}: danie zniknęło z bazy — nie wliczam go do zakupów.", { data: dzien.data, posilek: t(typ) }));
         continue;
       }
 
       const potrzeba = wpis.kto?.length ?? 0;
       if (!potrzeba) {
-        pominiete.push(`${dzien.data}, ${typ}: nikt tego nie je, więc nie kupujemy składników.`);
+        pominiete.push(t("{data}, {posilek}: nikt tego nie je, więc nie kupujemy składników.", { data: dzien.data, posilek: t(typ) }));
         continue;
       }
 
       const naIlu = Number(danie.porcje);
       if (!Number.isFinite(naIlu) || naIlu < 1) {
-        pominiete.push(`„${danie.nazwa}”: nie wiadomo, na ile osób jest ta gramatura — pomijam.`);
+        pominiete.push(t("„{danie}”: nie wiadomo, na ile osób jest ta gramatura — pomijam.", { danie: danie.nazwa }));
         continue;
       }
 
@@ -62,8 +67,8 @@ export function policzZakupy(siatka, dania, restauracyjne = {}) {
       let sklad = danie.skladniki || [], etykieta = danie.nazwa;
       if (wpis.restauracyjna) {
         const r = restauracyjne?.[danie.id];
-        if (Array.isArray(r?.skladniki)) { sklad = r.skladniki; etykieta = `${danie.nazwa} (restauracyjna)`; }
-        else pominiete.push(`${dzien.data}, ${typ}: „${danie.nazwa}” zaplanowane w wersji restauracyjnej, ale tej wersji nie ma — liczę z podstawowej.`);
+        if (Array.isArray(r?.skladniki)) { sklad = r.skladniki; etykieta = t("{danie} (restauracyjna)", { danie: danie.nazwa }); }
+        else pominiete.push(t("{data}, {posilek}: „{danie}” zaplanowane w wersji restauracyjnej, ale tej wersji nie ma — liczę z podstawowej.", { data: dzien.data, posilek: t(typ), danie: danie.nazwa }));
       }
 
       for (const sk of sklad) {
@@ -98,12 +103,12 @@ export function policzZakupy(siatka, dania, restauracyjne = {}) {
  * @returns [{ dzial, pozycje }] — działy w kolejności pierwszego wystąpienia w słowniku
  */
 export function pogrupujDzialami(pozycje, slownik) {
-  const dzialProduktu = new Map(slownik.map(p => [p.n, p.dzial || "Inne"]));
+  const dzialProduktu = new Map(slownik.map(p => [p.n, p.dzial || INNE]));
   const kolejnosc = [];
   const grupy = new Map();
 
   for (const p of pozycje) {
-    const dzial = dzialProduktu.get(p.produkt) || "Inne";
+    const dzial = dzialProduktu.get(p.produkt) || INNE;
     if (!grupy.has(dzial)) { grupy.set(dzial, []); kolejnosc.push(dzial); }
     grupy.get(dzial).push(p);
   }

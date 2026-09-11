@@ -41,7 +41,7 @@
          konfigurację, mimo że nie miał już nic do konfigurowania. Miłosz: „musi być
          po prostu coś typu siemanko Miłosz i przejdź do aplikacji”. -->
     <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight"
-        x-text="wraca ? (ja ? `Cześć, ${imieMoje}` : t('Witaj z powrotem')) : t('Cześć, tu Forkast')"></h1>
+        x-text="wraca ? (ja ? t('Cześć, {imie}', { imie: imieMoje }) : t('Witaj z powrotem')) : t('Cześć, tu Forkast')"></h1>
     <p class="mx-auto mt-2 max-w-[34ch] text-[1rem] leading-snug text-white/85"
        x-text="wraca
          ? t('Wasz stół jest nakryty. Wchodzisz i planujecie dalej.')
@@ -184,11 +184,11 @@
               <input type="text" :value="d.imie" maxlength="30"
                      @change="zmien(d, $event.target.value)"
                      @keydown.enter="$event.target.blur()"
-                     :aria-label="`Imię: ${d.imie}. Zmień, jeśli chcesz.`"
+                     :aria-label="t('Imię: {imie}. Zmień, jeśli chcesz.', { imie: d.imie })"
                      class="min-w-0 flex-1 border-0 bg-transparent p-0 font-medium outline-none
                             focus:underline focus:decoration-emerald-600 focus:decoration-2
                             focus:underline-offset-4 dark:text-stone-100">
-              <button type="button" @click="usun(d)" :aria-label="`Usuń ${d.imie} ze stołu`"
+              <button type="button" @click="usun(d)" :aria-label="t('Usuń {imie} ze stołu', { imie: d.imie })"
                       class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
                              transition active:bg-stone-100 dark:active:bg-stone-800">
                 <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -320,7 +320,7 @@ Alpine.data("ekranWejscie", () => ({
          Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
          o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
       const powod = (e && (e.message || e.name)) || String(e);
-      this.mrugnij?.(`Coś nie zadziałało: ${powod}`);
+      this.mrugnij?.(this.t("Coś nie zadziałało: {powod}", { powod }));
     }
   },
 
@@ -334,7 +334,7 @@ Alpine.data("ekranWejscie", () => ({
     else {
       this.laduje = false;
       this.komunikat = this.t("Brak połączenia z bazą.");
-      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      this.mrugnij?.(this.t("Brak internetu — część rzeczy może nie działać."));
       return;
     }
 
@@ -354,7 +354,7 @@ Alpine.data("ekranWejscie", () => ({
     this.kodDomu = kod;
     this.wraca = wracam;
     const trafione = SMACZNE.find(w => kod.includes(w));
-    this.smacznyKod = trafione ? `Twój kod ma w środku „${trafione}”. Dobry znak.` : "";
+    this.smacznyKod = trafione ? this.t("Twój kod ma w środku „{slowo}”. Dobry znak.", { slowo: trafione }) : "";
     this.krok = "osoby";
     /* Stół, do którego wchodzę, ma już swój język — mój wybór z poprzedniego
        ekranu nie ma prawa go zmienić (decyzja 119). Osobny odczyt, bo ten
@@ -371,7 +371,7 @@ Alpine.data("ekranWejscie", () => ({
       if (!this.ja && this.domownicy.length === 1) this.wybierzSiebie(this.domownicy[0].id);
     }, blad => {
       console.error("Nasłuch domowników padł:", blad);
-      this.mrugnij?.(`Nie dochodzą zmiany osób przy stole: ${blad?.code || blad?.message || blad}`);
+      this.mrugnij?.(this.t("Nie dochodzą zmiany osób przy stole: {powod}", { powod: blad?.code || blad?.message || blad }));
     });
   },
 
@@ -413,7 +413,7 @@ Alpine.data("ekranWejscie", () => ({
   async dolacz() {
     const teraz = Date.now();
     if (teraz < this.blokadaDo) {
-      this.bladKodu = `Za dużo prób — odczekaj ${Math.ceil((this.blokadaDo - teraz) / 1000)} s.`;
+      this.bladKodu = this.t("Za dużo prób — odczekaj {ile} s.", { ile: Math.ceil((this.blokadaDo - teraz) / 1000) });
       return;
     }
     const kod = znormalizujKod(this.wpisanyKod);
@@ -424,20 +424,20 @@ Alpine.data("ekranWejscie", () => ({
       if (this.bledneProby >= 3) {
         const czekaj = Math.min(2000 * 2 ** (this.bledneProby - 3), 30000);
         this.blokadaDo = Date.now() + czekaj;
-        tekst += ` (kolejna próba za ${Math.ceil(czekaj / 1000)} s)`;
+        tekst += this.t(" (kolejna próba za {ile} s)", { ile: Math.ceil(czekaj / 1000) });
       }
       this.bladKodu = tekst;
     };
 
     if (!kodPoprawny(kod)) {
-      nieudana("To nie wygląda na poprawny kod — sprawdź, czy nie brakuje znaku.");
+      nieudana(this.t("To nie wygląda na poprawny kod — sprawdź, czy nie brakuje znaku."));
       return;
     }
 
     this.sprawdzam = true;
     try {
       const snap = await get(ref(db, `domy/${kod}`));
-      if (!snap.exists()) { nieudana("Nie ma stołu z takim kodem. Sprawdź u osoby, która go wysłała."); return; }
+      if (!snap.exists()) { nieudana(this.t("Nie ma stołu z takim kodem. Sprawdź u osoby, która go wysłała.")); return; }
       this.bledneProby = 0;
       localStorage.setItem("forkast-dom", kod);
       this.wejdz(kod);
@@ -471,7 +471,7 @@ Alpine.data("ekranWejscie", () => ({
       const nowyRef = push(ref(db, `domy/${this.kodDomu}/domownicy`));
       await set(nowyRef, { imie });
       this.noweImie = "";
-      this.komunikat = `${imie} dołącza do stołu`;
+      this.komunikat = this.t("{imie} dołącza do stołu", { imie });
     } catch {
       this.bladOsoby = this.t("Nie udało się dodać — sprawdź internet.");
     }
@@ -507,7 +507,7 @@ Alpine.data("ekranWejscie", () => ({
     try {
       poZmianie = zmienImie(this.domownicy, d.id, imie);
     } catch (e) {
-      this.bladOsoby = e?.message || "Nie da się zapisać tego imienia.";
+      this.bladOsoby = e?.message || this.t("Nie da się zapisać tego imienia.");
       this.domownicy = [...this.domownicy];
       return;
     }
@@ -518,11 +518,11 @@ Alpine.data("ekranWejscie", () => ({
          wisi nasłuch, a wartość prosta zapisana pod taką gałąź nie dociera do bazy
          i kończy się wyjątkiem ze środka Firebase (decyzja 76, pułapka 2). */
       await set(ref(db, `domy/${this.kodDomu}/domownicy/${d.id}`), { imie });
-      this.komunikat = `${stare} to teraz ${imie}`;
-      this.mrugnij?.(`Zapisane: ${imie}`);
+      this.komunikat = this.t("{stare} to teraz {imie}", { stare, imie });
+      this.mrugnij?.(this.t("Zapisane: {imie}", { imie }));
     } catch (e) {
       console.error("Nie udało się zmienić imienia:", e);
-      this.bladOsoby = `Nie udało się zmienić imienia: ${e?.code || e?.message || e}`;
+      this.bladOsoby = this.t("Nie udało się zmienić imienia: {powod}", { powod: e?.code || e?.message || e });
       /* Cofamy podmianę: na ekranie ma stać to, co naprawdę jest w bazie. */
       this.domownicy = zmienImie(this.domownicy, d.id, stare);
     }
@@ -609,14 +609,23 @@ Alpine.start();
         "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
         "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      /* Tu nie ma słownika: bezpiecznik działa właśnie wtedy, gdy moduły nie wstały.
+         Dlatego ma własną parę napisów i sam czyta kopię języka z pamięci telefonu
+         (ten sam klucz co jezyk.js). Pusta albo niedostępna pamięć = polski. */
+      var en = false;
+      try { en = localStorage.getItem("forkast-jezyk") === "en"; } catch (e) {}
+      var N = en
+        ? { naglowek: "Something got stuck at start-up", wyjasnienie: "The app did not manage to start. Downloading it again usually helps.",
+            pobierz: "Download again", wroc: "Back to the start", czas: "time" }
+        : { naglowek: "Coś się zacięło przy starcie", wyjasnienie: "Aplikacja nie zdążyła się uruchomić. Najczęściej pomaga pobranie jej od nowa.",
+            pobierz: "Pobierz od nowa", wroc: "Wróć na początek", czas: "czas" };
       box.innerHTML =
-        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
-        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
-        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<p style="font-size:20px;font-weight:700;margin:0">' + N.naglowek + '</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">' + N.wyjasnienie + '</p>' +
         '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
-        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
-        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
-        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">' + N.pobierz + '</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">' + N.wroc + '</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">' + N.czas + ': ' + (Date.now() - start) + ' ms</p>';
       document.body.appendChild(box);
       document.getElementById("fk-reset").onclick = function () {
         if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });

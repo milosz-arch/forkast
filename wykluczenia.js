@@ -10,6 +10,8 @@
    zgadywać, dlaczego akurat tak.
    ===================================================================== */
 
+import { napis } from "./tlumaczenia.js";
+
 /* Lista kategorii pokazywana użytkownikowi. Do 3 sierpnia była wpisana wprost
    w HTML ekranu Dań — przy migracji trafiła tutaj, żeby nie istniała w dwóch
    kopiach, które można niezależnie zmienić.
@@ -19,12 +21,12 @@
    kosztowałby więcej uwagi wszystkich, niż daje tej garstce. Do rozważenia,
    gdy ktoś o to poprosi. */
 export const WYKLUCZENIA = [
-  { id: "mieso",   etykieta: "Mięso" },
-  { id: "ryby",    etykieta: "Ryby i owoce morza" },
-  { id: "nabial",  etykieta: "Nabiał" },
-  { id: "jajka",   etykieta: "Jajka" },
-  { id: "gluten",  etykieta: "Gluten" },
-  { id: "orzechy", etykieta: "Orzechy" },
+  { id: "mieso",   etykieta: napis("Mięso") },
+  { id: "ryby",    etykieta: napis("Ryby i owoce morza") },
+  { id: "nabial",  etykieta: napis("Nabiał") },
+  { id: "jajka",   etykieta: napis("Jajka") },
+  { id: "gluten",  etykieta: napis("Gluten") },
+  { id: "orzechy", etykieta: napis("Orzechy") },
 ];
 
 export const TAGI_PRODUKTOW = {

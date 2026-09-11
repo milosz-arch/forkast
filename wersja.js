@@ -17,18 +17,20 @@
    w Node. Czysta logika musi mieszkać tam, gdzie da się ją sprawdzić.
    ===================================================================== */
 
+import { PO_POLSKU } from "./tlumaczenia.js";
+
 export const WERSJA_DANYCH = 1;
 
 /**
  * @param {object} zapisane – to, co przyszło z bazy
  * @returns {string|null} komunikat dla użytkownika albo null, gdy wszystko gra
  */
-export function sprawdzWersje(zapisane) {
+export function sprawdzWersje(zapisane, t = PO_POLSKU) {
   /* Brak pola = wszystko, co zapisano przed jego wprowadzeniem. Musi dalej
      działać, inaczej wersjonowanie zepsułoby to, przed czym miało chronić. */
   const w = zapisane?.wersja ?? 1;
   return w > WERSJA_DANYCH
-    ? "Ktoś przy stole ma nowszą wersję aplikacji. Odśwież stronę, żeby nie nadpisać jego zmian."
+    ? t("Ktoś przy stole ma nowszą wersję aplikacji. Odśwież stronę, żeby nie nadpisać jego zmian.")
     : null;
 }
 
@@ -39,4 +41,4 @@ export function sprawdzWersje(zapisane) {
 
    Bez tego diagnoza problemu „mam starą wersję” polega na zgadywaniu. Ma być zgodny
    z numerem CACHE w sw.js. */
-export const WYDANIE = "v88";
+export const WYDANIE = "v89";

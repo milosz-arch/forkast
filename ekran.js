@@ -16,6 +16,9 @@
    dotrzymać, jest gorsza od jej braku.
    ===================================================================== */
 
+import { tb } from "./tlumaczenia.js";
+
+
 const KLUCZ = "forkast-ekran-swieci";
 
 let blokada = null;
@@ -118,10 +121,10 @@ function odswiezWyglad(przycisk) {
   // Słowo obok ikony, nie sama ikona: sam symbol nie mówi, co się stanie po
   // dotknięciu, a przy słabszym wzroku sam kolor też nie wystarcza.
   przycisk.innerHTML = wlaczone
-    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.9 1.9M16.7 16.7l1.9 1.9M18.6 5.4l-1.9 1.9M7.3 16.7l-1.9 1.9"/></svg><span>Ekran świeci</span>`
-    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7z"/></svg><span>Ekran gaśnie</span>`;
+    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.9 1.9M16.7 16.7l1.9 1.9M18.6 5.4l-1.9 1.9M7.3 16.7l-1.9 1.9"/></svg><span>${tb("Ekran świeci")}</span>`
+    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7z"/></svg><span>${tb("Ekran gaśnie")}</span>`;
   przycisk.setAttribute("aria-pressed", String(wlaczone));
   przycisk.title = wlaczone
-    ? "Ekran nie gaśnie, dopóki tu jesteś. Dotknij, żeby wyłączyć."
-    : "Ekran gaśnie normalnie. Dotknij, żeby świecił.";
+    ? tb("Ekran nie gaśnie, dopóki tu jesteś. Dotknij, żeby wyłączyć.")
+    : tb("Ekran gaśnie normalnie. Dotknij, żeby świecił.");
 }

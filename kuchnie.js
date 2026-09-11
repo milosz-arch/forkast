@@ -20,25 +20,27 @@
    polska. Fałszywe przypisanie do obcej kuchni jest gorsze niż jego brak.
    ===================================================================== */
 
+import { napis } from "./tlumaczenia.js";
+
 export const KUCHNIE = {
-  pl: { flaga: "🇵🇱", nazwa: "polska" },
-  it: { flaga: "🇮🇹", nazwa: "włoska" },
-  jp: { flaga: "🇯🇵", nazwa: "japońska" },
-  kr: { flaga: "🇰🇷", nazwa: "koreańska" },
-  cn: { flaga: "🇨🇳", nazwa: "chińska" },
-  th: { flaga: "🇹🇭", nazwa: "tajska" },
-  in: { flaga: "🇮🇳", nazwa: "indyjska" },
-  mx: { flaga: "🇲🇽", nazwa: "meksykańska" },
-  es: { flaga: "🇪🇸", nazwa: "hiszpańska" },
-  gr: { flaga: "🇬🇷", nazwa: "grecka" },
-  fr: { flaga: "🇫🇷", nazwa: "francuska" },
-  ge: { flaga: "🇬🇪", nazwa: "gruzińska" },
-  pe: { flaga: "🇵🇪", nazwa: "peruwiańska" },
-  il: { flaga: "🇮🇱", nazwa: "bliskowschodnia" },
+  pl: { flaga: "🇵🇱", nazwa: napis("polska") },
+  it: { flaga: "🇮🇹", nazwa: napis("włoska") },
+  jp: { flaga: "🇯🇵", nazwa: napis("japońska") },
+  kr: { flaga: "🇰🇷", nazwa: napis("koreańska") },
+  cn: { flaga: "🇨🇳", nazwa: napis("chińska") },
+  th: { flaga: "🇹🇭", nazwa: napis("tajska") },
+  in: { flaga: "🇮🇳", nazwa: napis("indyjska") },
+  mx: { flaga: "🇲🇽", nazwa: napis("meksykańska") },
+  es: { flaga: "🇪🇸", nazwa: napis("hiszpańska") },
+  gr: { flaga: "🇬🇷", nazwa: napis("grecka") },
+  fr: { flaga: "🇫🇷", nazwa: napis("francuska") },
+  ge: { flaga: "🇬🇪", nazwa: napis("gruzińska") },
+  pe: { flaga: "🇵🇪", nazwa: napis("peruwiańska") },
+  il: { flaga: "🇮🇱", nazwa: napis("bliskowschodnia") },
   /* Uniwersalna to PEŁNOPRAWNA wartość, nie brak danych. Owsianka, koktajl,
      kanapki i batony owsiane nie należą do żadnej kuchni narodowej i wpisanie
      im którejkolwiek byłoby zmyśleniem. 49 ze 113 dań startowych ma tę wartość. */
-  uni: { flaga: "", nazwa: "uniwersalna" },
+  uni: { flaga: "", nazwa: napis("uniwersalna") },
 };
 
 /* Kolejność ma znaczenie: pierwsza pasująca reguła wygrywa. Bardziej

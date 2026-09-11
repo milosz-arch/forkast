@@ -5,8 +5,11 @@
 // czyta go pobieżnie — stąd powtórzenia i przykład na końcu.
 
 import { KUCHNIE } from "./kuchnie.js";
+import { napis } from "./tlumaczenia.js";
 
-export const TYPY_POSILKOW = ["śniadanie", "lunch", "obiad", "przekąska", "kolacja"];
+/* Klucze bazy i słowa dla AI — zostają po polsku. `napis()` mówi tylko tyle,
+   że ekran pokazuje je człowiekowi przez t(typ) (decyzja 116). */
+export const TYPY_POSILKOW = [napis("śniadanie"), napis("lunch"), napis("obiad"), napis("przekąska"), napis("kolacja")];
 
 export const WYKLUCZENIA = [
   ["mieso",   "mięso"],

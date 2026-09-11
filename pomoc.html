@@ -12,10 +12,10 @@
     <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700 md:hidden"></div>
     <template x-if="pomocKlucz && POMOC[pomocKlucz]">
       <div>
-        <h3 class="text-[1.25rem] font-bold leading-tight" x-text="POMOC[pomocKlucz].tytul"></h3>
+        <h3 class="text-[1.25rem] font-bold leading-tight" x-text="bezSierot(t(POMOC[pomocKlucz].tytul))"></h3>
         <template x-for="a in POMOC[pomocKlucz].akapity" :key="a">
           <p class="mt-3 text-[1rem] leading-relaxed text-stone-600 dark:text-stone-400"
-             x-text="a"></p>
+             x-text="bezSierot(t(a))"></p>
         </template>
         <button type="button" @click="pomocKlucz = null"
                 class="mt-5 min-h-[2.9rem] w-full rounded-xl bg-emerald-700 font-bold text-white

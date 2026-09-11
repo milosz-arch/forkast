@@ -13,7 +13,7 @@
 
 import { obslugiwane, czyWlaczone, przelacz, nasluchuj, wlaczBlokadeEkranu } from "./ekran.js";
 import { JEZYKI, naStart, zapamietaj, zBazy } from "./jezyk.js";
-import { tlumacz, ustawJezykModulow } from "./tlumaczenia.js";
+import { tlumacz, ustawJezykModulow, napis } from "./tlumaczenia.js";
 
 /* Pasek na dole: pięć pozycji to maksimum, przy którym podpisy zostają czytelne
    i cele dotykowe nie schodzą poniżej progu. Ustawienia zeszły stąd do zębatki
@@ -38,9 +38,9 @@ export const ZAKLADKI = [
 ];
 
 export const SKALE = [
-  { id: "normalny", etykieta: "Normalny",    wartosc: 1 },
-  { id: "duzy",     etykieta: "Duży",        wartosc: 1.15 },
-  { id: "bardzo",   etykieta: "Bardzo duży", wartosc: 1.32 },
+  { id: "normalny", etykieta: napis("Normalny"),    wartosc: 1 },
+  { id: "duzy",     etykieta: napis("Duży"),        wartosc: 1.15 },
+  { id: "bardzo",   etykieta: napis("Bardzo duży"), wartosc: 1.32 },
 ];
 
 /* Motyw i skala ustawiane PRZED pierwszym rysowaniem — inaczej ekran mignie
@@ -86,7 +86,7 @@ export function danePowloki({ ekran, tytul, opis }) {
       jezyki: JEZYKI,
 
       /** Tłumaczy napis na język stołu. Klucz to polski napis (decyzja 120). */
-      t(napis) { return tlumacz(napis, this.jezyk); },
+      t(napis, wstawki) { return tlumacz(napis, this.jezyk, wstawki); },
 
       /* NAGŁÓWEK I PODTYTUŁ — zwykłe pola, NIE gettery.
 
@@ -198,8 +198,8 @@ export function danePowloki({ ekran, tytul, opis }) {
       async przelaczEkran() {
         await przelacz();
         this.mrugnij(this.ekranSwieci
-          ? "Ekran nie zgaśnie, dopóki tu jesteś."
-          : "Ekran gaśnie normalnie.");
+          ? this.t("Ekran nie zgaśnie, dopóki tu jesteś.")
+          : this.t("Ekran gaśnie normalnie."));
       },
 
       /* Krótki komunikat na dole. Trafia też do aria-live, więc czytnik

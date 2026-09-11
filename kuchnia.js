@@ -15,29 +15,31 @@
    wygenerowania wszystkiego od nowa i nie mieści się przed 16 sierpnia.
    ===================================================================== */
 
+import { napis } from "./tlumaczenia.js";
+
 export const PLYTY = [
-  { id: "indukcja", etykieta: "Indukcja",
-    opis: "moc w stopniach, szybko reaguje" },
-  { id: "gaz", etykieta: "Gaz",
-    opis: "płomień, natychmiastowa zmiana" },
-  { id: "elektryczna", etykieta: "Płyta elektryczna",
-    opis: "wolno się nagrzewa i stygnie" },
+  { id: "indukcja", etykieta: napis("Indukcja"),
+    opis: napis("moc w stopniach, szybko reaguje") },
+  { id: "gaz", etykieta: napis("Gaz"),
+    opis: napis("płomień, natychmiastowa zmiana") },
+  { id: "elektryczna", etykieta: napis("Płyta elektryczna"),
+    opis: napis("wolno się nagrzewa i stygnie") },
 ];
 
 export const PIEKARNIKI = [
-  { id: "termoobieg", etykieta: "Z termoobiegiem" },
-  { id: "gora-dol",   etykieta: "Góra-dół" },
-  { id: "brak",       etykieta: "Nie mam piekarnika" },
+  { id: "termoobieg", etykieta: napis("Z termoobiegiem") },
+  { id: "gora-dol",   etykieta: napis("Góra-dół") },
+  { id: "brak",       etykieta: napis("Nie mam piekarnika") },
 ];
 
 export const NACZYNIA = [
-  { id: "patelnia",        etykieta: "Patelnia" },
-  { id: "patelnia-zeliwo", etykieta: "Patelnia żeliwna" },
-  { id: "garnek-duzy",     etykieta: "Duży garnek" },
-  { id: "garnek-zeliwo",   etykieta: "Garnek żeliwny / brytfanna" },
-  { id: "wok",             etykieta: "Wok" },
-  { id: "blender",         etykieta: "Blender" },
-  { id: "mikser",          etykieta: "Mikser" },
+  { id: "patelnia",        etykieta: napis("Patelnia") },
+  { id: "patelnia-zeliwo", etykieta: napis("Patelnia żeliwna") },
+  { id: "garnek-duzy",     etykieta: napis("Duży garnek") },
+  { id: "garnek-zeliwo",   etykieta: napis("Garnek żeliwny / brytfanna") },
+  { id: "wok",             etykieta: napis("Wok") },
+  { id: "blender",         etykieta: napis("Blender") },
+  { id: "mikser",          etykieta: napis("Mikser") },
 ];
 
 export const DOMYSLNA = {

@@ -69,7 +69,7 @@ export function daneRestauracyjne() {
           this.restauracyjne = snap.val() || {};
           gotowe();
         }, (blad) => {
-          this.mrugnij?.(`Nie mogę czytać wersji restauracyjnych: ${blad?.message || blad}`);
+          this.mrugnij?.(this.t("Nie mogę czytać wersji restauracyjnych: {powod}", { powod: blad?.message || blad }));
           gotowe();
         });
       });
@@ -107,14 +107,14 @@ export function daneRestauracyjne() {
         else if (baza.get(n) !== ile) out.push(`${n} ${g(baza.get(n))} → ${g(ile)} g`);
       }
       for (const [n] of baza) if (!rest.has(n)) out.push(`− ${n}`);
-      return out.join(", ") || "ten sam skład — różnica jest w technice";
+      return out.join(", ") || this.t("ten sam skład — różnica jest w technice");
     },
 
     ponow(p) { delete this.stanAI[p.id]; return this.ulepsz(p); },
 
     /* Każdy etap ma własną nazwę w komunikacie (pułapka 26); komunikat niesie wydanie. */
     async ulepsz(p) {
-      if (!fb) { this.mrugnij?.("Brak internetu — AI nie odpowie."); return; }
+      if (!fb) { this.mrugnij?.(this.t("Brak internetu — AI nie odpowie.")); return; }
       this.stanAI[p.id] = "czekam";
       this.sekundy[p.id] = 0;
       const tyk = setInterval(() => { this.sekundy[p.id] = (this.sekundy[p.id] || 0) + 1; }, 1000);
@@ -138,7 +138,7 @@ export function daneRestauracyjne() {
           etap = "czytanie poprawki";
           wynik = parsujWersjeRestauracyjna(tekst, p, this.slownik);
         }
-        if (!wynik.ok) { koniec(`Nie udało się — AI dwa razy oddało przepis z rozjazdem: ${wynik.bledy[0]}`); return; }
+        if (!wynik.ok) { koniec(this.t("Nie udało się — AI dwa razy oddało przepis z rozjazdem: {blad}", { blad: wynik.bledy[0] })); return; }
 
         etap = "zapis nowych produktów";
         if (wynik.noweProdukty.length) {
@@ -154,9 +154,9 @@ export function daneRestauracyjne() {
         this.restauracyjne[p.id] = wpis;
         this.widok[p.id] = "restauracyjna";
         koniec(null);
-        this.mrugnij?.("Wersja restauracyjna gotowa.");
+        this.mrugnij?.(this.t("Wersja restauracyjna gotowa."));
       } catch (e) {
-        koniec(`Nie udało się (${etap}): ${e.message}`);
+        koniec(this.t("Nie udało się ({etap}): {powod}", { etap, powod: e.message }));
       }
     },
   };

@@ -25,6 +25,8 @@
    Jednostki: kalorie w kcal, makro w gramach — tak, jak leżą w słowniku produktów.
    ===================================================================== */
 
+import { PO_POLSKU } from "./tlumaczenia.js";
+
 /**
  * Ile jedna porcja dania waży w kaloriach i makro.
  *
@@ -137,7 +139,8 @@ export function ileOdhaczylo(zjedzone = {}, data, typ) {
  * Zero odhaczonych posiłków to nie „0 kcal”, tylko „nic jeszcze nie odhaczone”:
  * pierwsza forma wygląda jak głodówka, druga mówi prawdę.
  */
-export function opisDnia(suma) {
-  if (!suma || !suma.posilkow) return "nic jeszcze nie odhaczone";
-  return `${suma.kcal} kcal · B ${suma.bialko} · W ${suma.wegle} · T ${suma.tluszcz}`;
+export function opisDnia(suma, t = PO_POLSKU) {
+  if (!suma || !suma.posilkow) return t("nic jeszcze nie odhaczone");
+  /* Skróty makro to też tekst: B/W/T po polsku, P/C/F po angielsku. */
+  return t("{kcal} kcal · B {b} · W {w} · T {tl}", { kcal: suma.kcal, b: suma.bialko, w: suma.wegle, tl: suma.tluszcz });
 }

@@ -21,6 +21,8 @@
    nie wie, czy chce tę apkę. Dopiero gdy zdążył coś w niej zrobić.
    ===================================================================== */
 
+import { napis } from "./tlumaczenia.js";
+
 const KLUCZ_ODRZUCONO = "forkast-instalacja-odrzucona";
 const KLUCZ_WEJSC = "forkast-wejsc";
 
@@ -57,19 +59,17 @@ export function stanInstalacji() {
     return jestSafari()
       ? {
           system: "ios",
-          tytul: "Dodaj Forkast do ekranu",
-          tresc: "Dotknij ikony udostępniania na dole, a potem „Dodaj do ekranu początkowego”. " +
-                 "Forkast będzie wtedy wyglądał jak zwykła aplikacja — bez paska adresu.",
+          tytul: napis("Dodaj Forkast do ekranu"),
+          tresc: napis("Dotknij ikony udostępniania na dole, a potem „Dodaj do ekranu początkowego”. Forkast będzie wtedy wyglądał jak zwykła aplikacja — bez paska adresu."),
         }
       : {
           system: "ios-inna",
-          tytul: "Otwórz w Safari",
-          tresc: "Żeby dodać Forkast do ekranu, otwórz go w Safari — inne przeglądarki " +
-                 "na iPhonie tego nie potrafią.",
+          tytul: napis("Otwórz w Safari"),
+          tresc: napis("Żeby dodać Forkast do ekranu, otwórz go w Safari — inne przeglądarki na iPhonie tego nie potrafią."),
         };
   }
-  return { system: "android", tytul: "Dodaj Forkast do ekranu",
-           tresc: "Będzie wyglądał jak zwykła aplikacja i otworzy się jednym dotknięciem." };
+  return { system: "android", tytul: napis("Dodaj Forkast do ekranu"),
+           tresc: napis("Będzie wyglądał jak zwykła aplikacja i otworzy się jednym dotknięciem.") };
 }
 
 export function odrzuc() {

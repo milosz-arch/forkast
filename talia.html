@@ -126,7 +126,7 @@
                             dark:border-stone-800 dark:bg-stone-900">
                 <input type="checkbox" :value="w.id" x-model="wybraneWykluczenia"
                        class="size-6 shrink-0 accent-emerald-600 dark:accent-emerald-500">
-                <span class="font-medium" x-text="w.etykieta"></span>
+                <span class="font-medium" x-text="t(w.etykieta)"></span>
               </label>
             </template>
           </div>
@@ -141,9 +141,9 @@
         <div x-show="instalacja" x-transition
              class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-5
                     dark:border-emerald-500/20 dark:bg-emerald-500/10">
-          <h2 class="font-bold" x-text="instalacja?.tytul"></h2>
+          <h2 class="font-bold" x-text="instalacja ? t(instalacja.tytul) : ''"></h2>
           <p class="mt-1 text-[0.82rem] leading-snug text-stone-600 dark:text-stone-400"
-             x-text="instalacja?.tresc"></p>
+             x-text="instalacja ? t(instalacja.tresc) : ''"></p>
           <div class="mt-3 flex gap-2">
             <button type="button" x-show="instalacja?.system === 'android' && mamyPropozycje()"
                     @click="zainstalujTeraz()"
@@ -187,7 +187,7 @@
                              dark:bg-emerald-500/15 dark:text-emerald-300"
                       x-text="`${POTRZEBA_DAN - brakujeDan}/${POTRZEBA_DAN}`"></span>
                 <p class="min-w-0 flex-1 truncate text-[0.82rem] text-stone-500 dark:text-stone-400"
-                   x-text="zachetaKrotka"></p>
+                   x-text="zachetaKrotkaTekst()"></p>
                 <!-- Wyjaśnienie pod „i”, bo pełny tekst nie mieści się w jednej linii,
                      a zajmowanie trzech linii na stałe kosztuje więcej, niż daje. -->
                 <button type="button" @click="pomocKlucz = 'dania'"
@@ -201,7 +201,7 @@
                  :class="{ przyrost, gotowe }"
                  :style="`--postep:${postep}`"
                  role="progressbar" :aria-valuenow="postep" aria-valuemin="0" aria-valuemax="100"
-                 :aria-label="`Przejrzano ${indeks} z ${talia.length} dań`">
+                 :aria-label="t('Przejrzano {ile} z {z} dań', { ile: indeks, z: talia.length })">
               <i></i><u></u><b></b>
             </div>
             </div>
@@ -240,21 +240,21 @@
                    ma kuchnię WPISANĄ, a dania bez kuchni narodowej — uniwersalną. -->
               <p class="mt-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                         text-stone-400 dark:text-stone-500"
-                 x-text="`kuchnia ${kuchniaDania(danie).nazwa}`"></p>
+                 x-text="t('kuchnia {nazwa}', { nazwa: t(kuchniaDania(danie).nazwa) })"></p>
 
               <!-- Kontekst jednym wierszem: typy posiłku i liczba osób. -->
               <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.82rem]
                         text-stone-500 dark:text-stone-400">
-                <template x-for="(t, i) in danie.typy" :key="t">
+                <template x-for="(typ, i) in danie.typy" :key="typ">
                   <span class="flex items-center gap-2">
                     <span x-show="i > 0" class="size-1 rounded-full bg-stone-300 dark:bg-stone-600"></span>
-                    <span class="capitalize" x-text="t"></span>
+                    <span class="capitalize" x-text="t(typ)"></span>
                   </span>
                 </template>
                 <span class="size-1 rounded-full bg-stone-300 dark:bg-stone-600"></span>
-                <span x-text="`na ${danie.porcje} os.`"></span>
+                <span x-text="t('na {ile} os.', { ile: danie.porcje })"></span>
                 <span class="size-1 rounded-full bg-stone-300 dark:bg-stone-600"></span>
-                <span x-text="`${danie.skladniki.length} składników`"></span>
+                <span x-text="t('{ile} składników', { ile: danie.skladniki.length })"></span>
                 <!-- Marynowanie i moczenie nie liczą się do czasu w kuchni, ale
                      trzeba o nich wiedzieć zawczasu — inaczej człowiek wybiera
                      danie na dziś, a ono wymagało wczoraj. -->
@@ -263,7 +263,7 @@
                              text-red-800 dark:bg-red-400/15 dark:text-red-300" x-text="t('wymaga piekarnika')"></span>
                 <span x-show="!niewykonalne(danie) && powodyCzasu(danie).length"
                       class="text-[0.68rem] text-stone-400"
-                      :title="powodyCzasu(danie).join('; ')"
+                      :title="powodyCzasu(danie).map(p => t(p)).join('; ')"
                       x-text="`+ ${powodyCzasu(danie).length === 1 ? t('Wasz sprzęt') : t('Wasz sprzęt')}`"></span>
                 <span x-show="wymagaWyprzedzenia(danie)"
                       class="rounded-full bg-amber-50 px-2 py-0.5 text-[0.68rem] font-semibold
@@ -427,7 +427,7 @@ let db, ref, get, set, remove, push, update, onValue;
 import { POMOC } from "./pomoc.js";
 import { danePowloki, ding , zarejestrujPrzeciaganie , zarejestrujPasek } from "./powloka.js";
 import { stanInstalacji, odrzuc, zainstaluj, mamyPropozycje } from "./instalacja.js";
-import { stanPoczatkowy, zachetaPoczatkowa, zachetaKrotka, POTRZEBA_DAN } from "./postep.js";
+import { stanPoczatkowy, zachetaKrotka, POTRZEBA_DAN } from "./postep.js";
 import { WYKLUCZENIA, filtrujTalie } from "./wykluczenia.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu, wymagaWyprzedzenia }
   from "./czas.js";
@@ -468,8 +468,13 @@ Alpine.data("ekranDania", () => ({
 
   get danie() { return this.talia[this.indeks] || null; },
 
-  zachetaTekst: "",
-  zachetaKrotka: "",
+  /* Stan postępu, nie gotowy napis: zachętę liczy szablon przy każdym rysowaniu,
+     przez t() ekranu — więc zmiana języka ją przerysowuje, a napis zapisany
+     tu raz zamarzłby w języku z chwili liczenia (pułapka 34). */
+  stanPostepu: null,
+  zachetaKrotkaTekst() {
+    return this.stanPostepu ? zachetaKrotka(this.stanPostepu, (n, w) => this.t(n, w)) : "";
+  },
   POTRZEBA_DAN,
 
   /* Licznik pierwszych dań — osobny od paska postępu talii. Pasek mówi, ile
@@ -477,8 +482,7 @@ Alpine.data("ekranDania", () => ({
   odswiezPostep() {
     const stan = stanPoczatkowy(this.preferencje, this.wybraneWykluczenia);
     this.ustawOdblokowanie(stan);
-    this.zachetaTekst = zachetaPoczatkowa(stan);
-    this.zachetaKrotka = zachetaKrotka(stan);
+    this.stanPostepu = stan;
   },
   get postep() { return this.talia.length ? Math.round(this.indeks / this.talia.length * 100) : 0; },
 
@@ -505,7 +509,7 @@ Alpine.data("ekranDania", () => ({
          Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
          o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
       const powod = (e && (e.message || e.name)) || String(e);
-      this.mrugnij?.(`Coś nie zadziałało: ${powod}`);
+      this.mrugnij?.(this.t("Coś nie zadziałało: {powod}", { powod }));
     }
   },
 
@@ -520,7 +524,7 @@ Alpine.data("ekranDania", () => ({
     else {
       this.laduje = false;
       this.komunikat = this.t("Brak połączenia z bazą.");
-      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      this.mrugnij?.(this.t("Brak internetu — część rzeczy może nie działać."));
       return;
     }
 
@@ -620,7 +624,7 @@ Alpine.data("ekranDania", () => ({
     this.wjazd = false;
     this.$nextTick(() => { this.wjazd = true; });
     setTimeout(() => { this.wjazd = false; }, 260);
-    this.komunikat = wybor === "tak" ? "Polubione" : "Pominięte";
+    this.komunikat = wybor === "tak" ? this.t("Polubione") : this.t("Pominięte");
     // Półmetek: jedyne miejsce, gdzie warto powiedzieć „jeszcze trochę”.
     if (this.indeks === Math.floor(this.talia.length / 2) && this.talia.length >= 20)
       this.mrugnij(this.t("Połowa za Wami."));
@@ -746,14 +750,23 @@ Alpine.start();
         "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
         "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      /* Tu nie ma słownika: bezpiecznik działa właśnie wtedy, gdy moduły nie wstały.
+         Dlatego ma własną parę napisów i sam czyta kopię języka z pamięci telefonu
+         (ten sam klucz co jezyk.js). Pusta albo niedostępna pamięć = polski. */
+      var en = false;
+      try { en = localStorage.getItem("forkast-jezyk") === "en"; } catch (e) {}
+      var N = en
+        ? { naglowek: "Something got stuck at start-up", wyjasnienie: "The app did not manage to start. Downloading it again usually helps.",
+            pobierz: "Download again", wroc: "Back to the start", czas: "time" }
+        : { naglowek: "Coś się zacięło przy starcie", wyjasnienie: "Aplikacja nie zdążyła się uruchomić. Najczęściej pomaga pobranie jej od nowa.",
+            pobierz: "Pobierz od nowa", wroc: "Wróć na początek", czas: "czas" };
       box.innerHTML =
-        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
-        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
-        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<p style="font-size:20px;font-weight:700;margin:0">' + N.naglowek + '</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">' + N.wyjasnienie + '</p>' +
         '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
-        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
-        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
-        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">' + N.pobierz + '</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">' + N.wroc + '</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">' + N.czas + ': ' + (Date.now() - start) + ' ms</p>';
       document.body.appendChild(box);
       document.getElementById("fk-reset").onclick = function () {
         if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });

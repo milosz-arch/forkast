@@ -127,7 +127,7 @@
                z 6 na 7, nie mówi nic; przewijająca się mówi „przybyło” — a to jest
                informacja, po którą człowiek patrzy na ten ekran w sklepie. -->
           <p class="licznik liczba-glowna text-emerald-700 dark:text-emerald-400"
-             :aria-label="`${doKupienia.filter(p => p.wKoszyku).length} w koszyku`">
+             :aria-label="t('{ile} w koszyku', { ile: doKupienia.filter(p => p.wKoszyku).length })">
             <template x-for="(c, i) in String(doKupienia.filter(p => p.wKoszyku).length).split('')"
                       :key="i">
               <span class="cyfra" aria-hidden="true">
@@ -143,7 +143,7 @@
             <p class="text-[0.82rem] font-semibold leading-tight" x-text="opisKoszyka"></p>
             <p x-show="pozycje.length - doKupienia.length > 0"
                class="mt-0.5 text-[0.82rem] text-stone-400"
-               x-text="`${pozycje.length - doKupienia.length} już macie w domu`"></p>
+               x-text="t('{ile} już macie w domu', { ile: pozycje.length - doKupienia.length })"></p>
           </div>
         </div>
 
@@ -193,11 +193,11 @@
           <section>
             <!-- Licznik przy dziale: widać, ile zostało, bez liczenia wierszy. -->
             <h2 class="naglowek-dzialu mb-2 ml-1 text-stone-400 dark:text-stone-500">
-              <span x-text="g.dzial"></span>
+              <span x-text="t(g.dzial)"></span>
               <span class="ml-auto normal-case tracking-normal"
                     :class="zostaloWDziale(g) === 0 ? 'text-emerald-700 dark:text-emerald-400'
                                                     : 'text-stone-400'"
-                    x-text="zostaloWDziale(g) === 0 ? t('✓ gotowe') : `zostało ${zostaloWDziale(g)}`"></span>
+                    x-text="zostaloWDziale(g) === 0 ? t('✓ gotowe') : t('zostało {ile}', { ile: zostaloWDziale(g) })"></span>
             </h2>
             <ul role="list" class="overflow-hidden rounded-2xl border border-stone-100 bg-white
                                    shadow-sm dark:border-stone-800 dark:bg-stone-900">
@@ -206,10 +206,12 @@
                            dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
                           :aria-label="p.dopisek
-                            ? `${p.produkt}, dopisane ręcznie. ${p.wKoszyku ? t('W koszyku') : t('Do kupienia')}.`
+                            ? t('{produkt}, dopisane ręcznie. {stan}.', { produkt: p.produkt, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
                             : p.wDomu
-                              ? `${p.produkt}. Macie w domu ${p.ileWDomu}, nie trzeba kupować.`
-                              : `${p.produkt}, do kupienia ${p.ileDoKupienia}${p.masz > 0 ? `, w domu ${p.ileWDomu}` : ''}. ${p.wKoszyku ? t('W koszyku') : t('Do kupienia')}.`"
+                              ? t('{produkt}. Macie w domu {ile}, nie trzeba kupować.', { produkt: p.produkt, ile: p.ileWDomu })
+                              : p.masz > 0
+                                ? t('{produkt}, do kupienia {ile}, w domu {wDomu}. {stan}.', { produkt: p.produkt, ile: p.ileDoKupienia, wDomu: p.ileWDomu, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
+                                : t('{produkt}, do kupienia {ile}. {stan}.', { produkt: p.produkt, ile: p.ileDoKupienia, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })"
                           class="flex min-h-[3.25rem] w-full items-center gap-4 px-4 text-left transition
                                  active:bg-stone-50 dark:active:bg-stone-800/60"
                           :class="p.wKoszyku ? 'opacity-55' : ''">
@@ -227,7 +229,7 @@
                       <span class="block truncate font-medium"
                             :class="p.wKoszyku ? 'text-stone-400 line-through dark:text-stone-500' : ''"
                             x-text="p.produkt"></span>
-                      <span class="block truncate text-[0.82rem] text-stone-400" x-text="p.zDan"></span>
+                      <span class="block truncate text-[0.82rem] text-stone-400" x-text="p.dopisek ? t(p.zDan) : p.zDan"></span>
                     </span>
                     <!-- Ilość po odjęciu spiżarni. Gdy coś macie w domu, liczba mówi,
                          ILE DOŁOŻYĆ, a w nawiasie stoi, ile już jest — żeby było widać,
@@ -238,10 +240,10 @@
                            a to jest brak POJĘCIA: pasta do zębów nie ma ilu gramów. -->
                       <span x-show="!p.dopisek || p.ileDoKupienia"
                             class="block font-bold tabular-nums text-emerald-800 dark:text-emerald-400"
-                            x-text="p.wDomu ? 'mamy' : p.ileDoKupienia"></span>
+                            x-text="p.wDomu ? t('mamy') : p.ileDoKupienia"></span>
                       <span x-show="p.masz > 0"
                             class="block text-[0.68rem] tabular-nums text-stone-400 dark:text-stone-500"
-                            x-text="p.wDomu ? `${p.ileWDomu} w domu` : `${p.ileWDomu} jest w domu`"></span>
+                            x-text="p.wDomu ? t('{ile} w domu', { ile: p.ileWDomu }) : t('{ile} jest w domu', { ile: p.ileWDomu })"></span>
                     </span>
                   </button>
 
@@ -256,7 +258,7 @@
                        Przycisk stoi OBOK tamtego, nie w środku: przycisk w przycisku
                        to nieprawidłowy HTML i na iPhonie potrafi zjeść dotknięcie. -->
                   <button x-show="p.dopisek" type="button" @click="skreslDopisek(p)"
-                          :aria-label="`Usuń ${p.produkt} z listy`"
+                          :aria-label="t('Usuń {produkt} z listy', { produkt: p.produkt })"
                           class="flex w-12 shrink-0 items-center justify-center text-stone-300
                                  transition active:scale-90 dark:text-stone-600">
                     <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -380,12 +382,12 @@
                 </span>
                 <input type="number" :value="w.gramy" min="0"
                        @change="ustawWSpizarni(w.klucz, $event.target.value)"
-                       :aria-label="`Ile gramów: ${w.nazwa}`"
+                       :aria-label="t('Ile gramów: {produkt}', { produkt: w.nazwa })"
                        class="min-h-[2.5rem] w-20 shrink-0 rounded-xl border-2 border-stone-200 bg-white px-2
                               text-center text-[16px] outline-none focus:border-emerald-600
                               dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100">
                 <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
-                        :aria-label="`Usuń ${w.nazwa} ze spiżarni`"
+                        :aria-label="t('Usuń {produkt} ze spiżarni', { produkt: w.nazwa })"
                         class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
                                transition active:bg-stone-100 dark:active:bg-stone-800">
                   <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -471,6 +473,7 @@ import { PRODUKTY } from "./produkty.js";
    nie tę wersję, którą trzymał telefon: zrzut ekranu z błędem przychodził
    minutę po commicie, czyli zanim Netlify zdążył zbudować. Bez numeru nie da się
    tego odróżnić od „poprawka nie działa”, a to są dwie zupełnie różne sytuacje. */
+import { napis } from "./tlumaczenia.js";
 import { WYDANIE } from "./wersja.js";
 
 /* Firebase ładowany dynamicznie, nie importem na górze modułu.
@@ -488,21 +491,11 @@ import { WYDANIE } from "./wersja.js";
    jest osobna dla każdego adresu), więc ma stół zapisany gdzie indziej. */
 const kodDomu = localStorage.getItem("forkast-dom");
 if (!kodDomu) {
-  document.body.innerHTML = `
-    <div class="flex h-dvh flex-col items-center justify-center gap-5 px-8 text-center">
-      <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.24em] text-emerald-700
-                dark:text-emerald-400">Forkast</p>
-      <h1 class="text-2xl font-bold">Najpierw usiądź do stołu</h1>
-      <p class="max-w-[34ch] text-stone-500 dark:text-stone-400">
-        Ta przeglądarka nie wie jeszcze, do którego stołu należysz. Załóż nowy
-        albo wpisz kod, który ktoś Ci wysłał.
-      </p>
-      <a href="index.html"
-         class="flex min-h-[2.9rem] w-full max-w-xs items-center justify-center rounded-xl
-                bg-emerald-700 px-5 font-bold text-white no-underline dark:bg-emerald-600">
-        Przejdź do stołu
-      </a>
-    </div>`;
+  /* Ten sam ekran co na pozostałych — z baza.js, nie z własnej kopii. Do 11 września
+     stała tu druga kopia HTML-a: inny rozmiar liter, przycisk 46 px zamiast 52 px
+     i drugi komplet napisów do tłumaczenia. Rzucamy dalej, bo reszta tego modułu
+     zakłada, że stół jest. */
+  pokazBrakStolu();
   throw new Error("brak stołu");   // zatrzymuje resztę modułu
 }
 
@@ -605,9 +598,9 @@ Alpine.data("ekranZakupy", () => ({
     if (!this.pozycje.length) return "—";
     if (this.doKupienia.length && z === this.doKupienia.length) {
       const ile = Number(localStorage.getItem("forkast-kompletow") || 0);
-      return ile >= 10 ? "Wszystko w koszyku. yeah yeah 🎵" : "Wszystko w koszyku. Możesz iść do domu.";
+      return ile >= 10 ? this.t("Wszystko w koszyku. yeah yeah 🎵") : this.t("Wszystko w koszyku. Możesz iść do domu.");
     }
-    return `${z} z ${this.doKupienia.length} w koszyku`;
+    return this.t("{ile} z {z} w koszyku", { ile: z, z: this.doKupienia.length });
   },
 
   /* Wczytuje odhaczenia dla konkretnego okresu i sprząta poprzednie. */
@@ -694,13 +687,13 @@ Alpine.data("ekranZakupy", () => ({
           this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
         } catch (e) {
           console.error("Dopisane — treść nasłuchu padła:", e);
-          this.stanSieci = `[${WYDANIE}] Dopisane, treść nasłuchu: ${e?.message || e}`;
+          this.stanSieci = `[${WYDANIE}] ` + this.t("Dopisane, treść nasłuchu: {powod}", { powod: e?.message || e });
         }
-      }, blad => this.nasluchPadl("dopisanych pozycji", blad));
+      }, blad => this.nasluchPadl(this.t("dopisanych pozycji"), blad));
     } catch (e) {
       console.error(`Dopisane — padło na kroku „${etap}”:`, e);
-      this.stanSieci = `[${WYDANIE}] Dopisane padły na kroku „${etap}”: ${e?.message || e}`;
-      this.mrugnij?.(`[${WYDANIE}] Dopisane padły na kroku „${etap}”: ${e?.message || e}`);
+      this.stanSieci = `[${WYDANIE}] ` + this.t("Dopisane padły na kroku „{etap}”: {powod}", { etap, powod: e?.message || e });
+      this.mrugnij?.(this.stanSieci);
     }
   },
 
@@ -714,7 +707,7 @@ Alpine.data("ekranZakupy", () => ({
       this.odsubSpizarni = onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
         this.spizarnia = snap.val() || {};
         this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-      }, blad => this.nasluchPadl("spiżarni", blad));
+      }, blad => this.nasluchPadl(this.t("spiżarni"), blad));
     }
 
     /* Odhaczenia leżą w bazie, nie tylko na telefonie.
@@ -731,7 +724,7 @@ Alpine.data("ekranZakupy", () => ({
         this.odhaczone = zBazy;
         localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...zBazy]));
         this.pozycje = this.pozycje.map(x => ({ ...x, wKoszyku: zBazy.has(klucz(x.produkt)) }));
-      }, blad => this.nasluchPadl("odhaczeń", blad));
+      }, blad => this.nasluchPadl(this.t("odhaczeń"), blad));
   },
 
   /* NASŁUCH, KTÓRY PADŁ, MUSI BYĆ WIDOCZNY.
@@ -745,8 +738,8 @@ Alpine.data("ekranZakupy", () => ({
     console.error(`Nasłuch ${co} padł:`, blad);
     const powod = blad?.code || blad?.message || String(blad);
     this.stanSieci = /permission/i.test(powod)
-      ? `Baza nie pozwala czytać ${co} — to reguły dostępu, nie internet.`
-      : `Nie dochodzą zmiany ${co}: ${powod}`;
+      ? this.t("Baza nie pozwala czytać {co} — to reguły dostępu, nie internet.", { co })
+      : this.t("Nie dochodzą zmiany {co}: {powod}", { co, powod });
   },
 
   async init() {
@@ -769,7 +762,7 @@ Alpine.data("ekranZakupy", () => ({
          Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
          o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
       const powod = (e && (e.message || e.name)) || String(e);
-      this.stanSieci = `[${WYDANIE}] Coś nie zadziałało przy wczytywaniu: ${powod}`;
+      this.stanSieci = `[${WYDANIE}] ` + this.t("Coś nie zadziałało przy wczytywaniu: {powod}", { powod });
       /* DYMEK MUSI WIEDZIEĆ TYLE, CO EKRAN. Powód siedział dotąd wyłącznie
          w linijce pod listą, a dymek mówił „Coś nie zadziałało. Spróbuj odświeżyć.” —
          czyli dokładnie to zdanie, o którym sami zapisaliśmy 8 sierpnia, że nie da
@@ -822,8 +815,8 @@ Alpine.data("ekranZakupy", () => ({
     if (!fb) {
       this.laduje = false;
       this.stanSieci = lokalna
-        ? "Brak połączenia — to ostatnia lista zapisana na tym telefonie."
-        : "Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.";
+        ? this.t("Brak połączenia — to ostatnia lista zapisana na tym telefonie.")
+        : this.t("Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.");
       return;
     }
     this.fb = fb;
@@ -839,7 +832,7 @@ Alpine.data("ekranZakupy", () => ({
       this.podepnijNasluchy(this.startOkresu);
     } catch (e) {
       console.error("Nie udało się podpiąć nasłuchów:", e);
-      this.stanSieci = `Lista działa, ale zmiany drugiej osoby mogą nie dochodzić: ${e?.message || e}`;
+      this.stanSieci = this.t("Lista działa, ale zmiany drugiej osoby mogą nie dochodzić: {powod}", { powod: e?.message || e });
     }
     const { db, ref, get, onValue } = fb;
 
@@ -894,7 +887,7 @@ Alpine.data("ekranZakupy", () => ({
         const start = zapisany.okres?.start || "brak";
         if (this.kluczOdhaczen !== PREFIKS_ODHACZEN + start) this.ustawOkres(start);
 
-        const wynik = policzZakupy(zapisany.siatka, wszystkie, restauracyjne);
+        const wynik = policzZakupy(zapisany.siatka, wszystkie, restauracyjne, (n, w) => this.t(n, w));
         const grupy = pogrupujDzialami(wynik.pozycje, slownik);
         const plaskie = grupy.flatMap(g => g.pozycje.map(p => ({
           produkt: p.produkt,
@@ -916,16 +909,16 @@ Alpine.data("ekranZakupy", () => ({
         }));
       };
       onValue(ref(db, `domy/${kodDomu}/jadlospis`), (snap) => naPlan(snap.val()),
-              blad => this.nasluchPadl("jadłospisu", blad));
+              blad => this.nasluchPadl(this.t("jadłospisu"), blad));
       onValue(ref(db, `domy/${kodDomu}/restauracyjne`), (snap) => {
         restauracyjne = snap.val() || {};
         if (ostatniPlan) naPlan(ostatniPlan);
-      }, blad => this.nasluchPadl("wersji restauracyjnych", blad));
+      }, blad => this.nasluchPadl(this.t("wersji restauracyjnych"), blad));
     } catch {
       this.laduje = false;
       this.stanSieci = lokalna
-        ? "Brak połączenia — to ostatnia lista zapisana na tym telefonie."
-        : "Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.";
+        ? this.t("Brak połączenia — to ostatnia lista zapisana na tym telefonie.")
+        : this.t("Brak połączenia i nie mam zapisanej listy. Wejdź tu raz z internetem.");
     }
   },
 
@@ -961,7 +954,7 @@ Alpine.data("ekranZakupy", () => ({
       .map(([klucz, gramy]) => ({
         klucz, gramy,
         nazwa: nazwy[klucz] || klucz,
-        opis: opisZapasu(gramy, zuzycie[klucz] || 0),
+        opis: opisZapasu(gramy, zuzycie[klucz] || 0, (n, w) => this.t(n, w)),
       }))
       .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
   },
@@ -990,7 +983,7 @@ Alpine.data("ekranZakupy", () => ({
   async dopisz() {
     const tekst = normalizujDopisek(this.nowyDopisek);
     if (!tekst) return;
-    if (!this.fb) { this.mrugnij?.("Brak połączenia — dopiszę, gdy wróci internet."); return; }
+    if (!this.fb) { this.mrugnij?.(this.t("Brak połączenia — dopiszę, gdy wróci internet.")); return; }
     const ile = normalizujMiare(this.nowaMiara);
     this.nowyDopisek = "";
     this.nowaMiara = "";
@@ -1006,14 +999,14 @@ Alpine.data("ekranZakupy", () => ({
     try {
       const { db, ref, set } = this.fb;
       await set(ref(db, `domy/${kodDomu}/dopisane`), zNowym);
-      this.mrugnij?.(`Dopisano „${tekst}”`);
+      this.mrugnij?.(this.t("Dopisano „{tekst}”", { tekst }));
     } catch (e) {
       console.error("Nie udało się dopisać:", e);
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
       this.nowyDopisek = tekst;
       this.nowaMiara = ile || "";
-      this.mrugnij?.(`[${WYDANIE}] Nie udało się dopisać: ${e?.code || e?.message || e}`);
+      this.mrugnij?.(`[${WYDANIE}] ` + this.t("Nie udało się dopisać: {powod}", { powod: e?.code || e?.message || e }));
     }
   },
 
@@ -1027,7 +1020,7 @@ Alpine.data("ekranZakupy", () => ({
     this.dopisane = zmienione;
     this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
     navigator.vibrate?.(10);
-    this.komunikat = `${p.produkt}: ${wpis.odhaczone ? "z powrotem na liście" : "w koszyku"}`;
+    this.komunikat = `${p.produkt}: ${wpis.odhaczone ? this.t("z powrotem na liście") : this.t("w koszyku")}`;
 
     if (!this.fb) return;
     try {
@@ -1037,7 +1030,7 @@ Alpine.data("ekranZakupy", () => ({
       console.error("Nie udało się odhaczyć dopisanej pozycji:", e);
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-      this.mrugnij?.(`[${WYDANIE}] Nie udało się zapisać: ${e?.code || e?.message || e}`);
+      this.mrugnij?.(`[${WYDANIE}] ` + this.t("Nie udało się zapisać: {powod}", { powod: e?.code || e?.message || e }));
     }
   },
 
@@ -1054,12 +1047,12 @@ Alpine.data("ekranZakupy", () => ({
       /* Pusty obiekt kasuje gałąź (pułapka 15) — i dokładnie o to chodzi,
          gdy skreślono ostatnią dopisaną rzecz. */
       await set(ref(db, `domy/${kodDomu}/dopisane`), bez);
-      this.mrugnij?.(`Skreślono „${p.produkt}”`);
+      this.mrugnij?.(this.t("Skreślono „{produkt}”", { produkt: p.produkt }));
     } catch (e) {
       console.error("Nie udało się skreślić:", e);
       this.dopisane = poprzednie;
       this.pozycje = this.zOdhaczeniami(this.pozycjeSurowe);
-      this.mrugnij?.(`[${WYDANIE}] Nie udało się skreślić: ${e?.code || e?.message || e}`);
+      this.mrugnij?.(`[${WYDANIE}] ` + this.t("Nie udało się skreślić: {powod}", { powod: e?.code || e?.message || e }));
     }
   },
 
@@ -1175,8 +1168,8 @@ Alpine.data("ekranZakupy", () => ({
       .sort((a, b) => a.tekst.localeCompare(b.tekst, "pl"))
       .map(w => ({
         produkt: w.tekst,
-        dzial: dzialDopisku(w.tekst, this.slownik) || "Dopisane",
-        zDan: "dopisane ręcznie",
+        dzial: dzialDopisku(w.tekst, this.slownik) || napis("Dopisane"),
+        zDan: napis("dopisane ręcznie"),
         dopisek: w.id,
         gramy: 0, masz: 0, doKupienia: 0, wDomu: false,
         /* Wpisane wprost: „×3”, „500 g”, „2 opakowania”. Ta wartość NIE wchodzi
@@ -1249,7 +1242,7 @@ Alpine.data("ekranZakupy", () => ({
     if (this.kluczOdhaczen)
       localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...this.odhaczone]));
     navigator.vibrate?.(10);
-    this.komunikat = `${p.produkt}: ${p.wKoszyku ? "w koszyku" : "z powrotem na liście"}`;
+    this.komunikat = `${p.produkt}: ${p.wKoszyku ? this.t("w koszyku") : this.t("z powrotem na liście")}`;
 
     if (this.postep === 100) {
       const ile = Number(localStorage.getItem("forkast-kompletow") || 0) + 1;
@@ -1259,7 +1252,7 @@ Alpine.data("ekranZakupy", () => ({
                              : this.t("Wszystko w koszyku. Możesz iść do domu."));
     } else if (this.pozycje.filter(x => !x.wKoszyku).length === 1 && p.wKoszyku) {
       const ostatni = this.pozycje.find(x => !x.wKoszyku);
-      if (ostatni) this.mrugnij(`Został tylko ${ostatni.produkt.toLowerCase()}. Dasz radę.`);
+      if (ostatni) this.mrugnij(this.t("Został tylko {produkt}. Dasz radę.", { produkt: ostatni.produkt.toLowerCase() }));
     }
 
     if (!this.fb || !this.startOkresu) return;
@@ -1340,14 +1333,23 @@ Alpine.start();
         "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
         "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      /* Tu nie ma słownika: bezpiecznik działa właśnie wtedy, gdy moduły nie wstały.
+         Dlatego ma własną parę napisów i sam czyta kopię języka z pamięci telefonu
+         (ten sam klucz co jezyk.js). Pusta albo niedostępna pamięć = polski. */
+      var en = false;
+      try { en = localStorage.getItem("forkast-jezyk") === "en"; } catch (e) {}
+      var N = en
+        ? { naglowek: "Something got stuck at start-up", wyjasnienie: "The app did not manage to start. Downloading it again usually helps.",
+            pobierz: "Download again", wroc: "Back to the start", czas: "time" }
+        : { naglowek: "Coś się zacięło przy starcie", wyjasnienie: "Aplikacja nie zdążyła się uruchomić. Najczęściej pomaga pobranie jej od nowa.",
+            pobierz: "Pobierz od nowa", wroc: "Wróć na początek", czas: "czas" };
       box.innerHTML =
-        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
-        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
-        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<p style="font-size:20px;font-weight:700;margin:0">' + N.naglowek + '</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">' + N.wyjasnienie + '</p>' +
         '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
-        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
-        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
-        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">' + N.pobierz + '</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">' + N.wroc + '</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">' + N.czas + ': ' + (Date.now() - start) + ' ms</p>';
       document.body.appendChild(box);
       document.getElementById("fk-reset").onclick = function () {
         if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });

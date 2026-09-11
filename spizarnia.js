@@ -20,6 +20,8 @@
    Jednostka: gramy, tak jak wszędzie indziej w tej aplikacji.
    ===================================================================== */
 
+import { PO_POLSKU } from "./tlumaczenia.js";
+
 /** Ten sam klucz co przy odhaczeniach — Firebase nie przyjmuje . # $ [ ] / */
 export const kluczProduktu = nazwa => nazwa.toLowerCase()
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -81,10 +83,10 @@ export function starczyNa(masz, zuzycieNaOkres) {
 }
 
 /** Opis dla człowieka. „Starczy na 3 okresy” jest bezużyteczne bez zaokrąglenia. */
-export function opisZapasu(masz, zuzycieNaOkres) {
+export function opisZapasu(masz, zuzycieNaOkres, t = PO_POLSKU) {
   const ile = starczyNa(masz, zuzycieNaOkres);
-  if (ile === null) return "nie ma tego w tym okresie";
-  if (ile < 1) return "nie starczy na cały okres";
-  if (ile < 2) return "starczy na ten okres";
-  return `starczy na ${Math.floor(ile)} okresy`;
+  if (ile === null) return t("nie ma tego w tym okresie");
+  if (ile < 1) return t("nie starczy na cały okres");
+  if (ile < 2) return t("starczy na ten okres");
+  return t("starczy na {ile} okresy", { ile: Math.floor(ile) });
 }

@@ -28,6 +28,7 @@
 
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { filtrujTalie } from "./wykluczenia.js";
+import { PO_POLSKU } from "./tlumaczenia.js";
 
 export const POTRZEBA_DAN = 10;
 export const OTWORZ_PO_PRZEJRZANYCH = 40;
@@ -60,38 +61,22 @@ export function daniaDoOceny(preferencje = {}, wykluczenia = null) {
   return filtrujTalie(TALIA_STARTOWA, lista).filter(d => !(preferencje || {})[d.id]).length;
 }
 
-/** Tekst zachęty pod paskiem postępu. Ma mówić, PO CO to robimy. */
-export function zachetaPoczatkowa(stan) {
+/** Tekst zachęty pod paskiem postępu. Ma mówić, PO CO to robimy.
+    `t` podaje ekran (zna język stołu); bez niego wychodzi polski — tak wołają testy. */
+export function zachetaPoczatkowa(stan, t = PO_POLSKU) {
   if (stan.odblokowane) return "";
   if (stan.polubione === 0)
-    return `Zaznacz ${POTRZEBA_DAN} dań, które lubicie jeść — z nich apka ułoży jadłospis ` +
-           `i policzy zakupy. Nie musisz przeglądać wszystkich, wystarczy pierwsze, które pasują.`;
+    return t("Zaznacz {ile} dań, które lubicie jeść — z nich apka ułoży jadłospis i policzy zakupy. Nie musisz przeglądać wszystkich, wystarczy pierwsze, które pasują.", { ile: POTRZEBA_DAN });
   return stan.brakuje === 1
-    ? "Jeszcze jedno danie i otworzy się jadłospis."
-    : `Jeszcze ${stan.brakuje} dania i otworzy się jadłospis.`;
+    ? t("Jeszcze jedno danie i otworzy się jadłospis.")
+    : t("Jeszcze {ile} dania i otworzy się jadłospis.", { ile: stan.brakuje });
 }
 
 /** Wersja na jedną linię — do paska przyklejonego na górze, gdzie nie ma miejsca. */
-export function zachetaKrotka(stan) {
+export function zachetaKrotka(stan, t = PO_POLSKU) {
   if (stan.odblokowane) return "";
-  if (stan.polubione === 0) return "Zaznacz dania, które lubicie jeść";
+  if (stan.polubione === 0) return t("Zaznacz dania, które lubicie jeść");
   return stan.brakuje === 1
-    ? "Jeszcze jedno i otworzy się jadłospis"
-    : `Jeszcze ${stan.brakuje} do otwarcia jadłospisu`;
+    ? t("Jeszcze jedno i otworzy się jadłospis")
+    : t("Jeszcze {ile} do otwarcia jadłospisu", { ile: stan.brakuje });
 }
-
-/* Wyjaśnienie pod ikoną „i”. Dziesięć dań otwiera resztę aplikacji, ale to jest
-   minimum, nie cel — a różnicy między minimum a sensownym zapasem nie widać
-   z ekranu. Stąd potrzeba powiedzenia tego wprost, tylko nie na stałe. */
-export const DLACZEGO_WIECEJ = {
-  tytul: "Dziesięć to minimum, nie cel",
-  akapity: [
-    "Po dziesięciu daniach otworzy się jadłospis i lista zakupów — tyle wystarczy, " +
-    "żeby ułożyć plan.",
-    "Ale im więcej polubicie, tym mniej dania będą się powtarzać. Przy dziesięciu " +
-    "tygodniowy plan wraca do tych samych potraw co drugi dzień. Przy dwudziestu pięciu " +
-    "można jeść miesiąc bez powtórki.",
-    "Nie musicie robić tego za jednym razem. Możecie wrócić tu kiedykolwiek i dobrać " +
-    "kolejne — jadłospis od razu zacznie z nich korzystać.",
-  ],
-};

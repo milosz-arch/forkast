@@ -67,7 +67,10 @@ function bezKomentarzy(tekst, html) {
 
 /* Wywołania t("…") i tb("…"). Bierzemy tylko wywołania ze STAŁYM napisem —
    t(zmienna) jest legalne i nie da się go sprawdzić statycznie. */
-const WOLANIA = /\b(?:t|tb)\(\s*(?:'([^'\\\n]*)'|"([^"\\\n]*)")\s*\)/g;
+/* Drugi argument to wstawki: `t("Przejrzano {ile} z {z} dań", {…})`. Bez `,` w tym
+   wzorcu każde wywołanie ze wstawkami byłoby dla testu niewidzialne — napis bez
+   tłumaczenia przechodziłby po cichu dokładnie tam, gdzie zdanie jest najdłuższe. */
+const WOLANIA = /\b(?:t|tb|napis)\(\s*(?:'([^'\\\n]*)'|"([^"\\\n]*)")\s*[,)]/g;
 
 const uzyte = new Map();   // napis → pliki, w których stoi
 for (const p of PLIKI) {
@@ -160,6 +163,30 @@ test("żadne tłumaczenie nie jest puste", () => {
   prawda(puste.length === 0, `puste tłumaczenia: ${puste.map(([k]) => k).join(", ")}`);
 });
 
+/* WSTAWKI. Tłumaczenie, które zgubi `{ile}`, pokaże zdanie bez liczby; tłumaczenie
+   z literówką `{ilee}` pokaże goły nawias. Oba psują się tylko w jednym języku,
+   więc Polak ich nie zobaczy nigdy. */
+test("wstawki w tłumaczeniu są dokładnie te same co w kluczu", () => {
+  const wstawkiZ = n => [...n.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(",");
+  const zle = Object.entries(SLOWNIK).filter(([k, v]) => wstawkiZ(k) !== wstawkiZ(v));
+  prawda(zle.length === 0,
+    `${zle.length} tłumaczeń z innymi wstawkami niż klucz: ` +
+    zle.slice(0, 6).map(([k, v]) => `„${k}” → „${v}”`).join(", "));
+});
+
+test("napis ze wstawką zawsze dostaje wartości", () => {
+  const bez = [];
+  for (const p of PLIKI) {
+    const tekst = bezKomentarzy(readFileSync(new URL(p, KORZEN), "utf8"), p.endsWith(".html"));
+    /* `napis("…{x}…")` jest tu wyjątkiem z definicji: wartości dostaje później, przy t(). */
+    for (const m of tekst.matchAll(/\b(?:t|tb)\(\s*(?:'([^'\\\n]*)'|"([^"\\\n]*)")\s*\)/g)) {
+      const napis = m[1] ?? m[2];
+      if (/\{\w+\}/.test(napis)) bez.push(`„${napis}” (${p})`);
+    }
+  }
+  prawda(bez.length === 0, `wstawka bez wartości — na ekranie zostanie goły nawias: ${bez.join(", ")}`);
+});
+
 test("słownik nie trzyma martwych pozycji", () => {
   const martwe = Object.keys(SLOWNIK).filter(k => !uzyte.has(k));
   prawda(martwe.length === 0,
@@ -217,6 +244,87 @@ test("tytuł karty każdego ekranu ma tłumaczenie", () => {
   }
   prawda(brak.length === 0, `tytuły kart bez tłumaczenia: ${brak.join(", ")}`);
 });
+
+/* --------------------------------------------------------------------
+   NAPIS SCHOWANY W WYRAŻENIU
+
+   `x-text="`na ${danie.porcje} os.`"`, `:aria-label="`Usuń ${d.imie} ze stołu`"`.
+   Dla sprawdzenia gołego tekstu to atrybut, więc pomija go w całości, a dla
+   sprawdzenia t("…") to w ogóle nie jest wywołanie. 11 września było takich
+   miejsc ponad czterdzieści, na ośmiu ekranach — każde po polsku na angielskim
+   ekranie i żadne niewidoczne dla testów (pułapka 37 w szerszej postaci).
+
+   Liczy się każdy napis w cudzysłowie albo w backtickach, który ma w sobie
+   słowo i nie jest pierwszym argumentem t(). Wyjątki są wąskie i nazwane:
+   porównania (`=== 'poprawka'` to wartość z bazy, nie tekst na ekranie)
+   i jednostki, które brzmią tak samo w obu językach.
+   -------------------------------------------------------------------- */
+const TAKIE_SAME = new Set(["kcal", "min"]);
+
+function napisyWWyrazeniach(zrodlo) {
+  const bez = zrodlo.replace(/<script[\s\S]*?<\/script>/g, m => m.replace(/[^\n]/g, " "));
+  const wynik = [];
+  for (const m of bez.matchAll(/\s(?:x-text|x-html|:aria-label|:title|:placeholder|:alt|x-bind:aria-label|x-bind:title)\s*=\s*"([^"]*)"/g)) {
+    const linia = bez.slice(0, m.index).split("\n").length;
+    const wyr = m[1]
+      .replace(/\bt\(\s*'(?:[^'\\]|\\.)*'/g, "t(")
+      .replace(/(?:===|!==|==|!=)\s*'[^']*'/g, " ")
+      .replace(/'[^']*'\s*(?:===|!==|==|!=)/g, " ");
+    for (const s of wyr.matchAll(/'([^']*)'|`([^`]*)`/g)) {
+      const napis = (s[1] ?? s[2]).replace(/\$\{[^}]*\}/g, " ").trim();
+      if (!/[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]{2}/.test(napis) || TAKIE_SAME.has(napis)) continue;
+      wynik.push(`${linia}: „${napis.slice(0, 60)}”`);
+    }
+  }
+  return wynik;
+}
+
+/* --------------------------------------------------------------------
+   POLE Z DANYCH MODUŁU NA EKRANIE BEZ t()
+
+   `x-text="w.etykieta"` — napis leży w module po polsku (tak ma być: pułapka 34),
+   słownik go zna, test na martwe pozycje go widzi przez napis(), a ekran i tak
+   pokazuje polski, bo nikt nie zawołał t(). Tak wyglądały wykluczenia na
+   angielskim stole do 11 września (zrzut Miłosza) — każdy strażnik zielony.
+
+   Nazwy dań i produktów (`.nazwa`, `.produkt`) nie są tu sprawdzane: to treść,
+   nie interfejs — sesja B.
+   -------------------------------------------------------------------- */
+const POLA_TEKSTOWE = /(?<![\w.])((?:[\w$]+(?:\?\.|\.))+(?:etykieta|opis|tytul|tresc|tekst|bezSkladnikow|reakcja))\b/g;
+/* Wyjątki z nazwy: pole już przetłumaczone w chwili liczenia. */
+const POLE_JUZ_PRZETLUMACZONE = new Set([
+  "zakupy.html|w.opis",   // opisZapasu(…, t) w getterze zawartoscSpizarni — getter liczy się przy każdym rysowaniu
+]);
+
+function golePola(zrodlo, plik) {
+  const bez = zrodlo.replace(/<script[\s\S]*?<\/script>/g, m => m.replace(/[^\n]/g, " "));
+  const wynik = [];
+  for (const m of bez.matchAll(/\s(?:x-text|x-html|:aria-label|:title|:placeholder|:alt)\s*=\s*"([^"]*)"/g)) {
+    const linia = bez.slice(0, m.index).split("\n").length;
+    for (const p of m[1].matchAll(POLA_TEKSTOWE)) {
+      const przed = m[1].slice(0, p.index);
+      if (/\bt\(\s*$/.test(przed) || /\bbezSierot\(\s*t\(\s*$/.test(przed)) continue;
+      if (POLE_JUZ_PRZETLUMACZONE.has(`${plik}|${p[1]}`)) continue;
+      wynik.push(`${linia}: ${p[1]}`);
+    }
+  }
+  return wynik;
+}
+
+for (const plik of PRZEROBIONE) {
+  test(`${plik}: pola tekstowe z danych idą przez t()`, () => {
+    const gole = golePola(readFileSync(new URL(plik, KORZEN), "utf8"), plik);
+    prawda(gole.length === 0, `${gole.length} pól pokazanych bez t(): ${gole.join(", ")}`);
+  });
+}
+
+for (const plik of PRZEROBIONE) {
+  test(`${plik}: żadnego napisu schowanego w wyrażeniu poza t()`, () => {
+    const schowane = napisyWWyrazeniach(readFileSync(new URL(plik, KORZEN), "utf8"));
+    prawda(schowane.length === 0,
+      `${schowane.length} napisów w wyrażeniach:\n       ` + schowane.slice(0, 15).join("\n       "));
+  });
+}
 
 for (const plik of PRZEROBIONE) {
   test(`${plik}: żadnego gołego napisu poza t()`, () => {

@@ -186,7 +186,7 @@
                       :class="skala === s.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="s.etykieta"></span>
+                <span x-text="t(s.etykieta)"></span>
               </button>
             </template>
           </div>
@@ -205,7 +205,7 @@
                       :class="dlugoscOkresu === n
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="n + ' dni'"></span>
+                <span x-text="t('{ile} dni', { ile: n })"></span>
               </button>
             </template>
           </div>
@@ -238,7 +238,7 @@
                 <input type="text" :value="d.imie" maxlength="30"
                        @change="zmienImieOsoby(d, $event.target.value)"
                        @keydown.enter="$event.target.blur()"
-                       :aria-label="`Imię: ${d.imie}. Dotknij, żeby poprawić.`"
+                       :aria-label="t('Imię: {imie}. Dotknij, żeby poprawić.', { imie: d.imie })"
                        class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[1rem] font-medium
                               outline-none focus:underline focus:decoration-emerald-600
                               focus:decoration-2 focus:underline-offset-4 dark:text-stone-100">
@@ -280,10 +280,10 @@
             <template x-for="typ in TYPY_POSILKOW" :key="typ">
               <div class="py-3">
                 <div class="flex items-center gap-3">
-                  <span class="flex-1 capitalize" x-text="typ"></span>
+                  <span class="flex-1 capitalize" x-text="t(typ)"></span>
                   <button type="button" @click="przelaczPosilek(typ)"
                           :aria-pressed="(rytm[typ]?.wlaczony ?? false).toString()"
-                          :aria-label="`Posiłek ${typ}`"
+                          :aria-label="t('Posiłek {posilek}', { posilek: t(typ) })"
                           class="relative h-8 w-14 shrink-0 rounded-full transition-colors"
                           :class="rytm[typ]?.wlaczony ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-stone-300 dark:bg-stone-700'">
                     <span class="absolute top-1 size-6 rounded-full bg-white shadow transition-[left]"
@@ -320,7 +320,7 @@
                       :class="limitPowtorzen === p.wartosc
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="p.etykieta"></span>
+                <span x-text="t(p.etykieta)"></span>
               </button>
             </template>
           </div>
@@ -341,7 +341,7 @@
                       :class="kuchnia.plyta === p.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="p.etykieta"></span>
+                <span x-text="t(p.etykieta)"></span>
               </button>
             </template>
           </div>
@@ -355,7 +355,7 @@
                       :class="kuchnia.piekarnik === p.id
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="p.etykieta"></span>
+                <span x-text="t(p.etykieta)"></span>
               </button>
             </template>
           </div>
@@ -369,7 +369,7 @@
                       :class="kuchnia.naczynia?.includes(n.id)
                         ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-500 dark:bg-emerald-500'
                         : 'border-stone-200 dark:border-stone-700'">
-                <span x-text="n.etykieta"></span>
+                <span x-text="t(n.etykieta)"></span>
               </button>
             </template>
           </div>
@@ -482,6 +482,7 @@ import { polaczZBaza, kodStolu, pokazBrakStolu } from "./baza.js";
 let db, ref, get, set, remove, push, update, onValue;
 
 import { stanPoczatkowy } from "./postep.js";
+import { napis } from "./tlumaczenia.js";
 import { WYDANIE } from "./wersja.js";
 import { danePowloki } from "./powloka.js";
 import { PLYTY, PIEKARNIKI, NACZYNIA, DOMYSLNA } from "./kuchnia.js";
@@ -492,10 +493,10 @@ import { ktoJestemWsrod, ustawKimJestem, zmienImie } from "./dom.js";
 const kodDomu = kodStolu();
 
 const POWTORKI = [
-  { wartosc: null, etykieta: "bez limitu" },
-  { wartosc: 1, etykieta: "raz" },
-  { wartosc: 2, etykieta: "do 2×" },
-  { wartosc: 3, etykieta: "do 3×" },
+  { wartosc: null, etykieta: napis("bez limitu") },
+  { wartosc: 1, etykieta: napis("raz") },
+  { wartosc: 2, etykieta: napis("do 2×") },
+  { wartosc: 3, etykieta: napis("do 3×") },
 ];
 
 Alpine.data("ekranUstawienia", () => ({
@@ -528,7 +529,7 @@ Alpine.data("ekranUstawienia", () => ({
       console.error("Błąd startu ekranu:", e);
       this.laduje = false;
       this.komunikat = this.t("Coś nie zadziałało przy wczytywaniu.");
-      this.mrugnij?.("Coś nie zadziałało. Spróbuj odświeżyć.");
+      this.mrugnij?.(this.t("Coś nie zadziałało. Spróbuj odświeżyć."));
     }
   },
 
@@ -543,7 +544,7 @@ Alpine.data("ekranUstawienia", () => ({
     else {
       this.laduje = false;
       this.komunikat = this.t("Brak połączenia z bazą.");
-      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      this.mrugnij?.(this.t("Brak internetu — część rzeczy może nie działać."));
       return;
     }
 
@@ -596,7 +597,7 @@ Alpine.data("ekranUstawienia", () => ({
     try {
       this.domownicy = zmienImie(this.domownicy, d.id, imie);
     } catch (e) {
-      this.bladImienia = e?.message || "Nie da się zapisać tego imienia.";
+      this.bladImienia = e?.message || this.t("Nie da się zapisać tego imienia.");
       this.domownicy = [...this.domownicy]; return;
     }
 
@@ -604,11 +605,11 @@ Alpine.data("ekranUstawienia", () => ({
       /* Obiekt pod gałęzią osoby, nie wartość prosta pod `imie` — wartość prosta
          zapisana pod gałąź z nasłuchem nie dociera do bazy (decyzja 76, pułapka 2). */
       await set(ref(db, `domy/${kodDomu}/domownicy/${d.id}`), { imie });
-      this.komunikat = `${stare} to teraz ${imie}`;
-      this.mrugnij?.(`Zapisane: ${imie}`);
+      this.komunikat = this.t("{stare} to teraz {imie}", { stare, imie });
+      this.mrugnij?.(this.t("Zapisane: {imie}", { imie }));
     } catch (e) {
       console.error("Nie udało się zmienić imienia:", e);
-      this.bladImienia = `[${WYDANIE}] Nie udało się zapisać: ${e?.code || e?.message || e}`;
+      this.bladImienia = `[${WYDANIE}] ` + this.t("Nie udało się zapisać: {powod}", { powod: e?.code || e?.message || e });
       this.domownicy = zmienImie(this.domownicy, d.id, stare);
     }
   },
@@ -698,7 +699,7 @@ Alpine.data("ekranUstawienia", () => ({
       a.download = `forkast-nasze-dania-${paczka.pobrano}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
-      this.stanEksportu = `Pobrano ${dania.length} dań.`;
+      this.stanEksportu = this.t("Pobrano {ile} dań.", { ile: dania.length });
     } catch {
       this.stanEksportu = this.t("Nie udało się pobrać — sprawdź internet i spróbuj ponownie.");
     }
@@ -800,14 +801,23 @@ Alpine.start();
         "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
         "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      /* Tu nie ma słownika: bezpiecznik działa właśnie wtedy, gdy moduły nie wstały.
+         Dlatego ma własną parę napisów i sam czyta kopię języka z pamięci telefonu
+         (ten sam klucz co jezyk.js). Pusta albo niedostępna pamięć = polski. */
+      var en = false;
+      try { en = localStorage.getItem("forkast-jezyk") === "en"; } catch (e) {}
+      var N = en
+        ? { naglowek: "Something got stuck at start-up", wyjasnienie: "The app did not manage to start. Downloading it again usually helps.",
+            pobierz: "Download again", wroc: "Back to the start", czas: "time" }
+        : { naglowek: "Coś się zacięło przy starcie", wyjasnienie: "Aplikacja nie zdążyła się uruchomić. Najczęściej pomaga pobranie jej od nowa.",
+            pobierz: "Pobierz od nowa", wroc: "Wróć na początek", czas: "czas" };
       box.innerHTML =
-        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
-        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
-        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<p style="font-size:20px;font-weight:700;margin:0">' + N.naglowek + '</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">' + N.wyjasnienie + '</p>' +
         '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
-        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
-        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
-        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">' + N.pobierz + '</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">' + N.wroc + '</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">' + N.czas + ': ' + (Date.now() - start) + ' ms</p>';
       document.body.appendChild(box);
       document.getElementById("fk-reset").onclick = function () {
         if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });

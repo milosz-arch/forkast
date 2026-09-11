@@ -21,14 +21,16 @@
    „31 minut” byłoby kłamstwem — nie wiemy, jak szybko ktoś kroi cebulę.
    ===================================================================== */
 
+import { napis } from "./tlumaczenia.js";
+
 /* Progi dobrane pod realne decyzje, nie pod okrągłe liczby:
    do 20 min  – zdążysz po pracy, nic nie planując
    do 45 min  – zwykły obiad, trzeba się zabrać
    powyżej    – weekend albo wieczór, gdy masz czas */
 export const PROGI = [
-  { id: "szybko",  do: 20,       etykieta: "do 20 min",  barwa: "#0369A1", barwaCiemna: "#38BDF8" },
-  { id: "srednio", do: 45,       etykieta: "do 45 min",  barwa: "#B45309", barwaCiemna: "#FBBF24" },
-  { id: "dlugo",   do: Infinity, etykieta: "ponad 45 min", barwa: "#A21CAF", barwaCiemna: "#E879F9" },
+  { id: "szybko",  do: 20,       etykieta: napis("do 20 min"),  barwa: "#0369A1", barwaCiemna: "#38BDF8" },
+  { id: "srednio", do: 45,       etykieta: napis("do 45 min"),  barwa: "#B45309", barwaCiemna: "#FBBF24" },
+  { id: "dlugo",   do: Infinity, etykieta: napis("ponad 45 min"), barwa: "#A21CAF", barwaCiemna: "#E879F9" },
 ];
 
 /**
@@ -184,14 +186,14 @@ export function czasDlaSprzetu(danie, sprzet) {
      to niewykonalność. Pokazywanie tego jako dłuższego czasu byłoby kłamstwem
      i człowiek zaplanowałby danie, którego nie zrobi. */
   if (s.piekarnik === "brak" && ma("piekarnik")) {
-    return { minuty: bazowy, niewykonalne: true, powody: ["wymaga piekarnika"] };
+    return { minuty: bazowy, niewykonalne: true, powody: [napis("wymaga piekarnika")] };
   }
 
   /* Płyta elektryczna: wolno się nagrzewa i wolno stygnie, więc każdy krok
      z podgrzewaniem trwa dłużej. Gaz reaguje natychmiast — to punkt odniesienia.
      Indukcja jest szybsza od gazu przy zagotowywaniu, ale różnica jest mała. */
   if (ma("grzanie")) {
-    if (s.plyta === "elektryczna") { minuty *= 1.15; powody.push("płyta elektryczna nagrzewa się wolniej"); }
+    if (s.plyta === "elektryczna") { minuty *= 1.15; powody.push(napis("płyta elektryczna nagrzewa się wolniej")); }
     else if (s.plyta === "indukcja") { minuty *= 0.95; }
   }
 
@@ -199,21 +201,21 @@ export function czasDlaSprzetu(danie, sprzet) {
      w połowie, bo grzeje nierówno. */
   if (s.piekarnik === "gora-dol" && ma("piekarnik")) {
     minuty += 10;
-    powody.push("piekarnik bez termoobiegu grzeje dłużej");
+    powody.push(napis("piekarnik bez termoobiegu grzeje dłużej"));
   }
 
   /* Bez blendera zupę krem przeciera się przez sitko — to realnie kilka minut
      dłużej i sporo więcej wysiłku. */
   if (ma("blender") && !naczynia.includes("blender")) {
     minuty += 6;
-    powody.push("bez blendera trzeba przetrzeć przez sitko");
+    powody.push(napis("bez blendera trzeba przetrzeć przez sitko"));
   }
 
   /* Bez woka smaży się partiami, bo w patelni składniki puszczają wodę
      zamiast się smażyć. */
   if (ma("wok") && !naczynia.includes("wok")) {
     minuty += 5;
-    powody.push("bez woka trzeba smażyć partiami");
+    powody.push(napis("bez woka trzeba smażyć partiami"));
   }
 
   return { minuty: Math.round(minuty), niewykonalne: false, powody };

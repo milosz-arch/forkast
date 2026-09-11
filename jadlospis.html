@@ -203,11 +203,11 @@
 
                     <!-- WIERSZ WYŁĄCZONEGO POSIŁKU -->
                     <button type="button" x-show="!d.posilki[typ]" @click="wlacz(d, typ)"
-                            :aria-label="`Włącz ${typ}, ${podpisDnia(d.data)}`"
+                            :aria-label="t('Włącz {posilek}, {dzien}', { posilek: t(typ), dzien: podpisDnia(d.data) })"
                             class="block min-h-[2.5rem] w-full text-left text-[0.82rem]
                                    text-stone-300 dark:text-stone-600">
                       <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]"
-                            x-text="typ"></span>
+                            x-text="t(typ)"></span>
                       <span class="italic" x-text="t('— wyłączone, dotknij, żeby włączyć —')"></span>
                     </button>
 
@@ -219,16 +219,16 @@
                       <span class="size-2 shrink-0 rounded-full"
                             :style="`background:${barwaPosilku(d, typ)}`"></span>
                       <span class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]
-                                   text-stone-400 dark:text-stone-500" x-text="typ"></span>
+                                   text-stone-400 dark:text-stone-500" x-text="t(typ)"></span>
                       <span class="truncate text-[0.82rem] text-stone-400"
                             x-text="d.posilki[typ].kto.map(id => imieOsoby(id)).join(', ')"></span>
                     </div>
                     <button type="button" @click="dotknij(d, typ)"
                             class="block min-h-[2.5rem] w-full pr-24 text-left"
-                            :aria-label="`${typ}, ${podpisDnia(d.data)}: ${opisPosilku(d, typ)}. Dotknij, żeby zmienić.`">
+                            :aria-label="t('{posilek}, {dzien}: {co}. Dotknij, żeby zmienić.', { posilek: t(typ), dzien: podpisDnia(d.data), co: opisPosilku(d, typ) })">
                       <span x-show="d.posilki[typ].bezSkladnikow"
                             class="text-[1rem] font-semibold text-stone-500 dark:text-stone-400"
-                            x-text="d.posilki[typ].bezSkladnikow"></span>
+                            x-text="t(d.posilki[typ].bezSkladnikow)"></span>
                       <span x-show="!d.posilki[typ].bezSkladnikow && d.posilki[typ].danie"
                             class="text-[1rem] font-medium"
                             x-text="nazwaDania(d.posilki[typ].danie)"></span>
@@ -260,8 +260,8 @@
                             x-show="ja"
                             :aria-pressed="mojPtaszek(d, typ).toString()"
                             :aria-label="mojPtaszek(d, typ)
-                              ? `Odznacz ${typ}, ${podpisDnia(d.data)} — cofnie kalorie i odda zapas do spiżarni`
-                              : `Odhacz ${typ}, ${podpisDnia(d.data)} jako zjedzone przez Ciebie`"
+                              ? t('Odznacz {posilek}, {dzien} — cofnie kalorie i odda zapas do spiżarni', { posilek: t(typ), dzien: podpisDnia(d.data) })
+                              : t('Odhacz {posilek}, {dzien} jako zjedzone przez Ciebie', { posilek: t(typ), dzien: podpisDnia(d.data) })"
                             class="absolute right-11 top-1/2 flex size-11 -translate-y-1/2 items-center
                                    justify-center rounded-xl transition active:scale-95"
                             :class="!mogeOdhaczyc(d, typ)
@@ -287,8 +287,8 @@
                          gdy nie ma już czego zepsuć. -->
                     <button type="button" @click="krzyzyk(d, typ)"
                             :aria-label="posilekPusty(d, typ)
-                              ? `Wyłącz ${typ}, ${podpisDnia(d.data)}`
-                              : `Zdejmij danie z ${typ}, ${podpisDnia(d.data)}`"
+                              ? t('Wyłącz {posilek}, {dzien}', { posilek: t(typ), dzien: podpisDnia(d.data) })
+                              : t('Zdejmij danie z {posilek}, {dzien}', { posilek: t(typ), dzien: podpisDnia(d.data) })"
                             class="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center
                                    justify-center rounded-xl text-stone-300 transition
                                    active:bg-stone-100 dark:text-stone-600 dark:active:bg-stone-800">
@@ -355,13 +355,13 @@
         <h3 class="text-[1.25rem] font-bold leading-tight" x-text="przepis.danie.nazwa"></h3>
         <p class="mt-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                   text-emerald-700 dark:text-emerald-400"
-           x-text="`${przepis.typ} · ${podpisDnia(przepis.data)}`"></p>
+           x-text="`${t(przepis.typ)} · ${podpisDnia(przepis.data)}`"></p>
 
         <div class="mt-4 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm
                     dark:border-stone-800 dark:bg-stone-900">
           <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em]
                     text-emerald-700 dark:text-emerald-400"
-             x-text="`Składniki na ${przepis.ileOsob} ${przepis.ileOsob === 1 ? t('osobę') : 'osoby'}`"></p>
+             x-text="przepis.ileOsob === 1 ? t('Składniki na {ile} osobę', { ile: przepis.ileOsob }) : t('Składniki na {ile} osoby', { ile: przepis.ileOsob })"></p>
           <ul class="mt-2">
             <template x-for="s in skladDoPokazania(przepis.danie, przepis.wsp)" :key="s.produkt">
               <li class="flex justify-between py-1 text-[1rem] text-stone-600 dark:text-stone-400">
@@ -373,7 +373,7 @@
           </ul>
           <p x-show="przepis.przeliczone"
              class="mt-3 text-[0.82rem] italic text-stone-400"
-             x-text="`Przeliczone z przepisu na ${przepis.danie.porcje} os.`"></p>
+             x-text="t('Przeliczone z przepisu na {ile} os.', { ile: przepis.danie.porcje })"></p>
         </div>
 
         <!-- Wersja restauracyjna (decyzja 111): ta sama logika co na ekranie Przepisów,
@@ -471,7 +471,7 @@
               bg-stone-50 px-4 pt-3 dark:bg-stone-950"
        style="padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))">
     <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-700"></div>
-    <h3 class="mb-3 text-lg font-bold" x-text="arkusz ? `${arkusz.typ} — ${podpisDnia(arkusz.dzien.data)}` : ''"></h3>
+    <h3 class="mb-3 text-lg font-bold" x-text="arkusz ? `${t(arkusz.typ)} — ${podpisDnia(arkusz.dzien.data)}` : ''"></h3>
 
     <p x-show="arkusz && !pasujaceDania.length" class="mb-3 text-[0.82rem] text-stone-500" x-text="t('Nie masz polubionego dania, które pasuje na ten posiłek.')"></p>
 
@@ -492,7 +492,7 @@
               class="mb-2 flex min-h-[2.9rem] w-full flex-col justify-center rounded-xl border
                      border-stone-100 bg-white px-4 py-3 text-left transition
                      active:border-emerald-500 dark:border-stone-800 dark:bg-stone-900">
-        <span class="font-medium" x-text="p.etykieta"></span>
+        <span class="font-medium" x-text="t(p.etykieta)"></span>
         <span class="mt-0.5 text-[0.82rem] text-stone-400" x-text="t('nie wchodzi do listy zakupów')"></span>
       </button>
     </template>
@@ -532,6 +532,7 @@ import { ulozPlan as ulozAutomatem } from "./automat.js";
 import { TALIA_STARTOWA } from "./talia-startowa.js";
 import { progDlaSprzetu, opisCzasuDlaSprzetu, czasDlaSprzetu } from "./czas.js";
 import { TYPY_POSILKOW } from "./prompt.js";
+import { napis } from "./tlumaczenia.js";
 import { PRODUKTY } from "./produkty.js";
 import { ktoJestemWsrod } from "./dom.js";
 import { daneRestauracyjne } from "./restauracyjna.js";
@@ -612,7 +613,7 @@ Alpine.data("ekranJadlospis", () => ({
          Dlatego powód wchodzi do widocznej linii pod listą — tej samej, która mówi
          o braku zasięgu. Zostaje na ekranie, więc da się go sfotografować. */
       const powod = (e && (e.message || e.name)) || String(e);
-      this.mrugnij?.(`Coś nie zadziałało: ${powod}`);
+      this.mrugnij?.(this.t("Coś nie zadziałało: {powod}", { powod }));
     }
   },
 
@@ -627,7 +628,7 @@ Alpine.data("ekranJadlospis", () => ({
     else {
       this.laduje = false;
       this.komunikat = this.t("Brak połączenia z bazą.");
-      this.mrugnij?.("Brak internetu — część rzeczy może nie działać.");
+      this.mrugnij?.(this.t("Brak internetu — część rzeczy może nie działać."));
       return;
     }
 
@@ -675,8 +676,8 @@ Alpine.data("ekranJadlospis", () => ({
          czyli jak coś, co człowiek uzna za swoją winę. Mówimy wprost (decyzja 76). */
       console.error("Nasłuch jadłospisu padł:", blad);
       this.mrugnij?.(/permission/i.test(blad?.code || blad?.message || "")
-        ? "Baza nie pozwala czytać jadłospisu — to reguły dostępu, nie internet."
-        : `Nie dochodzą zmiany jadłospisu: ${blad?.code || blad?.message || blad}`);
+        ? this.t("Baza nie pozwala czytać jadłospisu — to reguły dostępu, nie internet.")
+        : this.t("Nie dochodzą zmiany jadłospisu: {powod}", { powod: blad?.code || blad?.message || blad }));
     });
 
     /* Odhaczone posiłki i spiżarnia — wspólne dla stołu, więc na żywo.
@@ -684,19 +685,19 @@ Alpine.data("ekranJadlospis", () => ({
        danych (decyzja 76). */
     onValue(ref(db, `domy/${kodDomu}/zjedzone`), snap => {
       this.zjedzone = snap.val() || {};
-    }, blad => this.nasluchPadl("odhaczonych posiłków", blad));
+    }, blad => this.nasluchPadl(this.t("odhaczonych posiłków"), blad));
 
     onValue(ref(db, `domy/${kodDomu}/spizarnia`), snap => {
       this.spizarnia = snap.val() || {};
-    }, blad => this.nasluchPadl("spiżarni", blad));
+    }, blad => this.nasluchPadl(this.t("spiżarni"), blad));
   },
 
   nasluchPadl(co, blad) {
     console.error(`Nasłuch ${co} padł:`, blad);
     const powod = blad?.code || blad?.message || String(blad);
     this.mrugnij?.(/permission/i.test(powod)
-      ? `Baza nie pozwala czytać ${co} — to reguły dostępu, nie internet.`
-      : `Nie dochodzą zmiany ${co}: ${powod}`);
+      ? this.t("Baza nie pozwala czytać {co} — to reguły dostępu, nie internet.", { co })
+      : this.t("Nie dochodzą zmiany {co}: {powod}", { co, powod }));
   },
 
   /* =====================================================================
@@ -723,7 +724,7 @@ Alpine.data("ekranJadlospis", () => ({
   },
 
   podpisLicznika(d) {
-    return opisDnia(dzienOsoby(d, this.zjedzone, this.ja, this.wszystkieDania, PRODUKTY));
+    return opisDnia(dzienOsoby(d, this.zjedzone, this.ja, this.wszystkieDania, PRODUKTY), (n, w) => this.t(n, w));
   },
 
   /* Posiłek, którego nie da się odhaczyć: pusty, „na mieście”, albo taki,
@@ -797,7 +798,7 @@ Alpine.data("ekranJadlospis", () => ({
       await set(ref(db, `domy/${kodDomu}/spizarnia`), nowaSpizarnia);
     } catch (e) {
       console.error("Zapis odhaczenia nie przeszedł:", e);
-      this.mrugnij(`Nie udało się zapisać: ${e?.code || e?.message || e}`);
+      this.mrugnij(this.t("Nie udało się zapisać: {powod}", { powod: e?.code || e?.message || e }));
     }
   },
 
@@ -867,13 +868,19 @@ Alpine.data("ekranJadlospis", () => ({
   podpisDnia(iso) {
     const [r, m, d] = iso.split("-").map(Number);
     const data = new Date(r, m - 1, d, 12);
+    /* Po angielsku daty nie składamy ze słownika, tylko oddajemy przeglądarce:
+       nazwy dni i miesięcy to jej wiedza, a „Saturday 5 September” ma inną
+       gramatykę niż polski dopełniacz („5 września”). Polska ścieżka zostaje
+       nietknięta — działała i nie ma powodu, żeby zależała od przeglądarki. */
+    if (this.jezyk === "en")
+      return new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(data);
     return `${DNI_PL[data.getDay()]}, ${d} ${MIES_PL[m - 1]}`;
   },
-  nazwaDania(id) { return this.wszystkieDania.find(d => d.id === id)?.nazwa || "(usunięte danie)"; },
+  nazwaDania(id) { return this.wszystkieDania.find(d => d.id === id)?.nazwa || this.t("(usunięte danie)"); },
   imieOsoby(id) { return this.domownicy.find(d => d.id === id)?.imie || "?"; },
   opisPosilku(d, typ) {
     const w = d.posilki[typ];
-    return w.bezSkladnikow || (w.danie ? this.nazwaDania(w.danie) : "nie wybrano dania");
+    return w.bezSkladnikow ? this.t(w.bezSkladnikow) : (w.danie ? this.nazwaDania(w.danie) : this.t("nie wybrano dania"));
   },
 
   /* Zapis całościowy — dla operacji, które CELOWO nadpisują wszystko:
@@ -922,12 +929,12 @@ Alpine.data("ekranJadlospis", () => ({
     const wgTypu = new Map();
     for (const b of bledy) {
       const m = b.match(/na "([^"]+)"/);
-      const typ = m ? m[1] : "posiłek";
+      const typ = m ? m[1] : napis("posiłek");
       wgTypu.set(typ, (wgTypu.get(typ) || 0) + 1);
     }
     this.uwagi = [...wgTypu].map(([typ, ile]) => ile === 1
-      ? `Jednego dnia zabrakło dania na ${typ}.`
-      : `W ${ile} dniach nie ma czego wstawić na ${typ} — polub więcej takich dań albo wyłącz ten posiłek w Ustawieniach.`);
+      ? this.t("Jednego dnia zabrakło dania na {posilek}.", { posilek: this.t(typ) })
+      : this.t("W {ile} dniach nie ma czego wstawić na {posilek} — polub więcej takich dań albo wyłącz ten posiłek w Ustawieniach.", { ile, posilek: this.t(typ) }));
 
     if (!bledy.length) this.mrugnij(this.t("Plan gotowy. Lista zakupów policzy się sama."));
   },
@@ -942,7 +949,7 @@ Alpine.data("ekranJadlospis", () => ({
   },
 
   zastosujZdalne(zapisany) {
-    const ostrzezenie = sprawdzWersje(zapisany);
+    const ostrzezenie = sprawdzWersje(zapisany, (n, w) => this.t(n, w));
     if (ostrzezenie) { this.uwagi = [ostrzezenie]; return; }
 
     if (planKompletny(zapisany)) {
@@ -956,8 +963,7 @@ Alpine.data("ekranJadlospis", () => ({
          mówimy wprost i zaczynamy okres od nowa, bo tamtego i tak nie da się użyć. */
       if (zapisany?.siatka) {
         console.warn("Niekompletny plan w bazie, pomijam:", zapisany);
-        this.uwagi = ["Plan zapisany przy stole był niekompletny i nie dało się go wczytać. " +
-                      "Ułóż go proszę na nowo — to zajmie chwilę i nic więcej nie zginęło."];
+        this.uwagi = [this.t("Plan zapisany przy stole był niekompletny i nie dało się go wczytać. Ułóż go proszę na nowo — to zajmie chwilę i nic więcej nie zginęło.")];
       }
       this.okres = nowyOkres(new Date(), this.ustawienia.dlugoscOkresu || 7);
       this.siatka = pustaSiatka(this.okres, this.rytm());
@@ -1008,7 +1014,7 @@ Alpine.data("ekranJadlospis", () => ({
       this.siatka = ustawWersje(this.siatka, data, typ, restauracyjna);
       await this.zapiszPosilek(data, typ);
     } catch (e) {
-      this.mrugnij(`Nie udało się zapisać wersji: ${e.message}`);
+      this.mrugnij(this.t("Nie udało się zapisać wersji: {powod}", { powod: e.message }));
     }
   },
 
@@ -1065,10 +1071,10 @@ Alpine.data("ekranJadlospis", () => ({
   async krzyzyk(dzien, typ) {
     if (!posilekPusty(dzien, typ)) {
       this.siatka = wyczyscDanie(this.siatka, dzien.data, typ);
-      this.komunikat = `Zdjęto danie z ${typ}`;
+      this.komunikat = this.t("Zdjęto danie z {posilek}", { posilek: this.t(typ) });
     } else {
       this.siatka = wylaczPosilek(this.siatka, dzien.data, typ);
-      this.komunikat = `Wyłączono ${typ} — dotknij wiersza, żeby wrócić`;
+      this.komunikat = this.t("Wyłączono {posilek} — dotknij wiersza, żeby wrócić", { posilek: this.t(typ) });
     }
     await this.zapiszPosilek(dzien.data, typ);
   },
@@ -1082,7 +1088,7 @@ Alpine.data("ekranJadlospis", () => ({
     if (!kto.length) { this.komunikat = this.t("Najpierw dodaj kogoś do stołu"); return; }
     this.siatka = wlaczPosilek(this.siatka, dzien.data, typ, kto);
     await this.zapiszPosilek(dzien.data, typ);
-    this.komunikat = `Włączono ${typ}`;
+    this.komunikat = this.t("Włączono {posilek}", { posilek: this.t(typ) });
   },
 }));
 
@@ -1137,14 +1143,23 @@ Alpine.start();
         "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;" +
         "background:#fafaf9;color:#292524;font:16px/1.5 -apple-system,system-ui,sans-serif");
+      /* Tu nie ma słownika: bezpiecznik działa właśnie wtedy, gdy moduły nie wstały.
+         Dlatego ma własną parę napisów i sam czyta kopię języka z pamięci telefonu
+         (ten sam klucz co jezyk.js). Pusta albo niedostępna pamięć = polski. */
+      var en = false;
+      try { en = localStorage.getItem("forkast-jezyk") === "en"; } catch (e) {}
+      var N = en
+        ? { naglowek: "Something got stuck at start-up", wyjasnienie: "The app did not manage to start. Downloading it again usually helps.",
+            pobierz: "Download again", wroc: "Back to the start", czas: "time" }
+        : { naglowek: "Coś się zacięło przy starcie", wyjasnienie: "Aplikacja nie zdążyła się uruchomić. Najczęściej pomaga pobranie jej od nowa.",
+            pobierz: "Pobierz od nowa", wroc: "Wróć na początek", czas: "czas" };
       box.innerHTML =
-        '<p style="font-size:20px;font-weight:700;margin:0">Coś się zacięło przy starcie</p>' +
-        '<p style="margin:0;max-width:32ch;color:#57534e">Aplikacja nie zdążyła się uruchomić. ' +
-        'Najczęściej pomaga pobranie jej od nowa.</p>' +
+        '<p style="font-size:20px;font-weight:700;margin:0">' + N.naglowek + '</p>' +
+        '<p style="margin:0;max-width:32ch;color:#57534e">' + N.wyjasnienie + '</p>' +
         '<button id="fk-reset" style="min-height:52px;padding:0 24px;border:0;border-radius:12px;' +
-        'background:#047857;color:#fff;font-weight:700;font-size:16px">Pobierz od nowa</button>' +
-        '<a href="index.html" style="color:#047857;font-size:14px">Wróć na początek</a>' +
-        '<p style="margin:0;font-size:12px;color:#a8a29e">czas: ' + (Date.now() - start) + ' ms</p>';
+        'background:#047857;color:#fff;font-weight:700;font-size:16px">' + N.pobierz + '</button>' +
+        '<a href="index.html" style="color:#047857;font-size:14px">' + N.wroc + '</a>' +
+        '<p style="margin:0;font-size:12px;color:#a8a29e">' + N.czas + ': ' + (Date.now() - start) + ' ms</p>';
       document.body.appendChild(box);
       document.getElementById("fk-reset").onclick = function () {
         if (window.caches) caches.keys().then(function (k) { k.forEach(function (x) { caches.delete(x); }); });
