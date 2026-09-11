@@ -56,6 +56,8 @@ const POMIJANE = new Map([
   ["sw.js", "lista plików offline, nie tekst"],
   ["prompt.js", "rozmowa z AI jest po polsku — sesja C"],
   ["parser.js", "uwagi o odpowiedzi AI wracają do AI jako poprawka — sesja C"],
+  ["talia-en.js", "angielska warstwa dań — pilnuje test-talia-en.mjs"],
+  ["produkty-en.js", "angielskie nazwy produktów — pilnuje test-talia-en.mjs"],
 ]);
 
 /* SKAN OD 11 WRZEŚNIA: KAŻDY NAPIS, NIE TYLKO TEN W ZNANYM GNIEŹDZIE.

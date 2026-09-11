@@ -193,7 +193,7 @@
           <section>
             <!-- Licznik przy dziale: widać, ile zostało, bez liczenia wierszy. -->
             <h2 class="naglowek-dzialu mb-2 ml-1 text-stone-400 dark:text-stone-500">
-              <span x-text="t(g.dzial)"></span>
+              <span x-text="dzialWJezyku(g.dzial)"></span>
               <span class="ml-auto normal-case tracking-normal"
                     :class="zostaloWDziale(g) === 0 ? 'text-emerald-700 dark:text-emerald-400'
                                                     : 'text-stone-400'"
@@ -206,12 +206,12 @@
                            dark:border-stone-800">
                   <button type="button" @click="odhacz(p)" :aria-pressed="p.wKoszyku.toString()"
                           :aria-label="p.dopisek
-                            ? t('{produkt}, dopisane ręcznie. {stan}.', { produkt: p.produkt, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
+                            ? t('{produkt}, dopisane ręcznie. {stan}.', { produkt: produktWJezyku(p.produkt), stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
                             : p.wDomu
-                              ? t('{produkt}. Macie w domu {ile}, nie trzeba kupować.', { produkt: p.produkt, ile: p.ileWDomu })
+                              ? t('{produkt}. Macie w domu {ile}, nie trzeba kupować.', { produkt: produktWJezyku(p.produkt), ile: p.ileWDomu })
                               : p.masz > 0
-                                ? t('{produkt}, do kupienia {ile}, w domu {wDomu}. {stan}.', { produkt: p.produkt, ile: p.ileDoKupienia, wDomu: p.ileWDomu, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
-                                : t('{produkt}, do kupienia {ile}. {stan}.', { produkt: p.produkt, ile: p.ileDoKupienia, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })"
+                                ? t('{produkt}, do kupienia {ile}, w domu {wDomu}. {stan}.', { produkt: produktWJezyku(p.produkt), ile: p.ileDoKupienia, wDomu: p.ileWDomu, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })
+                                : t('{produkt}, do kupienia {ile}. {stan}.', { produkt: produktWJezyku(p.produkt), ile: p.ileDoKupienia, stan: p.wKoszyku ? t('W koszyku') : t('Do kupienia') })"
                           class="flex min-h-[3.25rem] w-full items-center gap-4 px-4 text-left transition
                                  active:bg-stone-50 dark:active:bg-stone-800/60"
                           :class="p.wKoszyku ? 'opacity-55' : ''">
@@ -228,7 +228,7 @@
                     <span class="min-w-0 flex-1">
                       <span class="block truncate font-medium"
                             :class="p.wKoszyku ? 'text-stone-400 line-through dark:text-stone-500' : ''"
-                            x-text="p.produkt"></span>
+                            x-text="produktWJezyku(p.produkt)"></span>
                       <span class="block truncate text-[0.82rem] text-stone-400" x-text="p.dopisek ? t(p.zDan) : p.zDan"></span>
                     </span>
                     <!-- Ilość po odjęciu spiżarni. Gdy coś macie w domu, liczba mówi,
@@ -258,7 +258,7 @@
                        Przycisk stoi OBOK tamtego, nie w środku: przycisk w przycisku
                        to nieprawidłowy HTML i na iPhonie potrafi zjeść dotknięcie. -->
                   <button x-show="p.dopisek" type="button" @click="skreslDopisek(p)"
-                          :aria-label="t('Usuń {produkt} z listy', { produkt: p.produkt })"
+                          :aria-label="t('Usuń {produkt} z listy', { produkt: produktWJezyku(p.produkt) })"
                           class="flex w-12 shrink-0 items-center justify-center text-stone-300
                                  transition active:scale-90 dark:text-stone-600">
                     <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -377,17 +377,17 @@
               <li class="flex items-center gap-3 border-b border-stone-100 px-4 py-3 last:border-0
                          dark:border-stone-800">
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate font-medium" x-text="w.nazwa"></span>
+                  <span class="block truncate font-medium" x-text="produktWJezyku(w.nazwa)"></span>
                   <span class="block text-[0.82rem] text-stone-400" x-text="w.opis"></span>
                 </span>
                 <input type="number" :value="w.gramy" min="0"
                        @change="ustawWSpizarni(w.klucz, $event.target.value)"
-                       :aria-label="t('Ile gramów: {produkt}', { produkt: w.nazwa })"
+                       :aria-label="t('Ile gramów: {produkt}', { produkt: produktWJezyku(w.nazwa) })"
                        class="min-h-[2.5rem] w-20 shrink-0 rounded-xl border-2 border-stone-200 bg-white px-2
                               text-center text-[16px] outline-none focus:border-emerald-600
                               dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100">
                 <button type="button" @click="ustawWSpizarni(w.klucz, 0)"
-                        :aria-label="t('Usuń {produkt} ze spiżarni', { produkt: w.nazwa })"
+                        :aria-label="t('Usuń {produkt} ze spiżarni', { produkt: produktWJezyku(w.nazwa) })"
                         class="flex size-11 shrink-0 items-center justify-center rounded-xl text-stone-400
                                transition active:bg-stone-100 dark:active:bg-stone-800">
                   <svg class="ikona ikona-sm"><use href="#i-x"/></svg>
@@ -567,10 +567,14 @@ Alpine.data("ekranZakupy", () => ({
     }
     /* Odhaczone spadają na dół działu: to, co zostało do kupienia, ma być
        na wierzchu, bo po to się w tę listę patrzy, stojąc w sklepie. */
-    return [...grupy].map(([dzial, poz]) => ({
-      dzial,
-      pozycje: [...poz.filter(p => !p.wKoszyku), ...poz.filter(p => p.wKoszyku)],
-    }));
+    /* Przy angielskim stole kolejność alfabetyczna po polskich kluczach wyglądałaby
+       na przypadkową, więc sortujemy po tym, co widać. Polska kolejność zostaje
+       nietknięta — łącznie z miejscem dopisanych pozycji. */
+    const poNazwie = (a, b) => this.produktWJezyku(a.produkt).localeCompare(this.produktWJezyku(b.produkt), "en");
+    return [...grupy].map(([dzial, poz]) => {
+      const lista = this.jezyk === "en" ? [...poz].sort(poNazwie) : poz;
+      return { dzial, pozycje: [...lista.filter(p => !p.wKoszyku), ...lista.filter(p => p.wKoszyku)] };
+    });
   },
   /* Ile w tym dziale zostało do wzięcia. Nagłówek dzialu używał tej nazwy
      dwa razy i też jej nigdzie nie było — dział nigdy nie mówił „gotowe”. */
@@ -887,7 +891,7 @@ Alpine.data("ekranZakupy", () => ({
         const start = zapisany.okres?.start || "brak";
         if (this.kluczOdhaczen !== PREFIKS_ODHACZEN + start) this.ustawOkres(start);
 
-        const wynik = policzZakupy(zapisany.siatka, wszystkie, restauracyjne, (n, w) => this.t(n, w));
+        const wynik = policzZakupy(zapisany.siatka, wszystkie, restauracyjne, (n, w) => this.t(n, w), d => this.nazwaWJezyku(d));
         const grupy = pogrupujDzialami(wynik.pozycje, slownik);
         const plaskie = grupy.flatMap(g => g.pozycje.map(p => ({
           produkt: p.produkt,
@@ -956,7 +960,7 @@ Alpine.data("ekranZakupy", () => ({
         nazwa: nazwy[klucz] || klucz,
         opis: opisZapasu(gramy, zuzycie[klucz] || 0, (n, w) => this.t(n, w)),
       }))
-      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+      .sort((a, b) => this.produktWJezyku(a.nazwa).localeCompare(this.produktWJezyku(b.nazwa), this.jezyk));
   },
 
   /* ZAPISUJEMY CAŁĄ GAŁĄŹ, NIE POJEDYNCZE DZIECKO — dokładnie jak spiżarnia.
@@ -1242,7 +1246,7 @@ Alpine.data("ekranZakupy", () => ({
     if (this.kluczOdhaczen)
       localStorage.setItem(this.kluczOdhaczen, JSON.stringify([...this.odhaczone]));
     navigator.vibrate?.(10);
-    this.komunikat = `${p.produkt}: ${p.wKoszyku ? this.t("w koszyku") : this.t("z powrotem na liście")}`;
+    this.komunikat = `${this.produktWJezyku(p.produkt)}: ${p.wKoszyku ? this.t("w koszyku") : this.t("z powrotem na liście")}`;
 
     if (this.postep === 100) {
       const ile = Number(localStorage.getItem("forkast-kompletow") || 0) + 1;
@@ -1252,7 +1256,7 @@ Alpine.data("ekranZakupy", () => ({
                              : this.t("Wszystko w koszyku. Możesz iść do domu."));
     } else if (this.pozycje.filter(x => !x.wKoszyku).length === 1 && p.wKoszyku) {
       const ostatni = this.pozycje.find(x => !x.wKoszyku);
-      if (ostatni) this.mrugnij(this.t("Został tylko {produkt}. Dasz radę.", { produkt: ostatni.produkt.toLowerCase() }));
+      if (ostatni) this.mrugnij(this.t("Został tylko {produkt}. Dasz radę.", { produkt: this.produktWJezyku(ostatni.produkt).toLowerCase() }));
     }
 
     if (!this.fb || !this.startOkresu) return;

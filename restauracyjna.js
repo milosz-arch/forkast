@@ -82,7 +82,7 @@ export function daneRestauracyjne() {
 
     krokiDoPokazania(p) {
       return this.widok[p.id] === "restauracyjna" && this.maWersje(p)
-        ? this.restauracyjne[p.id].kroki : p.kroki;
+        ? this.restauracyjne[p.id].kroki : this.krokiWJezyku(p);
     },
 
     /* Skład do pokazania: restauracyjny, gdy taki widok; podstawowy inaczej.
@@ -103,10 +103,10 @@ export function daneRestauracyjne() {
       const rest = new Map(r.map(s => [s.produkt, s.gramy]));
       const out = [];
       for (const [n, ile] of rest) {
-        if (!baza.has(n)) out.push(`+ ${n} ${g(ile)} g`);
-        else if (baza.get(n) !== ile) out.push(`${n} ${g(baza.get(n))} → ${g(ile)} g`);
+        if (!baza.has(n)) out.push(`+ ${this.produktWJezyku(n)} ${g(ile)} g`);
+        else if (baza.get(n) !== ile) out.push(`${this.produktWJezyku(n)} ${g(baza.get(n))} → ${g(ile)} g`);
       }
-      for (const [n] of baza) if (!rest.has(n)) out.push(`− ${n}`);
+      for (const [n] of baza) if (!rest.has(n)) out.push(`− ${this.produktWJezyku(n)}`);
       return out.join(", ") || this.t("ten sam skład — różnica jest w technice");
     },
 

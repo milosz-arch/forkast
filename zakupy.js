@@ -30,7 +30,7 @@ const INNE = napis("Inne");
  *   pozycje   — [{ produkt, gramy, wDaniach:[nazwy] }] posortowane wg nazwy
  *   pominiete — opis miejsc, których nie dało się policzyć (brakujące danie, zły przepis)
  */
-export function policzZakupy(siatka, dania, restauracyjne = {}, t = PO_POLSKU) {
+export function policzZakupy(siatka, dania, restauracyjne = {}, t = PO_POLSKU, nazwa = d => d.nazwa) {
   const wgProduktu = new Map();
   const pominiete = [];
 
@@ -64,10 +64,10 @@ export function policzZakupy(siatka, dania, restauracyjne = {}, t = PO_POLSKU) {
 
       /* Skład: restauracyjny, jeśli tak zaplanowano i wersja istnieje. Porcje te same —
          parser pilnuje, żeby model ich nie zmieniał (112). */
-      let sklad = danie.skladniki || [], etykieta = danie.nazwa;
+      let sklad = danie.skladniki || [], etykieta = nazwa(danie);
       if (wpis.restauracyjna) {
         const r = restauracyjne?.[danie.id];
-        if (Array.isArray(r?.skladniki)) { sklad = r.skladniki; etykieta = t("{danie} (restauracyjna)", { danie: danie.nazwa }); }
+        if (Array.isArray(r?.skladniki)) { sklad = r.skladniki; etykieta = t("{danie} (restauracyjna)", { danie: nazwa(danie) }); }
         else pominiete.push(t("{data}, {posilek}: „{danie}” zaplanowane w wersji restauracyjnej, ale tej wersji nie ma — liczę z podstawowej.", { data: dzien.data, posilek: t(typ), danie: danie.nazwa }));
       }
 

@@ -222,7 +222,7 @@
 
               <div class="flex items-start justify-between gap-3">
                 <h2 class="text-[1.45rem] font-bold leading-[1.15] tracking-tight"
-                    x-text="bezSierot(danie.nazwa)"></h2>
+                    x-text="bezSierot(nazwaWJezyku(danie))"></h2>
                 <!-- Czas zamiast kategorii. Kubełki („domowa klasyka”, „nowoczesne”)
                      mieszały trzy różne osie i 45 dań ze 101 nie miało żadnego,
                      więc oznaczenia wyglądały na przypadkowe. Czas jest jednoznaczny,
@@ -276,7 +276,7 @@
                 <template x-for="s in danie.skladniki" :key="s.produkt">
                   <li class="flex items-baseline justify-between gap-3 break-inside-avoid py-1
                              text-[1rem]">
-                    <span class="text-stone-600 dark:text-stone-400" x-text="s.produkt"></span>
+                    <span class="text-stone-600 dark:text-stone-400" x-text="produktWJezyku(s.produkt)"></span>
                     <span class="shrink-0 font-semibold tabular-nums text-stone-800 dark:text-stone-200"
                           x-text="s.gramy + ' g'"></span>
                   </li>

@@ -41,4 +41,4 @@ export function sprawdzWersje(zapisane, t = PO_POLSKU) {
 
    Bez tego diagnoza problemu „mam starą wersję” polega na zgadywaniu. Ma być zgodny
    z numerem CACHE w sw.js. */
-export const WYDANIE = "v89";
+export const WYDANIE = "v90";

@@ -14,6 +14,8 @@
 import { obslugiwane, czyWlaczone, przelacz, nasluchuj, wlaczBlokadeEkranu } from "./ekran.js";
 import { JEZYKI, naStart, zapamietaj, zBazy } from "./jezyk.js";
 import { tlumacz, ustawJezykModulow, napis } from "./tlumaczenia.js";
+import { DANIA_EN } from "./talia-en.js";
+import { PRODUKTY_EN, DZIALY_EN } from "./produkty-en.js";
 
 /* Pasek na dole: pięć pozycji to maksimum, przy którym podpisy zostają czytelne
    i cele dotykowe nie schodzą poniżej progu. Ustawienia zeszły stąd do zębatki
@@ -87,6 +89,26 @@ export function danePowloki({ ekran, tytul, opis }) {
 
       /** Tłumaczy napis na język stołu. Klucz to polski napis (decyzja 120). */
       t(napis, wstawki) { return tlumacz(napis, this.jezyk, wstawki); },
+
+      /* TREŚĆ DAŃ W JĘZYKU STOŁU (decyzja 130). Polska warstwa zostaje źródłem
+         prawdy — z niej liczą się zakupy, czas i sprzęt. To tylko to, co widać.
+         Danie spoza talii (własne, z AI) i produkt spoza słownika nie mają
+         angielskiej warstwy i pokazują się tak, jak je zapisano. */
+      nazwaWJezyku(danie) {
+        return (this.jezyk === "en" && DANIA_EN[danie?.id]?.nazwa) || danie?.nazwa || "";
+      },
+      krokiWJezyku(danie) {
+        const en = this.jezyk === "en" ? DANIA_EN[danie?.id]?.kroki : null;
+        /* Tylko przy tej samej liczbie kroków — inaczej angielski opisywałby
+           inny przepis niż ten, z którego liczy się czas i zakupy. */
+        return en && en.length === (danie?.kroki || []).length ? en : (danie?.kroki || []);
+      },
+      produktWJezyku(nazwa) {
+        return (this.jezyk === "en" && PRODUKTY_EN[nazwa]) || nazwa;
+      },
+      dzialWJezyku(dzial) {
+        return (this.jezyk === "en" && DZIALY_EN[dzial]) || this.t(dzial);
+      },
 
       /* NAGŁÓWEK I PODTYTUŁ — zwykłe pola, NIE gettery.
 

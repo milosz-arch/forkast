@@ -207,7 +207,7 @@
               <ul class="mt-3 space-y-1.5">
                 <template x-for="s in d.skladniki" :key="s.produkt">
                   <li class="flex justify-between text-[1rem] text-stone-600 dark:text-stone-400">
-                    <span x-text="s.produkt"></span>
+                    <span x-text="produktWJezyku(s.produkt)"></span>
                     <span class="font-semibold tabular-nums text-stone-800 dark:text-stone-200"
                           x-text="s.gramy + ' g'"></span>
                   </li>
